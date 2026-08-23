@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model items_template {
+  id               String             @id @db.VarChar(50)
+  name             String             @db.VarChar(50)
+  category         String             @db.VarChar(20)
+  rarity           Int?               @default(1)
+  description      String?            @db.Text
+  attributes       String?            @db.LongText
+  base_price       Int?               @default(10)
+  is_stackable     Boolean?           @default(true)
+  player_inventory player_inventory[]
+}
+
+model player_inventory {
+  id             String         @id @db.VarChar(36)
+  save_id        String         @db.VarChar(36)
+  item_id        String         @db.VarChar(50)
+  quantity       Int?           @default(1)
+  is_equipped    Boolean?       @default(false)
+  durability     Int?
+  saves          saves          @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_inventory_ibfk_1")
+  items_template items_template @relation(fields: [item_id], references: [id], onUpdate: Restrict, map: "player_inventory_ibfk_2")
+
+  @@index([item_id], map: "item_id")
+  @@index([save_id], map: "save_id")
+}
+
+model player_relationships {
+  id            String  @id @db.VarChar(36)
+  save_id       String  @db.VarChar(36)
+  npc_name      String  @db.VarChar(50)
+  affinity      Int?    @default(0)
+  relation_type String? @db.VarChar(20)
+  flags         String? @db.LongText
+  saves         saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_relationships_ibfk_1")
+
+  @@index([save_id], map: "save_id")
+}
+
+model players {
+  id               String  @id @db.VarChar(36)
+  save_id          String  @unique(map: "save_id") @db.VarChar(36)
+  name             String  @db.VarChar(50)
+  dao_name         String? @db.VarChar(50)
+  gender           String? @default("男") @db.VarChar(20)
+  age              Int?    @default(16)
+  max_lifespan     Int?    @default(100)
+  realm_major      String  @db.VarChar(20)
+  realm_minor      String  @db.VarChar(20)
+  sect_id          String? @db.VarChar(50)
+  aptitude         Int?    @default(10)
+  comprehension    Int?    @default(10)
+  divine_sense     Int?    @default(10)
+  speed            Int?    @default(10)
+  dao_heart        Int?    @default(10)
+  fortune          Int?    @default(10)
+  appearance       Int?    @default(3)
+  hp               Int?    @default(100)
+  max_hp           Int?    @default(100)
+  mp               Int?    @default(100)
+  max_mp           Int?    @default(100)
+  cultivation      Int?    @default(0)
+  spirit_stones    Int?    @default(0)
+  merit            Int?    @default(0)
+  karma            Int?    @default(0)
+  spiritual_roots  String  @db.LongText
+  talents          String? @db.LongText
+  status_effects   String? @db.LongText
+  current_location String? @db.VarChar(50)
+  saves            saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "players_ibfk_1")
+}
+
+model saves {
+  id                   String                 @id @db.VarChar(36)
+  save_slot            Int
+  save_name            String                 @db.VarChar(50)
+  play_time_seconds    Int?                   @default(0)
+  is_game_over         Boolean?               @default(false)
+  in_samsara_pool      Boolean?               @default(false)
+  created_at           DateTime               @default(now()) @db.Timestamp(0)
+  updated_at           DateTime               @default(now()) @db.Timestamp(0)
+  player_inventory     player_inventory[]
+  player_relationships player_relationships[]
+  players              players?
+  world_state          world_state?
+}
+
+model world_state {
+  save_id         String  @id @db.VarChar(36)
+  current_year    Int?    @default(387)
+  current_season  String? @default("春") @db.VarChar(10)
+  global_events   String? @db.LongText
+  triggered_clues String? @db.LongText
+  saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")
+}
