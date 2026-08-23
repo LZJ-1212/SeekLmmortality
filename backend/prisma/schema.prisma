@@ -22,15 +22,14 @@ model items_template {
 model player_inventory {
   id             String         @id @db.VarChar(36)
   save_id        String         @db.VarChar(36)
-  item_id        String         @db.VarChar(50)
+  item_id        String?        @db.VarChar(50)   // 改为可选，null 表示自定义物品
+  custom_name    String?        @db.VarChar(100)  // AI 生成的物品名称（如“上古骨片”）
+  custom_data    Json?                           // 存放 AI 给的描述、稀有度、效果
   quantity       Int?           @default(1)
   is_equipped    Boolean?       @default(false)
   durability     Int?
-  saves          saves          @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_inventory_ibfk_1")
-  items_template items_template @relation(fields: [item_id], references: [id], onUpdate: Restrict, map: "player_inventory_ibfk_2")
-
-  @@index([item_id], map: "item_id")
-  @@index([save_id], map: "save_id")
+  saves          saves          @relation(fields: [save_id], references: [id], onDelete: Cascade)
+  items_template items_template? @relation(fields: [item_id], references: [id])
 }
 
 model player_relationships {

@@ -8,11 +8,11 @@ interface Props {
 export const StatusCard: React.FC<Props> = ({ player }) => {
   // 提取灵根数组用于渲染色块
   const roots = player.spiritual_roots.elements || [];
-  const elementColors: Record<string, string> = { '金':'bg-gold', '木':'bg-wood', '水':'bg-water', '火':'bg-blood', '土':'bg-[#B08A4E]', '雷':'bg-thunder', '风':'bg-[#7F9C9C]', '冰':'bg-sect' };
+  const elementColors: Record<string, string> = { '金': 'bg-gold', '木': 'bg-wood', '水': 'bg-water', '火': 'bg-blood', '土': 'bg-[#B08A4E]', '雷': 'bg-thunder', '风': 'bg-[#7F9C9C]', '冰': 'bg-sect' };
 
   return (
     <div className="w-[420px] bg-paper border-2 border-jade rounded-md shadow-lg p-4 font-serif text-textMain select-none flex-shrink-0 h-fit">
-      
+
       <div className="bg-jade text-white text-center py-1.5 rounded-sm font-bold tracking-widest text-lg shadow-sm">
         状态卡 · 初始
       </div>
@@ -22,7 +22,7 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
         <div className="flex justify-between items-center">
           {/* 动态渲染姓名、性别、年龄 */}
           <span>道号 <strong className="text-textDark">{player.name}</strong> · {player.gender} · {player.age} 岁</span>
-          <span className="text-xs text-textSub">寿元 
+          <span className="text-xs text-textSub">寿元
             <span className="ml-1 text-textMain font-semibold">{player.age}/{player.max_lifespan}</span>
           </span>
         </div>
@@ -74,6 +74,36 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
           <span>业力: <strong className="text-textSub">{player.karma}</strong></span>
         </div>
         <div className="text-[11px] text-textSub truncate">所在地: {player.current_location}</div>
+      </div>
+
+      {/* ===== 背包区域 ===== */}
+      <div className="mt-3 pt-2 border-t border-gold border-opacity-50">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-textSub font-bold">🎒 背包</span>
+          <span className="text-textSub text-[10px]">
+            {player.inventory?.length || 0} 件
+          </span>
+        </div>
+        <div className="mt-1 text-xs text-textMain max-h-[100px] overflow-y-auto">
+          {player.inventory && player.inventory.length > 0 ? (
+            <div className="space-y-1">
+              {player.inventory.map((item: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center bg-[#F4EFE6] px-2 py-1 rounded border border-[#E5E0D5]">
+                  <span>
+                    {item.type === 'custom' ? (
+                      <span className="text-mystic">{item.name}</span>
+                    ) : (
+                      <span className="text-textDark">{item.name}</span>
+                    )}
+                  </span>
+                  <span className="text-textSub text-[10px]">x{item.quantity}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span className="text-textSub text-[10px]">空无一物</span>
+          )}
+        </div>
       </div>
     </div>
   );
