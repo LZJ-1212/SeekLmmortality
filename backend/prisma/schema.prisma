@@ -51,6 +51,7 @@ model players {
   dao_name         String? @db.VarChar(50)
   gender           String? @default("男") @db.VarChar(20)
   age              Int?    @default(16)
+  pending_months   Float?  @default(0) // 未满一年的零碎月份累加器，防止 0.1/0.2/1 个月的行动永远无法转化为年龄增长
   max_lifespan     Int?    @default(100)
   realm_major      String  @db.VarChar(20)
   realm_minor      String  @db.VarChar(20)
@@ -96,6 +97,7 @@ model world_state {
   save_id         String  @id @db.VarChar(36)
   current_year    Int?    @default(387)
   current_season  String? @default("春") @db.VarChar(10)
+  pending_months  Float?  @default(0) // 未满一季度（3个月）的零碎月份累加器，用于推进季节/年份
   global_events   String? @db.LongText
   triggered_clues String? @db.LongText
   saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")

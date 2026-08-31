@@ -1,9 +1,20 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { wakeUpHeaven, deduceAction } from './ai';
+import { prisma } from './src/db/prisma';
+import { InventoryService } from './src/services/inventory.service';
+import inventoryRoutes from './src/routes/inventory.routes';
+import {
+  REALM_LAWS,
+  resolveBreakthroughAttempt,
+  clampResource,
+  applyCultivationDelta,
+  advanceAge,
+  advanceWorldTime,
+  getDeathReason,
+} from './src/services/playerState.service';
 
 // 加载 .env 环境变量
 dotenv.config();
@@ -11,26 +22,15 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 极简启动，无需适配器
-const prisma = new PrismaClient();
+// 背包业务逻辑统一走 Service 层，路由/AI 结算代码不直接拼 Prisma 查询
+const inventoryService = new InventoryService(prisma);
 
 // 中间件配置：允许跨域请求和解析 JSON
 app.use(cors());
 app.use(express.json());
 
-// 天地法则：境界突破阈值与雷劫数据
-const REALM_LAWS: Record<string, any> = {
-  "炼气·初期": { next: "炼气·中期", reqCultivation: 100, isMajor: false },
-  "炼气·中期": { next: "炼气·后期", reqCultivation: 200, isMajor: false },
-  "炼气·后期": { next: "炼气·圆满", reqCultivation: 400, isMajor: false },
-  "炼气·圆满": { 
-    next: "筑基·初期", reqCultivation: 800, isMajor: true, 
-    baseSuccess: 0.7, // 基础成功率 70%
-    tribulationDamage: 60, // 雷劫基础伤害
-    newLifespan: 200 // 筑基期寿元上限
-  }
-  // 未来可以在这里继续补全金丹、元婴等数据...
-};
+// 背包 CRUD 独立路由（增/删/改/查）
+app.use('/api/inventory', inventoryRoutes);
 
 // 测试路由：探查天地灵气（数据库连接测试）
 app.get('/api/ping', async (req: Request, res: Response) => {
@@ -166,32 +166,9 @@ app.get('/api/player/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ status: 'error', message: '查无此人，该修士恐已陨落。' });
     }
     
-    // 新增：查询背包
-    const inventory = await prisma.player_inventory.findMany({
-      where: { save_id: player.save_id },
-      include: { items_template: true }
-    });
+    // 背包数据统一走 Service 层查询与格式化
+    const inventoryData = await inventoryService.getInventory(player.save_id);
 
-    // 格式化背包数据（包含自定义物品）
-    const inventoryData = inventory.map(i => {
-      if (i.items_template) {
-        return {
-          name: i.items_template.name,
-          quantity: i.quantity,
-          type: 'template'
-        };
-      } else {
-        const custom = i.custom_data as any;
-        return {
-          name: i.custom_name || '未知',
-          quantity: i.quantity,
-          type: 'custom',
-          rarity: custom?.rarity || 1,
-          description: custom?.description || ''
-        };
-      }
-    });
-    
     res.json({
       status: 'success',
       data: {
@@ -208,75 +185,76 @@ app.get('/api/player/:id', async (req: Request, res: Response) => {
 app.post('/api/action', async (req: Request, res: Response) => {
   try {
     const { playerId, action } = req.body;
-    const player = await prisma.players.findUnique({ where: { id: playerId } });
+    const player = await prisma.players.findUnique({
+      where: { id: playerId },
+      include: { saves: true },
+    });
     if (!player) return res.status(404).json({ status: 'error', message: '修士不存在' });
-    if (player.hp !== null && player.hp <= 0) return res.status(403).json({ status: 'error', message: '已身陨道消' });
 
-    let forcedOutcome = "";
-    
-    // 【核心拦截器】：判定玩家是否试图突破
-    if (action.includes("突破") || action.includes("破境") || action.includes("结丹")) {
-      const currentRealmKey = `${player.realm_major}·${player.realm_minor}`;
-      const realmLaw = REALM_LAWS[currentRealmKey];
-
-      if (!realmLaw) {
-        forcedOutcome = "玩家试图突破，但前方境界未明，无法突破。扣除少量灵力。";
-      } else if ((player.cultivation || 0) < realmLaw.reqCultivation) {
-        forcedOutcome = `玩家试图突破，但修为不足（需要${realmLaw.reqCultivation}）。强行冲关导致灵力反噬，受轻伤（气血-10），突破失败。`;
-      } else {
-        if (realmLaw.isMajor) {
-          const roll = Math.random();
-          const actualSuccessRate = realmLaw.baseSuccess + ((player.dao_heart || 10) * 0.01);
-          
-          if (roll <= actualSuccessRate) {
-            forcedOutcome = `玩家成功抵御雷劫，突破至【${realmLaw.next}】！气血上限增加，伤势完全恢复，寿元大涨。`;
-            player.realm_major = realmLaw.next.split('·')[0];
-            player.realm_minor = realmLaw.next.split('·')[1];
-            player.max_hp = (player.max_hp || 100) + 100;
-            player.hp = player.max_hp; 
-            player.max_lifespan = realmLaw.newLifespan;
-            player.cultivation = 0; 
-          } else {
-            forcedOutcome = `玩家突破失败，被雷劫劈中！受重伤（气血-${realmLaw.tribulationDamage}），修为大跌（修为-100）。`;
-          }
-        } else {
-          forcedOutcome = `玩家水到渠成，突破至小境界【${realmLaw.next}】。修为清零重修。`;
-          player.realm_minor = realmLaw.next.split('·')[1];
-          player.cultivation = 0;
-        }
-      }
+    // 【死亡锁】：存档一旦被标记为终结（气血耗尽或寿元耗尽），无论如何都不允许再有任何行动
+    const alreadyDead = player.saves?.is_game_over
+      || getDeathReason(player.hp ?? 100, player.age ?? 16, player.max_lifespan ?? 100) !== null;
+    if (alreadyDead) {
+      return res.status(403).json({ status: 'error', message: '大限已至，道消身陨，万事皆休。' });
     }
 
-    // 查询背包（用于传递给 AI）
-        const inventory = await prisma.player_inventory.findMany({
-      where: { save_id: player.save_id }, 
-      include: { items_template: true }
-    });
-    const inventoryStr = inventory
-      .map(i => {
-        if (i.items_template) {
-          return `${i.items_template.name} x${i.quantity}`;
-        } else {
-          // 自定义物品
-          const custom = i.custom_data as any;
-          const name = i.custom_name || '未知物品';
-          const rarity = custom?.rarity ? `(${custom.rarity}阶)` : '';
-          return `${name}${rarity} x${i.quantity}`;
-        }
-      })
-      .join('，');
+    let forcedOutcome = "";
 
-    // 丢给 DeepSeek 进行推演
+    // 【核心拦截器 1】：境界突破——所有数值变化由后端硬计算，不依赖 AI 自己填写 hp_delta/cultivation_delta
+    const attemptingBreakthrough = action.includes("突破") || action.includes("破境") || action.includes("结丹");
+    const breakthroughResult = attemptingBreakthrough
+      ? resolveBreakthroughAttempt(
+          {
+            realmMajor: player.realm_major,
+            realmMinor: player.realm_minor,
+            cultivation: player.cultivation ?? 0,
+            hp: player.hp ?? 100,
+            maxHp: player.max_hp ?? 100,
+            maxLifespan: player.max_lifespan ?? 100,
+            daoHeart: player.dao_heart ?? 10,
+          },
+          REALM_LAWS,
+        )
+      : null;
+    if (breakthroughResult) {
+      forcedOutcome = breakthroughResult.forcedOutcomeText;
+    }
+
+    // 【核心拦截器 2】：物品真实性校验——防止 AI 凭空编造玩家使用了背包里没有的字典物品
+    const fabricationWarning = await inventoryService.detectFabricatedItemUsage(player.save_id, action);
+    if (fabricationWarning) {
+      forcedOutcome = forcedOutcome ? `${forcedOutcome}\n${fabricationWarning}` : fabricationWarning;
+    }
+
+    // 查询背包（用于传递给 AI），统一走 Service 层
+    const inventoryStr = await inventoryService.getInventoryPromptString(player.save_id);
+
+    // 丢给 DeepSeek 进行推演（叙事 + 非关键数值，如 mp/功德/业力/物品变化）
     const deduction = await deduceAction(player, action, forcedOutcome, inventoryStr);
 
-    // 结算数值 
-    const newHp = Math.max(0, Math.min(player.max_hp || 100, (player.hp || 100) + (deduction.hp_delta || 0)));
-    const newMp = Math.max(0, Math.min(player.max_mp || 100, (player.mp || 100) + (deduction.mp_delta || 0)));
-    const newCultivation = action.includes("突破") && forcedOutcome.includes("成功") ? 0 
-                         : Math.max(0, (player.cultivation || 0) + (deduction.cultivation_delta || 0));
-    
+    // ==================== 核心状态机：气血/灵力/修为结算 ====================
+    // 若本次触发了境界突破，气血与修为的最终值完全由 breakthroughResult 决定，
+    // AI 返回的 hp_delta/cultivation_delta 一律忽略，避免关键数值被 AI 篡改或算错。
+    const maxHp = breakthroughResult ? breakthroughResult.patch.maxHp : (player.max_hp ?? 100);
+    const maxLifespan = breakthroughResult ? breakthroughResult.patch.maxLifespan : (player.max_lifespan ?? 100);
+    const realmMajor = breakthroughResult ? breakthroughResult.patch.realmMajor : player.realm_major;
+    const realmMinor = breakthroughResult ? breakthroughResult.patch.realmMinor : player.realm_minor;
+
+    const newHp = breakthroughResult
+      ? breakthroughResult.patch.hp
+      : clampResource(player.hp ?? 100, deduction.hp_delta || 0, maxHp);
+    const newMp = clampResource(player.mp ?? 100, deduction.mp_delta || 0, player.max_mp ?? 100);
+    const newCultivation = breakthroughResult
+      ? breakthroughResult.patch.cultivation
+      : applyCultivationDelta(player.cultivation ?? 0, deduction.cultivation_delta || 0);
+
+    // ==================== 核心状态机：时间流逝（修复“角色永远不会变老”的 Bug） ====================
     const monthsPassed = deduction.time_cost_months || 1;
-    const addedAge = monthsPassed >= 12 ? Math.floor(monthsPassed / 12) : 0;
+    const { newAge, newPendingMonths } = advanceAge(player.age ?? 16, player.pending_months ?? 0, monthsPassed);
+
+    // ==================== 核心状态机：死亡判定（新增寿元耗尽判定） ====================
+    const deathReason = getDeathReason(newHp, newAge, maxLifespan);
+    const isDeadNow = deathReason !== null;
 
     // ==================== 构建统一事务 ====================
     const transactionOps: any[] = [];
@@ -289,149 +267,49 @@ app.post('/api/action', async (req: Request, res: Response) => {
           hp: newHp,
           mp: newMp,
           cultivation: newCultivation,
-          age: (player.age || 16) + addedAge,
-          realm_major: player.realm_major,
-          realm_minor: player.realm_minor,
-          max_hp: player.max_hp,
-          max_lifespan: player.max_lifespan,
+          age: newAge,
+          pending_months: newPendingMonths,
+          realm_major: realmMajor,
+          realm_minor: realmMinor,
+          max_hp: maxHp,
+          max_lifespan: maxLifespan,
           merit: Math.max(0, (player.merit || 0) + (deduction.merit_delta || 0)),
           karma: Math.max(0, (player.karma || 0) + (deduction.karma_delta || 0)),
         }
       })
     );
 
-    // ==================== 处理背包物品变更（含自定义物品熔断） ====================
-    const itemChanges = deduction.item_changes || [];
-    
-    if (itemChanges.length > 0) {
-      // 1. 先分离出“常规物品”和“自定义物品”
-      const regularItemNames = itemChanges
-        .filter((ic: any) => !ic.effects) // 没有 effects 字段的视为常规
-        .map((ic: any) => ic.name);
-      
-      // 2. 查询常规物品的模板
-      const templates = await prisma.items_template.findMany({
-        where: { name: { in: regularItemNames } }
-      });
-
-       // 【重要】构建模板映射
-      const templateMap = Object.fromEntries(
-        templates.map(t => [t.name, t])
+    // 2. 世界时间推进（年份/季节随月份流逝同步更新）
+    const worldState = await prisma.world_state.findUnique({ where: { save_id: player.save_id } });
+    if (worldState) {
+      const { newYear, newSeason, newPendingMonths: newWorldPendingMonths } = advanceWorldTime(
+        worldState.current_year ?? 387,
+        worldState.current_season ?? '春',
+        worldState.pending_months ?? 0,
+        monthsPassed,
       );
-
-      // 3. 遍历处理每一个变更
-      for (const change of itemChanges) {
-        const changeAmount = change.change || 0;
-        if (changeAmount === 0) continue;
-
-        // --- 分支 A：常规物品（数据库里有） ---
-        const template = templateMap[change.name];
-        if (template) {
-          const existing = await prisma.player_inventory.findFirst({
-            where: { save_id: player.save_id!, item_id: template.id }
-          });
-          
-          if (changeAmount > 0) {
-            if (existing) {
-              transactionOps.push(
-                prisma.player_inventory.update({
-                  where: { id: existing.id },
-                  data: { quantity: { increment: changeAmount } }
-                })
-              );
-            } else {
-              transactionOps.push(
-                prisma.player_inventory.create({
-                  data: {
-                    id: crypto.randomUUID(),
-                    save_id: player.save_id!,
-                    item_id: template.id,
-                    quantity: changeAmount,
-                    is_equipped: false
-                  }
-                })
-              );
-            }
-          } else {
-            // 消耗逻辑（不变）
-            if (!existing) continue;
-            const newQty = (existing.quantity || 0) + changeAmount;
-            if (newQty < 0) throw new Error(`物品 "${change.name}" 数量不足`);
-            if (newQty === 0) {
-              transactionOps.push(prisma.player_inventory.delete({ where: { id: existing.id } }));
-            } else {
-              transactionOps.push(
-                prisma.player_inventory.update({
-                  where: { id: existing.id },
-                  data: { quantity: newQty }
-                })
-              );
-            }
-          }
-          continue;
-        }
-
-        // --- 分支 B：自定义物品（数据库里没有的） ---
-        // 验证稀有度：最高 4（地阶）
-        const rarity = change.rarity || 1;
-        if (rarity > 4) {
-          console.warn(`⚠️ 自定义物品 "${change.name}" 稀有度 ${rarity} 超出上限(4)，已降级为地阶`);
-        }
-
-        // 验证效果数值（防作弊熔断）
-        const effects = change.effects || {};
-        const boundedEffects: any = {};
-        
-        // 硬上限阈值
-        const MAX_CULTIVATION_DELTA = 30;
-        const MAX_HP_DELTA = 50;
-        const MAX_MP_DELTA = 50;
-        const MAX_MERIT_DELTA = 5;
-        const MAX_KARMA_DELTA = 5;
-
-        if (effects.cultivation_delta) {
-          boundedEffects.cultivation_delta = Math.max(-MAX_CULTIVATION_DELTA, Math.min(MAX_CULTIVATION_DELTA, effects.cultivation_delta));
-        }
-        if (effects.hp_delta) {
-          boundedEffects.hp_delta = Math.max(-MAX_HP_DELTA, Math.min(MAX_HP_DELTA, effects.hp_delta));
-        }
-        if (effects.mp_delta) {
-          boundedEffects.mp_delta = Math.max(-MAX_MP_DELTA, Math.min(MAX_MP_DELTA, effects.mp_delta));
-        }
-        if (effects.merit_delta) {
-          boundedEffects.merit_delta = Math.max(-MAX_MERIT_DELTA, Math.min(MAX_MERIT_DELTA, effects.merit_delta));
-        }
-        if (effects.karma_delta) {
-          boundedEffects.karma_delta = Math.max(-MAX_KARMA_DELTA, Math.min(MAX_KARMA_DELTA, effects.karma_delta));
-        }
-
-        // 如果效果全部为 0 且无特殊描述，仍可生成，但视为“凡品”
-        const customData = {
-          name: change.name,
-          category: change.category || "misc",
-          rarity: Math.min(rarity, 4),
-          description: change.description || "一件来历不明的物品。",
-          effects: boundedEffects
-        };
-
-        // 写入数据库（关联 item_id = null，只存 custom 数据）
-        transactionOps.push(
-          prisma.player_inventory.create({
-            data: {
-              id: crypto.randomUUID(),
-              save_id: player.save_id!,
-              item_id: null,
-              custom_name: change.name,
-              custom_data: customData,
-              quantity: changeAmount > 0 ? changeAmount : 1, // 自定义物品只支持获得（不给消耗）
-              is_equipped: false
-            }
-          })
-        );
-      }
+      transactionOps.push(
+        prisma.world_state.update({
+          where: { save_id: player.save_id },
+          data: { current_year: newYear, current_season: newSeason, pending_months: newWorldPendingMonths },
+        })
+      );
     }
 
-    // 执行统一事务
+    // 3. 死亡结算：一旦判定死亡，永久锁死该存档
+    if (isDeadNow) {
+      transactionOps.push(
+        prisma.saves.update({ where: { id: player.save_id }, data: { is_game_over: true } })
+      );
+    }
+
+    // ==================== 处理背包物品变更（含自定义物品熔断） ====================
+    // 物品增删逻辑统一走 Service 层（内部自带事务），必须先于玩家属性事务执行：
+    // 一旦物品变更失败（如库存不足），直接抛出异常，玩家属性事务不会被执行。
+    const itemChanges = deduction.item_changes || [];
+    await inventoryService.applyItemChanges(player.save_id, itemChanges);
+
+    // 执行玩家属性更新事务
     const [updatedPlayer] = await prisma.$transaction(transactionOps);
 
     res.json({
@@ -440,7 +318,8 @@ app.post('/api/action', async (req: Request, res: Response) => {
         narrative: deduction.narrative,
         options: deduction.next_options,
         monthsPassed: monthsPassed,
-        isDead: newHp === 0,
+        isDead: isDeadNow,
+        deathReason: deathReason,
         player: updatedPlayer
       }
     });

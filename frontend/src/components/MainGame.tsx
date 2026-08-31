@@ -46,8 +46,10 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  // 判断是否死亡
-  const isDead = playerData?.hp <= 0;
+  // 判断是否死亡：气血耗尽 或 寿元耗尽（年龄超过寿元上限），二者任一成立即为陨落/坐化
+  const isDead = playerData
+    ? playerData.hp <= 0 || playerData.age > playerData.max_lifespan
+    : false;
 
   const handleAction = async (actionDesc: string) => {
     if (!actionDesc.trim() || isProcessing || isDead) return;
@@ -73,9 +75,12 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
 
         setLogs(prev => [...prev, { id: Date.now() + 1, type: 'narrative', content: finalNarrative }]);
 
-        // 如果死亡，追加天道提示
+        // 如果死亡，追加天道提示（区分气血耗尽 / 寿元耗尽两种死因）
         if (result.data.isDead) {
-          setLogs(prev => [...prev, { id: Date.now() + 2, type: 'system', content: '【天道无情】 气血耗尽，你已身陨道消...' }]);
+          const deathMessage = result.data.deathReason === 'lifespan_exhausted'
+            ? '【天道无情】 寿元耗尽，大限已至，你已坐化飞灰...'
+            : '【天道无情】 气血耗尽，你已身陨道消...';
+          setLogs(prev => [...prev, { id: Date.now() + 2, type: 'system', content: deathMessage }]);
         }
 
         // 更新动态按钮
