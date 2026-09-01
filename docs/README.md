@@ -13,7 +13,8 @@
 | [hosting.md](./hosting.md) | I06 功能规格（L1 穿透、暴露面、朋友须知） |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 架构（双 Origin 隧道、API 基址、NSSM 保活） |
 | [ui.md](./ui.md) | **电脑 / 手机 UI 设计**：宣纸气质、断点、书房 vs 掌中分栏 |
-| [command_ui.md](./command_ui.md) | 局内 14 指令语义；≥1024 常驻面板 + 指令在下 |
+| [command_ui.md](./command_ui.md) | 局内 12 指令功能：只读地图/技艺、三条行动、日志与选项本机保存 |
+| [command_ui_architecture.md](./command_ui_architecture.md) | 指令技术：`handleCommand`、固定句、接口、灰键缺口 |
 | [mobile.md](./mobile.md) | I11 功能规格（窄屏底栏、键盘；布局代码未做） |
 | [mobile_architecture.md](./mobile_architecture.md) | I11 改哪些组件、dvh、安全区 |
 | [player_agency.md](./player_agency.md) | **S36 自由度规范**：叙事自由、数值主权为零；三圈边界 |
@@ -54,3 +55,5 @@
 | [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | S36：自由度总则已写；情境锁已落地；宣称奇迹骰 **A5** 未接线 |
 
 已实现的十二系统细节以 `game_design.md` + `backend/src/services/*.ts` 为准，不另复制一份以免双源。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。
+
+**代码已有、独立规格未成册**（洞府/宗门/技艺/情缘/当前地图/物品等）见 [project_status.md](./project_status.md) 第 13 节；待办 **I13–I18**。整体界面 **I19**。

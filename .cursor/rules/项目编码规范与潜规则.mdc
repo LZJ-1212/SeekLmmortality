@@ -7,7 +7,7 @@ alwaysApply: true
 
 与 [project.mdc](./project.mdc) 分工：那份管架构隔离、密钥、数值/AI 铁律、Prisma 5、主题色。**本份管怎么写代码、测什么、仓库里不要干什么。** 玩法规格与开工顺序：`docs/README.md`、`docs/roadmap.md`。玩家能说什么、天道锁什么：`docs/player_agency.md`。
 
-对玩家说明用中文。标识符用英文（`getOrCreateCave`，不要 `getDongfu`）。
+对玩家说明用中文。标识符用英文（`getCave`，不要 `getDongfu`）。
 
 ---
 

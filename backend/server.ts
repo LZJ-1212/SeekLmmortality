@@ -20,8 +20,9 @@ import {
 } from './src/services/playerState.service';
 import { resolveCombatModifiers, parseElementsFromSpiritualRoots } from './src/services/combat.service';
 import { resolveKarmaRetribution, clampMeritDelta, clampKarmaDelta } from './src/services/karma.service';
-import { CaveService } from './src/services/cave.service';
-import { calculateSeclusionCultivationGain, getRegionBaseSpiritualDensity } from './src/services/cultivationFormula.service';
+import { CaveService, detectEstablishCaveIntent, detectGrantCaveIntent, resolveSeclusionSpiritualDensity } from './src/services/cave.service';
+import { unlearnedSpellForcedOutcome } from './src/services/technique.service';
+import { calculateSeclusionCultivationGain } from './src/services/cultivationFormula.service';
 import { detectCraftingAttempt, resolveCrafting } from './src/services/crafting.service';
 import {
   clampSpiritStonesDelta,
@@ -40,7 +41,7 @@ import {
   getSectRankByReputation,
   TRAITOR_RANK_LABEL,
 } from './src/services/sect.service';
-import { RelationshipService } from './src/services/relationship.service';
+import { RelationshipService, deceasedNpcForcedOutcome } from './src/services/relationship.service';
 import { isDualCultivationAttempt, resolveDualCultivation } from './src/services/npc.service';
 import { findLongestMatchingName } from './src/utils/textMatch';
 import { REALM_RANKS } from './src/services/combat.service';
@@ -73,7 +74,8 @@ import { isEligibleForSamsara, resolveLegacyBlessing } from './src/services/rein
 import { ReincarnationDbService } from './src/services/reincarnationDb.service';
 import { SnapshotService } from './src/services/snapshot.service';
 import { SaveService } from './src/services/save.service';
-import { evaluateSituation, nextSceneContext, parseSceneContext } from './src/services/situation.service';
+import { evaluateSituation, nextSceneContext } from './src/services/situation.service';
+import { WorldStateRepository } from './src/repositories/worldState.repository';
 // S21 安全网关：口令 / 净化 / 注入黑名单 / 创角校验 / 每日行动配额
 import {
   requirePlayToken,
@@ -103,7 +105,7 @@ const PORT = process.env.PORT || 3000;
 
 // 背包业务逻辑统一走 Service 层，路由/AI 结算代码不直接拼 Prisma 查询
 const inventoryService = new InventoryService(prisma);
-// 洞府业务逻辑：懒加载兜底 + 灵气浓度查询
+// 洞府：须开辟或赐府；禁止把所在地懒建成府
 const caveService = new CaveService(prisma);
 // 宗门业务逻辑：声望驱动的职位晋升 + 叛宗标记
 const sectService = new SectService(prisma);
@@ -117,6 +119,7 @@ const reincarnationService = new ReincarnationDbService(prisma);
 const snapshotService = new SnapshotService(prisma);
 // 存档列表业务逻辑：列出全部存档供前端选择（免手抄 UUID）
 const saveService = new SaveService(prisma);
+const worldStateRepo = new WorldStateRepository(prisma);
 
 // 中间件配置：允许跨域请求和解析 JSON
 // S21 / I06：配了 PLAY_CORS_ORIGIN 则只放行该（逗号分隔）列表 + 本机 5173，避免隧道配置把 localhost 创角卡死
@@ -269,14 +272,6 @@ app.post('/api/create-player', requirePlayToken, async (req: Request, res: Respo
           current_season: "春",
         }
       }),
-      prisma.player_cave.create({
-        data: {
-          save_id: saveId,
-          level: 1,
-          spiritual_density: getRegionBaseSpiritualDensity("青岳·天机坊市"),
-          location_name: "青岳·天机坊市",
-        }
-      }),
       prisma.players.create({
         data: {
           id: playerId,
@@ -358,9 +353,10 @@ app.get('/api/player/:id', requirePlayToken, async (req: Request, res: Response)
     // 背包数据统一走 Service 层查询与格式化
     const inventoryData = await inventoryService.getInventory(player.save_id);
     const lifespanStatus = getLifespanStatus(player.age ?? 16, player.max_lifespan ?? 100);
-    const cave = await caveService.getOrCreateCave(player.save_id, player.current_location ?? '青岳·天机坊市');
+    const cave = await caveService.getCave(player.save_id);
     const sect = await sectService.getSect(player.save_id);
     const relationships = await relationshipService.getAll(player.save_id);
+    const worldState = await worldStateRepo.findBySaveId(player.save_id);
 
     res.json({
       status: 'success',
@@ -370,7 +366,9 @@ app.get('/api/player/:id', requirePlayToken, async (req: Request, res: Response)
         lifespanStatus,
         cave,
         sect,
-        relationships
+        relationships,
+        current_year: worldState?.current_year ?? 387,
+        current_season: worldState?.current_season ?? '春',
       }
     });
   } catch (error) {
@@ -414,8 +412,8 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
     }
 
     // 世界状态：情境锁 + 年份/旧友检测复用
-    const worldState = await prisma.world_state.findUnique({ where: { save_id: player.save_id } });
-    const sceneContext = parseSceneContext(worldState?.scene_context);
+    const worldState = await worldStateRepo.findBySaveId(player.save_id);
+    const { context: sceneContext, persistable: scenePersistable } = await worldStateRepo.readSceneContext(player.save_id);
     const situation = evaluateSituation(sceneContext, action);
     if (!situation.ok) {
       return res.status(400).json({ status: 'error', message: situation.message });
@@ -427,8 +425,7 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
       return res.status(429).json({ status: 'error', message: '今日推演次数已尽，明日再来。' });
     }
 
-    // 洞府：灵气浓度直接决定闭关修炼的收益倍率（懒加载兜底，兼容洞府系统上线前创建的旧存档）
-    const cave = await caveService.getOrCreateCave(player.save_id, player.current_location ?? '青岳·天机坊市');
+    let cave = await caveService.getCave(player.save_id);
     // 宗门：可能为 null（尚未加入任何宗门，即"散修"），这是合法状态，不做懒加载兜底
     const playerSect = await sectService.getSect(player.save_id);
     // 人际关系：全部现有关系，供双修目标匹配 + 旧友寿元耗尽检测复用
@@ -495,27 +492,65 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
       forcedOutcomeParts.push(fabricationWarning);
     }
 
+    const spellFizzle = unlearnedSpellForcedOutcome(action, []);
+    if (spellFizzle) {
+      forcedOutcomeParts.push(spellFizzle);
+    }
+
+    const deceasedVisit = deceasedNpcForcedOutcome(action, relationships);
+    if (deceasedVisit) {
+      forcedOutcomeParts.push(deceasedVisit);
+    }
+
+    const wantsEstablish = detectEstablishCaveIntent(action);
+    const wantsGrant = detectGrantCaveIntent(action);
+    if (wantsGrant && !wantsEstablish && !playerSect) {
+      forcedOutcomeParts.push(
+        '玩家并无宗门，何来赐府。叙事须点明无人授府，不得凭空得洞府。',
+      );
+    } else if (wantsEstablish || (wantsGrant && playerSect)) {
+      const locationName = player.current_location ?? '青岳·天机坊市';
+      const established = await caveService.establishCave(player.save_id, locationName);
+      if (established.ok) {
+        cave = established.cave;
+        const how = wantsGrant && playerSect && !wantsEstablish ? '宗门赐府' : '自行开辟';
+        forcedOutcomeParts.push(
+          `玩家于「${locationName}」${how}，洞府落成。此后闭关方可凭府中灵脉；叙事须写清开府安家，不得写成客栈即洞府。`,
+        );
+      } else {
+        forcedOutcomeParts.push(
+          '玩家已有洞府，不得另开一座。叙事须点明旧府仍在，此次开府落空。',
+        );
+      }
+    }
+
     // 【核心拦截器 3】：闭关时长解析——「闭关无岁月，转眼数十载」，具体闭关多久绝不能让 AI 随口猜测，
     // 必须由后端从行动文本里精确解析出真实月数并强制锁定，AI 只负责把这段时光写成一笔带过的剧情。
     const seclusionMonths = detectSeclusionMonths(action);
-    // 闭关修炼收益：由洞府灵气浓度 × 资质 × 灵根 × 道心的公式硬性算出，绝不采信 AI 的想象。
-    // 与境界突破/业力天罚一样，属于"自成一体"的确定性事件，不与它们叠加在同一回合。
+    const seclusionAura = resolveSeclusionSpiritualDensity(
+      cave,
+      player.current_location ?? '青岳·天机坊市',
+    );
+    // 闭关修炼收益：由洞府（或借地打折）灵气 × 资质 × 灵根 × 道心硬算，绝不采信 AI。
     const seclusionCultivationGain = seclusionMonths !== null && !breakthroughResult && !karmaRetributionResult?.triggered
       ? calculateSeclusionCultivationGain(
           {
             aptitude: player.aptitude ?? 10,
             rootQuality: parseRootQuality(player.spiritual_roots),
             daoHeart: player.dao_heart ?? 10,
-            caveSpiritualDensity: cave.spiritual_density ?? 10,
+            caveSpiritualDensity: seclusionAura.density,
             talentCoefficient: getCultivationSpeedMultiplier(ownedTalents) * getBuildCultivationSpeedMultiplier(characterBuild), // 逆天改命天赋 + 创角命格（体质/天赋/出身/道途）的修炼倍率
           },
           seclusionMonths,
         )
       : null;
     if (seclusionMonths !== null) {
+      const auraNote = seclusionAura.source === 'cave'
+        ? `此次闭关，凭借洞府灵气与自身根骨，修为精进 ${seclusionCultivationGain} 点，需在叙事中体现修为大有长进。`
+        : `玩家并无洞府，只得借地打坐，灵气散逸。此次修为精进 ${seclusionCultivationGain} 点。叙事不得写成已有洞府或客栈即洞府。`;
       forcedOutcomeParts.push(
         `玩家决定闭关，此次共计闭关 ${describeMonths(seclusionMonths)}。须以"山中无甲子，寒尽不知年"的笔法一笔带过这段漫长时光，直接描写出关后的状态与心境变化，不要逐日描写修炼过程。`
-        + (seclusionCultivationGain !== null ? `此次闭关，凭借洞府灵气与自身根骨，修为精进 ${seclusionCultivationGain} 点，需在叙事中体现修为大有长进。` : ''),
+        + (seclusionCultivationGain !== null ? auraNote : ''),
       );
     }
 
@@ -597,10 +632,11 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
     // 增益幅度由后端依据好感度硬性计算，绝不采信 AI 自己给出的增益数值。
     let dualCultivationTargetName: string | null = null;
     let dualCultivationResult: ReturnType<typeof resolveDualCultivation> | null = null;
-    if (isDualCultivationAttempt(action) && relationships.length > 0) {
-      dualCultivationTargetName = findLongestMatchingName(action, relationships.map((r) => r.npc_name));
+    const livingRelationships = relationships.filter((rel) => !rel.is_deceased);
+    if (isDualCultivationAttempt(action) && livingRelationships.length > 0) {
+      dualCultivationTargetName = findLongestMatchingName(action, livingRelationships.map((r) => r.npc_name));
       if (dualCultivationTargetName) {
-        const targetRelationship = relationships.find((r) => r.npc_name === dualCultivationTargetName)!;
+        const targetRelationship = livingRelationships.find((r) => r.npc_name === dualCultivationTargetName)!;
         dualCultivationResult = resolveDualCultivation(dualCultivationTargetName, {
           affinity: targetRelationship.affinity ?? 0,
           playerMaxHp: player.max_hp ?? 100,
@@ -659,11 +695,11 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
     const hasLockedNumbers = !!breakthroughResult || !!karmaRetributionResult?.triggered || seclusionCultivationGain !== null || !!regionDangerCheck?.isDangerous;
 
     // 丢给 DeepSeek 进行推演（叙事 + 非关键数值，如 mp/功德/业力/物品变化）
-    const deduction = await deduceAction(player, action, forcedOutcome, inventoryStr, hasLockedNumbers, {
+    const deduction = await deduceAction(player, action, forcedOutcome, inventoryStr, hasLockedNumbers, cave ? {
       level: cave.level ?? 1,
       spiritualDensity: cave.spiritual_density ?? 10,
       locationName: cave.location_name ?? player.current_location ?? '青岳·天机坊市',
-    }, playerSect ? {
+    } : undefined, playerSect ? {
       sectName: playerSect.sect_name,
       rank: playerSect.rank ?? '试炼弟子',
       reputation: playerSect.reputation ?? 0,
@@ -790,7 +826,11 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
           },
           worldState?.current_year ?? 387,
         );
-      } else if (existingRelationship && (relationshipEvent.affinity_delta || relationshipEvent.relation_type)) {
+      } else if (
+        existingRelationship
+        && !existingRelationship.is_deceased
+        && (relationshipEvent.affinity_delta || relationshipEvent.relation_type)
+      ) {
         await relationshipService.applyAffinityDelta(
           existingRelationship,
           relationshipEvent.affinity_delta || 0,
@@ -844,17 +884,16 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
         inCombat: Boolean(combat?.in_combat),
         isDead: isDeadNow,
       });
-      transactionOps.push(
-        prisma.world_state.update({
-          where: { save_id: player.save_id },
-          data: {
-            current_year: newYear,
-            current_season: newSeason,
-            pending_months: newWorldPendingMonths,
-            scene_context: nextScene,
-          },
-        })
-      );
+      const clockOp = worldStateRepo.clockUpdate(player.save_id, {
+        current_year: newYear,
+        current_season: newSeason,
+        pending_months: newWorldPendingMonths,
+      });
+      if (scenePersistable) {
+        transactionOps.push(clockOp, worldStateRepo.sceneContextUpdate(player.save_id, nextScene));
+      } else {
+        transactionOps.push(clockOp);
+      }
     }
 
     // 3. 死亡结算：一旦判定死亡，永久锁死该存档；

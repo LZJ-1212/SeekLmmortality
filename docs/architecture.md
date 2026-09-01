@@ -44,7 +44,7 @@ AI 返回的数值增量若与拦截器冲突，以拦截器为准（现有代�
 
 ## 4. 前端要点
 
-- 主界面：`MainGame.tsx`、`StatusCard.tsx`、`CommandMenu.tsx`。视觉与断点见 [ui.md](./ui.md)。
+- 主界面：`MainGame.tsx`、`StatusCard.tsx`、`CommandMenu.tsx`。视觉与断点见 [ui.md](./ui.md)。指令分发见 [command_ui_architecture.md](./command_ui_architecture.md)。
 - 创角：命格选项须与 [content_catalog.md](./content_catalog.md) 一致。
 - 无全局状态库；存档 id 在列表页选择。声音：规格有，代码无。
 - 玩家自由度：叙事自由、数值由拦截器锁死，见 [player_agency.md](./player_agency.md)。

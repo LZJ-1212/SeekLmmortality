@@ -2,12 +2,14 @@ import React from 'react';
 
 /** 全部指令（顺序即菜单展示顺序） */
 export const COMMANDS = [
-  '面板', '修炼', '突破', '悟道', '洞府', '地图', '背包', '坊市', '宗门', '技艺', '情缘', '对话', '存档', '读档',
+  '面板', '修炼', '突破', '悟道', '洞府', '地图', '背包', '宗门', '技艺', '情缘', '存档', '读档',
 ] as const;
 export type Command = typeof COMMANDS[number];
 
 /** 只读查看类指令：处理中/已死亡仍可点开查看（不依赖行动结算） */
-const ALWAYS_ENABLED: ReadonlySet<Command> = new Set(['面板', '背包', '洞府', '宗门', '情缘']);
+const ALWAYS_ENABLED: ReadonlySet<Command> = new Set([
+  '面板', '背包', '洞府', '宗门', '情缘', '地图', '技艺', '读档', '存档',
+]);
 
 interface Props {
   /** 当前打开的弹窗指令（用于高亮） */

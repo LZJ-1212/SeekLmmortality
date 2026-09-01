@@ -22,10 +22,12 @@ export interface PlayerCardData {
   merit: number;
   karma: number;
   current_location?: string | null;
+  current_year?: number | null;
+  current_season?: string | null;
   spiritual_roots: { quality?: string; elements?: string[] };
   lifespanStatus?: { remainingYears: number; isNearingLifespanLimit: boolean };
   sect?: { sect_name?: string | null; rank?: string | null; is_traitor?: boolean | null; reputation?: number | null };
-  cave?: { location_name?: string | null; level?: number | null; spiritual_density?: number | null };
+  cave?: { location_name?: string | null; level?: number | null; spiritual_density?: number | null } | null;
   relationships?: Array<{
     id: string;
     npc_name: string;

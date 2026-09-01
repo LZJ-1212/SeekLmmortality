@@ -4,6 +4,7 @@ import { CommandMenu, type Command } from './CommandMenu';
 import { InfoModal, type InfoPanelType } from './InfoModal';
 import { LoadModal } from './LoadModal';
 import { StatusCard } from './StatusCard';
+import { formatHeavenCalendar } from '../catalogDisplay';
 
 // 定义每条日志的格式
 interface LogEntry {
@@ -24,20 +25,97 @@ interface Opening {
 const FONT_SIZE_KEY = 'sl_font_size';
 const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 24;
+const LOGS_STORAGE_PREFIX = 'sl_action_logs_';
+const OPTIONS_STORAGE_PREFIX = 'sl_action_options_';
+const LOGS_MAX = 400;
+
+const DEFAULT_ACTION_OPTIONS: OpeningOption[] = [
+  { tag: '平和', text: '闭关修炼' },
+  { tag: '机缘', text: '四处打听' },
+  { tag: '风险', text: '出城历练' },
+];
+
+function logsStorageKey(playerId: string) {
+  return `${LOGS_STORAGE_PREFIX}${playerId}`;
+}
+
+function optionsStorageKey(playerId: string) {
+  return `${OPTIONS_STORAGE_PREFIX}${playerId}`;
+}
+
+function readStoredLogs(playerId: string): LogEntry[] | null {
+  try {
+    const raw = localStorage.getItem(logsStorageKey(playerId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const logs: LogEntry[] = [];
+    for (const row of parsed) {
+      if (!row || typeof row !== 'object') continue;
+      const entry = row as Partial<LogEntry>;
+      if (
+        typeof entry.id === 'number' &&
+        (entry.type === 'system' || entry.type === 'player' || entry.type === 'narrative') &&
+        typeof entry.content === 'string'
+      ) {
+        logs.push({ id: entry.id, type: entry.type, content: entry.content });
+      }
+    }
+    return logs.length > 0 ? logs : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredLogs(playerId: string, logs: LogEntry[]) {
+  try {
+    localStorage.setItem(logsStorageKey(playerId), JSON.stringify(logs.slice(-LOGS_MAX)));
+  } catch {
+    /* 配额满则放弃，不打断局内 */
+  }
+}
+
+function readStoredOptions(playerId: string): OpeningOption[] | null {
+  try {
+    const raw = localStorage.getItem(optionsStorageKey(playerId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const options: OpeningOption[] = [];
+    for (const row of parsed) {
+      if (!row || typeof row !== 'object') continue;
+      const option = row as Partial<OpeningOption>;
+      if (typeof option.tag === 'string' && typeof option.text === 'string' && option.text.trim()) {
+        options.push({ tag: option.tag, text: option.text });
+      }
+    }
+    return options.length > 0 ? options : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredOptions(playerId: string, options: OpeningOption[]) {
+  try {
+    localStorage.setItem(optionsStorageKey(playerId), JSON.stringify(options));
+  } catch {
+    /* 配额满则放弃 */
+  }
+}
+
+const DEFAULT_LOGS: LogEntry[] = [
+  { id: 1, type: 'system', content: '—— 仙路已开，凡尘录入 ——' },
+];
 
 // 指令 → 标准行动文本（行动类指令点击即发对应文本，触发后端确定性拦截器）
 const COMMAND_ACTION_TEXT: Partial<Record<Command, string>> = {
   修炼: '闭关修炼',
   突破: '尝试突破境界',
   悟道: '参悟道法',
-  地图: '查看九州地图',
-  坊市: '前往坊市',
-  技艺: '研习修仙百艺',
-  对话: '寻人交谈',
 };
 
-// 信息类指令（打开详情弹窗）
-const INFO_COMMANDS: ReadonlySet<Command> = new Set(['面板', '背包', '洞府', '宗门', '情缘']);
+// 信息类指令（打开详情弹窗，不调 DeepSeek）
+const INFO_COMMANDS: ReadonlySet<Command> = new Set(['面板', '背包', '洞府', '宗门', '情缘', '地图', '技艺']);
 
 interface Props {
   playerId: string;
@@ -61,16 +139,11 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
     localStorage.setItem(FONT_SIZE_KEY, String(fontSize));
   }, [fontSize]);
 
-  // 初始默认的三个动态选项
-  const [actionOptions, setActionOptions] = useState([
-    { tag: '平和', text: '闭关修炼' },
-    { tag: '机缘', text: '四处打听' },
-    { tag: '风险', text: '出城历练' }
-  ]);
+  const [actionOptions, setActionOptions] = useState<OpeningOption[]>(
+    () => readStoredOptions(playerId) ?? DEFAULT_ACTION_OPTIONS,
+  );
 
-  const [logs, setLogs] = useState<LogEntry[]>([
-    { id: 1, type: 'system', content: '—— 仙路已开，凡尘录入 ——' }
-  ]);
+  const [logs, setLogs] = useState<LogEntry[]>(() => readStoredLogs(playerId) ?? DEFAULT_LOGS);
 
   // 逆天改命：大境界渡劫成功后的天赋三选一（Rogue-like），非空时需强制玩家先选择
   const [talentChoices, setTalentChoices] = useState<{ id: string; name: string; description: string }[]>([]);
@@ -88,8 +161,11 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // 开局剧情：把玩家创角定下的命格织成的身世写进日志，并按剧情给出的方向初始化起步选项
+  // 开局剧情：已有本机历史（含叙事或玩家行动）则不覆盖，避免回列表/刷新丢日志
   useEffect(() => {
+    const stored = readStoredLogs(playerId);
+    const hasHistory = Boolean(stored?.some((row) => row.type === 'player' || row.type === 'narrative'));
+    if (hasHistory) return;
     if (opening.paragraphs.length > 0) {
       const base: LogEntry[] = [{ id: 1, type: 'system', content: '—— 仙路已开，凡尘录入 ——' }];
       const storyLogs: LogEntry[] = opening.paragraphs.map((p, i) => ({ id: i + 2, type: 'narrative', content: p }));
@@ -98,7 +174,15 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
     if (opening.options.length > 0) {
       setActionOptions(opening.options);
     }
-  }, [opening]);
+  }, [opening, playerId]);
+
+  useEffect(() => {
+    writeStoredLogs(playerId, logs);
+  }, [playerId, logs]);
+
+  useEffect(() => {
+    writeStoredOptions(playerId, actionOptions);
+  }, [playerId, actionOptions]);
 
   // 初次加载数据
   useEffect(() => {
@@ -218,7 +302,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         // ======================================================
 
       } else {
-        setLogs(prev => [...prev, { id: Date.now() + 1, type: 'system', content: `【天道反噬】 ${result.message}` }]);
+        setLogs(prev => [...prev, { id: Date.now() + 1, type: 'system', content: result.message ? `【天机】 ${result.message}` : '【天机】 推演未成。' }]);
       }
     } catch (error) {
       setLogs(prev => [...prev, { id: Date.now() + 1, type: 'system', content: '【天机中断】 无法沟通天道引擎。' }]);
@@ -285,7 +369,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
     }
   };
 
-  // 读档回滚成功后：刷新玩家数据 + 重置日志与天赋选择
+  // 读档回滚成功后：刷新人物；日志只追加一句，不抹掉历史行动
   const handleRolledBack = async () => {
     const refreshResponse = await apiFetch(`/api/player/${playerId}`);
     const refreshData = await refreshResponse.json();
@@ -297,7 +381,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
       });
     }
     setTalentChoices([]);
-    setLogs([{ id: Date.now(), type: 'system', content: '—— 时光倒流，回到存档的那一刻 ——' }]);
+    setLogs((prev) => [...prev, { id: Date.now(), type: 'system', content: '—— 时光倒流，回到该快照时刻（上文仍为当时见闻） ——' }]);
     setActiveCommand(null);
   };
 
@@ -416,7 +500,9 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
                 A+
               </button>
             </div>
-            <span className="text-sm font-normal opacity-80">{isDead ? '寂灭' : '天玄历'}</span>
+            <span className="text-sm font-normal opacity-90">
+              {isDead ? '寂灭' : formatHeavenCalendar(playerData.current_year, playerData.current_season)}
+            </span>
           </div>
         </div>
 

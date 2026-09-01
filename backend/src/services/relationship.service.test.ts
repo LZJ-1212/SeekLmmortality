@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RelationshipService } from './relationship.service';
+import { RelationshipService, deceasedNpcForcedOutcome } from './relationship.service';
 import type { RelationshipRepository } from '../repositories/relationship.repository';
 import { getMaxLifespanForRealm } from './npc.service';
 
@@ -128,5 +128,29 @@ describe('RelationshipService.checkForDeceasedFriends（旧友寿元耗尽的传
     const notices = await service.checkForDeceasedFriends('save-1', 450);
 
     expect(notices).toHaveLength(0);
+  });
+});
+
+describe('deceasedNpcForcedOutcome（已仙逝不得再拜访）', () => {
+  it('失败/拒绝：拜访已故旧友必须落空', () => {
+    const text = deceasedNpcForcedOutcome('拜访那位无名老修士，请教修行', [
+      { npc_name: '无名老修士', is_deceased: true },
+    ]);
+    expect(text).toContain('已然仙逝');
+  });
+
+  it('正常路径：在世之人拜访不拦', () => {
+    expect(
+      deceasedNpcForcedOutcome('拜访苏晴', [
+        { npc_name: '苏晴', is_deceased: false },
+        { npc_name: '无名老修士', is_deceased: true },
+      ]),
+    ).toBeNull();
+  });
+
+  it('边界：行动未点名亡者则不拦', () => {
+    expect(
+      deceasedNpcForcedOutcome('出城历练', [{ npc_name: '无名老修士', is_deceased: true }]),
+    ).toBeNull();
   });
 });

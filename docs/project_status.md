@@ -44,21 +44,21 @@
 | S03 | 时间与岁月 | 闭关月数、pending_months、大限预警 | 同上 | `detectSeclusionMonths`、`advanceAge` | 90% | 有单测 | — |
 | S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节；自由度 [player_agency.md](./player_agency.md) | `combat.service.ts` | 85% | 有单测 | AI 报的敌人境界仍靠 prompt；战中「捡神器反杀」仍可能被模型圆（**A5**） |
 | S05 | 功德业力 | 夹紧增量、天罚掷骰 | 同上 | `karma.service.ts` | 85% | 有单测 | — |
-| S06 | 百艺与洞府 | 炼丹器阵植、洞府灵气×闭关 | 同上 | `crafting.service.ts` `cave.service.ts` `cultivationFormula.service.ts` | 80% | 有单测 | 无功法系统（公式占位 1.0）；配方表偏少 |
+| S06 | 百艺与洞府 | 炼丹器阵植、洞府灵气×闭关 | 同上 | `crafting.service.ts` `cave.service.ts` `cultivationFormula.service.ts` | 85% | 有单测 | 创角不送府；无府借地闭关灵气六成；技艺 UI 未习。功法系数仍占位 1.0 |
 | S07 | 经济坊市 | 买卖/拍卖硬计价 | 无独立白皮书节，逻辑在代码 | `economy.service.ts` | 80% | 有单测 | 无真实玩家市场 |
 | S08 | 宗门 | 声望职位、叛宗追杀 | 代码即规格 | `sect.service.ts` | 80% | 有单测 | 宗门内容薄 |
-| S09 | 人际双修 | NPC 寿元、双修、传音符 | 代码即规格 | `npc.service.ts` `relationship.service.ts` | 80% | 有单测 | 前端情缘列表较简 |
+| S09 | 人际双修 | NPC 寿元、双修、传音符 | 代码即规格 | `npc.service.ts` `relationship.service.ts` | 82% | 有单测 | 仙逝不得拜访已拦；独立规格待 **I16** |
 | S10 | 探索奇遇 | 1d100、地区分级 | 代码即规格 | `exploration.service.ts` | 80% | 有单测 | 九州地区表未填满 |
 | S11 | 逆天改命 | 大境三选一天赋乘数 | 代码即规格 | `talent.service.ts` | 85% | 有单测 | 天赋池偏少 |
 | S12 | 轮回与读档 | 轮回池遗泽、快照回滚 | 代码即规格 | `reincarnation*.ts` `snapshot.service.ts` `LoadModal.tsx` | 85% | 有单测；手测过池与回滚 | 局内「读档」弹窗已有；账号级云存档仍缺 |
-| S13 | 背包物品 | 字典+自定义物品、防幻觉使用 | 无独立 md | `inventory.service.ts` 路由 | 85% | 有单测 | — |
+| S13 | 背包物品 | 字典+自定义物品、防幻觉使用 | 无独立 md | `inventory.service.ts` 路由 | 85% | 有单测 | 独立规格待 **I18** |
 | S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 代码 + 创角页说明 | `characterBuild.service.ts` | 85% | 有单测 | — |
 | S15 | 开场剧情 | 命格生成开场并起步 | 代码 | `opening.service.ts` | 85% | 有单测 | — |
-| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` | 80% | 无单测；构建通过 | 设置页、**I11 窄屏**未做；宽屏书房+存档列表已有 |
+| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) · [command_ui_architecture.md](./command_ui_architecture.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` | 80% | 无单测；构建通过 | 设置页、**I11 窄屏**未做；死亡后读档按钮仍被灰掉（规格要求可开） |
 | S17 | AI 叙事约束 | json_object + forcedOutcome | [game_design.md](./game_design.md) 一 | `ai.ts` | 75% | 无隔离单测 | 偶发不守铁律，靠拦截器兜底 |
 | S18 | 声音（人声） | 旁白/天道/NPC 朗读 | [audio_system.md](./audio_system.md) | 无 | 规格 95% / 代码 0% | 无 | **可延后** |
 | S19 | BGM 与 SFX | 配乐循环、情境切换、打击/雷/点击 | [audio_system.md](./audio_system.md) 一、八；架构混音器仍适用 | 无 | 0% | 无 | **可先于人声做**（创角+局内 BGM + 少量特效） |
-| S20 | 功法与神通构筑 | 主修+辅修槽、招式、参悟残卷 | [combat_build.md](./combat_build.md) | 修炼公式仅占位 1.0 | 规格 90% / 代码 0% | 无 | 实现前按规格改公式与战斗 |
+| S20 | 功法与神通构筑 | 主修+辅修槽、招式、参悟残卷 | [combat_build.md](./combat_build.md) | 公式占位 1.0；未习术法薄拦截 `technique.service.ts` | 规格 90% / 招式库 0% / 未习熔断已做 | 熔断有测 | 实现槽位与招式名表 |
 | S21 | 意图识别与安全网关 | 口令、日限、防注入、超长拒绝；意图分类后做 | [intent_gateway.md](./intent_gateway.md) · [架构](./intent_gateway_architecture.md) | `backend/src/gateway/` + `server.ts` 挂载 | 最小集代码已落地；层 E/F 0% | 网关单测已有 | **L1 最小集已做**；分类器可后做 |
 | S22 | 长效记忆与大事记 | chronicles 表、30 回合压缩备忘录 | [chronicle.md](./chronicle.md) | 无 | 规格 90% / 代码 0% | 无 | 长局必需，短试玩可后做 |
 | S23 | 灵兽与傀儡 | 神识占用、战斗协同 | [beasts.md](./beasts.md) | 无 | 规格 85% / 代码 0% | 无 | 规划中 |
@@ -91,10 +91,18 @@
 | I09 | 商业：支付与回本 | 0% | **不必为 L1 做** |
 | I10 | 启动说明 | 90% | [runbook.md](./runbook.md)；L1 口令须另给朋友，勿写入公开 README |
 | I11 | 手机浏览器适配 | 规格 90% / 代码 0% | 竖屏能创角、行动、点指令；不改后端。视觉 [ui.md](./ui.md)；必做项 [mobile.md](./mobile.md) · [mobile_architecture.md](./mobile_architecture.md) |
+| I12 | 地图美术 | 规格记入路线图 / 代码 0% | 精细九州图替换 `RegionMap` 线稿；点图仍不赶路。**不挡 S20** |
+| I13 | 地图设计与系统 | 规格散落 / 代码薄 | 只读图 + 探索骰已有；邻接赶路 S31。待补对照规格 |
+| I14 | 宗门设计与系统 | 无独立 md / 代码有 | `sect.service.ts`；待 `sect.md` |
+| I15 | 技艺设计与系统 | 无独立 md / 代码有 | 配方在内容表；待 `crafts.md`（等级、拜师） |
+| I16 | 情缘设计与系统 | 无独立 md / 代码有 | 好感双修仙逝已有；待 `bonds.md` |
+| I17 | 洞府设计与系统 | 无独立 md / 代码有 | 开辟已有；争夺 S35。待 `cave.md` |
+| I18 | 物品设计与系统 | 无独立 md / 代码有 | 字典+熔断已有；待 `items.md` |
+| I19 | UI 设计 | 现状有色板与分栏 / 无完整界面规格 | 不是纯文字指令+日志；信息架构与视觉。窄屏仍 I11；地图美术 I12 |
 
 ### 2.3 规划中的玩法（规格已写）
 
-六套原规划 + 真实感十套 + **S36 自由度**。人天见各 md 与 [roadmap.md](./roadmap.md)。**公网试玩门槛是 A1–A3**（网关、口令日限、部署）；**A5** 挡「一句话反杀」被模型圆过去，不挡开隧道。
+六套原规划 + 真实感十套 + **S36 自由度**。完成度见各 md 与 [roadmap.md](./roadmap.md)。**公网试玩门槛是 A1–A3**（网关、口令日限、部署）；**A5** 挡「一句话反杀」被模型圆过去，不挡开隧道。
 
 索引：[docs/README.md](./README.md)「规划中的玩法」表。
 
@@ -261,6 +269,8 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 |------|------|
 | [game_design.md](./game_design.md) | 天道法则、UI 短铁律、十二系统、修炼公式 |
 | [ui.md](./ui.md) | 电脑/手机 UI：宣纸、断点、书房 vs 掌中 |
+| [command_ui.md](./command_ui.md) | 14 指令功能规格 |
+| [command_ui_architecture.md](./command_ui_architecture.md) | 指令前端分发与接口 |
 | [architecture.md](./architecture.md) | 已实现代码怎么分层 |
 | [api.md](./api.md) | HTTP 契约 |
 | [runbook.md](./runbook.md) | XAMPP / 前后端启动 |
@@ -283,6 +293,8 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 ## 10. 当前下一动作
 
 **代码下一刀（待办 A5）：** `miracle.service.ts` —— 封闭词表检测 + 仙缘骰 + 不破差两大境秒杀；L1 可不发物品。规格 [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md)。
+
+**体感待办（不挡功法）：** I12 地图美术；**I13–I18** 地图/宗门/技艺/情缘/洞府/物品的独立规格与深化；**I19** 整体 UI 设计。旧存档若曾懒创建洞府，记录仍在；新号须开辟或宗门赐府。
 
 **真机下一刀（A3 / I06）：** 穿透/保活仍须在你电脑上做（API 基址已抽）。
 
@@ -327,4 +339,28 @@ S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26�
 - **以后若真要上线**：走 L2（玩家自备 Key）或「月卡额度」，不要幻想靠你的 Key 养全体玩家。
 
 不必为「会不会回本」而停更内核；也 **不必** 为上线去改许可证、上架 Steam。等 L1 朋友说「还想玩」再考虑 L2。
+
+---
+
+## 13. 代码有、独立规格没有（对照 2026-09-02）
+
+「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 I13–I18）。界面不停留在纯文字凑合，走 **I19**。
+
+| 已有代码 | 文档现状 | 缺口 |
+|----------|----------|------|
+| 洞府开辟/借地闭关 `cave.service.ts` | 白皮书 S06 一句；争夺规划 [spirit_veins.md](./spirit_veins.md) | **无** `cave.md` → **I17** |
+| 宗门声望职位叛宗 `sect.service.ts` | 进度表写「代码即规格」 | **无** `sect.md` → **I14** |
+| 百艺炼制 `crafting.service.ts` + 技艺弹层 | [content_catalog.md](./content_catalog.md) 配方表；丹毒规划 S30 | **无** 技艺等级/拜师规格 → **I15** |
+| 情缘好感双修仙逝 `relationship`/`npc` | 白皮书第 9 条一句；凡人亲缘规划 S29 | **无** `bonds.md` → **I16** |
+| 只读地图 `RegionMap` + 探索骰 | [command_ui.md](./command_ui.md)；赶路规划 [geography.md](./geography.md) | 当前图与 S31 未对照 → **I13**；美术 **I12** |
+| 坊市拍卖 `economy.service.ts` | 无独立 md | 有代码、无成册（未单独立项；内容表无物价全表） |
+| 逆天改命 `talent.service.ts` | 内容表有天赋名 | 无独立玩法 md |
+| 背包熔断 `inventory.service.ts` | api / 铁律散落 | **无** `items.md` → **I18** |
+| 开场剧情 `opening.service.ts` | 无独立 md | 无 |
+| 天玄历 `world_state` 年季 | [command_ui_architecture.md](./command_ui_architecture.md) 一句 | 无独立历法 md |
+| 未习术法 `technique.service.ts` | [combat_build.md](./combat_build.md) 已记薄拦截 | 招式库仍待 S20 |
+| 情境锁、网关、自由度 | [situation.md](./situation.md) [intent_gateway.md](./intent_gateway.md) [player_agency.md](./player_agency.md) | 已有规格 |
+| S20、S22–S36、S18/S19 | 各有 md | **规格有、代码无**（S21 最小集除外） |
+
+结论：不是「很多系统完全没文档」，而是 **洞府/宗门/技艺/情缘/当前地图/物品** 玩了薄实现却没有自己的设计册；规划中的功法、大事记等相反（有册无代码）。界面现状是指令+日志，终局设计走 **I19**。
 

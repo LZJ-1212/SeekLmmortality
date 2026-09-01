@@ -10,7 +10,7 @@ export class CaveRepository {
     return this.prisma.player_cave.findUnique({ where: { save_id: saveId } });
   }
 
-  /** 新建一座默认洞府（等级 1，灵气浓度按出身地区给定的基础值） */
+  /** 开辟或赐府时新建（等级 1，灵气按该地点地区基础值） */
   create(saveId: string, locationName: string, spiritualDensity: number) {
     return this.prisma.player_cave.create({
       data: {

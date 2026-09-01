@@ -1,8 +1,8 @@
 # 电脑与手机 UI 设计
 
-规格先行。本文件是 **视觉与分栏的总则**：页面长什么样、断点怎么切、电脑和手机各怎么排。色板以 `frontend/tailwind.config.js` 为准；改色先改配置再改本表。
+规格先行。本文件记录 **当前已落地的分栏、色板、断点**。不是「产品永远只有指令加日志」的决议。整体界面与信息架构待办 **I19**（[roadmap.md](./roadmap.md)）。
 
-**不写玩法公式、不写接口。** 指令点下去做什么见 [command_ui.md](./command_ui.md)。窄屏必做项与键盘验收见 [I11 mobile.md](./mobile.md)；改哪些文件见 [mobile_architecture.md](./mobile_architecture.md)。天道铁律里的一行摘要仍留在 [game_design.md](./game_design.md) 第二节，细节以本文件为准，避免三处各写一套布局。
+**不写玩法公式、不写接口。** 指令点下去做什么见 [command_ui.md](./command_ui.md)；组件与分发见 [command_ui_architecture.md](./command_ui_architecture.md)。
 
 产品气质：**宣纸书房**，不是赛博终端、不是马卡龙、不是图标 App。
 
@@ -51,7 +51,7 @@ Tailwind：`md` = 768px，`lg` = 1024px。与代码 `MainGame` 的 `lg:flex` / `
 - 剧情、系统日志、选项、AI 叙事 **禁止 emoji**。
 - 音量按钮可用克制 SVG（见 [audio_system.md](./audio_system.md)）；未做声音前不要先摆一排假按钮。
 - 对玩家短讯修仙口吻；不要把堆栈打在局内日志当正文。
-- 指令必须有汉字。禁止汉堡菜单把 14 指令藏起来。
+- 指令必须有汉字。禁止汉堡菜单把指令藏起来。
 
 ### 3.3 选项
 
@@ -130,7 +130,7 @@ I11 落地后局内：
 ├─────────────────────────────┤
 │ 动态选项（可换行）             │
 │ 输入 + 行动                   │
-│ 14 指令底栏 4 列 × n 行       │
+│ 指令底栏 4 列 × n 行          │
 │ 底部安全区（Home / 刘海）      │
 └─────────────────────────────┘
 ```
@@ -164,10 +164,11 @@ I11 落地后局内：
 
 ## 7. 明确不要
 
-- 每个玩法系统先做一块独立大 UI（见 [roadmap.md](./roadmap.md)）；优先指令 + 日志 + 只读弹层。
 - 为手机绕过口令、日限、死亡锁，或第二套 `fetch` 基址。
 - 用 User-Agent 切换「手机站」。
 - 第三套平板专用玩法布局。
+- 新内联马卡龙色；剧情 emoji。
+- 把「指令栏 + 日志 + 纯文字弹层」写成最终形态（那是现状，不是目标）。完整设计走 **I19**。
 
 ---
 
@@ -175,8 +176,10 @@ I11 落地后局内：
 
 | 问题 | 以谁为准 |
 |------|----------|
-| 颜色、分栏、电脑/手机长什么样 | **本文件** + `tailwind.config.js` |
-| 14 指令名字、顺序、点下去发什么 | [command_ui.md](./command_ui.md) |
+| 颜色、分栏、电脑/手机长什么样（**现状**） | **本文件** + `tailwind.config.js` |
+| 目标整体界面 | 待办 **I19**（规格未写前不要把指令+日志当终局） |
+| 指令名字、顺序、点下去发什么 | [command_ui.md](./command_ui.md) |
+| 指令代码落点 | [command_ui_architecture.md](./command_ui_architecture.md) |
 | I11 验收清单、键盘、安全区 | [mobile.md](./mobile.md) |
 | I11 改哪些文件、开工顺序 | [mobile_architecture.md](./mobile_architecture.md) |
 | 已实现 DOM | `frontend/src/components/*` |
@@ -198,6 +201,6 @@ I11 落地后局内：
 
 **手机（I11 落地后，≤390px）**
 
-- 见 [mobile.md](./mobile.md) 第 7 节（列表、创角、局内、键盘、14 指令）。
+- 见 [mobile.md](./mobile.md) 第 7 节（列表、创角、局内、键盘、指令）。
 
 前端改布局后：`frontend` 下 `npm run build` 过。

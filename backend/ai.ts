@@ -40,7 +40,7 @@ export async function deduceAction(
   hasLockedNumbers: boolean = false,
   caveInfo?: { level: number; spiritualDensity: number; locationName: string },
   sectInfo?: { sectName: string | null; rank: string; reputation: number; isTraitor: boolean },
-  relationships?: { npc_name: string; relation_type: string | null; affinity: number | null }[],
+  relationships?: { npc_name: string; relation_type: string | null; affinity: number | null; is_deceased?: boolean | null }[],
 ) {
   const lockedNumbersNote = hasLockedNumbers
     ? '其中涉及的气血/修为具体数值已由天道（后端）精确计算完毕并直接生效，你在 hp_delta/cultivation_delta 里只需填 0，无需也不能自己重复计算这部分数值，只管把这段指令转化为生动的剧情文字。'
@@ -78,12 +78,16 @@ export async function deduceAction(
 2. 若剧情合理地引入一位此前从未出现过的重要 NPC（如结识挚友、道侣、仇敌），在 relationship_event 里填写该 NPC 的姓名、关系类型、境界与大致年龄（is_new 设为 true）；若是与已有关系的 NPC 互动加深/恶化情谊，只填 npc_name 与 affinity_delta（is_new 设为 false 或省略），数值参考量级：日常互动 1~10，患难相助/背叛 10~20（后端会夹紧到最高 20）。不涉及具体人际关系的普通行动，relationship_event 填 null。
 3. 玩家与某位 NPC 双修时，是否成功、增益多少已由天道依据好感度硬性计算并锁定在【天道最高指令】里，你不需要也不能自己给出双修相关的额外数值，只管把过程写得含蓄优美；双修不看双方性别，只看情谊深浅，绝不能因为性别而拒绝或质疑这段关系。
 4. 若本回合【天道最高指令】里出现"传音符"送来旧友仙逝的讯息，必须在叙事里体现这份物是人非的怅然，但不要因此打断或否定玩家当前正在做的事。
+5. 人际关系名单里标为已仙逝者，绝不可在剧情里活生生出场交谈、赐教或双修。若【天道最高指令】写明人去楼空，必须按此描写。
 【探索与随机奇遇铁律】（九州地理分级：机缘与风险并存）：
 1. 玩家出门历练/探索时，是否强行触发奇遇（1d100 掷骰 + 仙缘属性）已由天道后端判定完毕；若【天道最高指令】里出现"掷骰机缘"字样，你必须据此演绎出"遇到重伤大能"或"秘境现世"的具体剧情与选项，绝不能视而不见地写成平淡无事的历练。
 2. 九州各地按境界分级（如青岳山适合炼气期修士，中州天阙这类大能云集之地对低境界修士而言去之即死）；若玩家强闯远超自身境界的高危地图，气血惩罚（甚至陨落）已由天道硬性判定并锁定在【天道最高指令】里，你的 hp_delta 此时必须填 0，只管把"环境本身的天地法则碾压凡躯"这种因境界悬殊而不可抗的凶险感演绎出来，不要让玩家轻易化险为夷。
 【经济与坊市铁律】：
 1. 玩家在坊市购买/出售物品，或在拍卖会上喊价时，成交价格、是否成交、灵石变动全部已由天道依据物品图鉴基准价与虚拟买家心理价位硬性计算并锁定在【天道最高指令】里，你的 spirit_stones_delta 必须填 0，item_changes 里也绝对不能出现那件正在交易/拍卖的物品，只管把结果写成生动剧情（成交时描写讨价还价后的畅快，失手时描写与珍品失之交臂的遗憾）。
 2. 除坊市/拍卖场景外，若剧情里有拾获/赏赐/丢失灵石等情节，可以正常给出合理的 spirit_stones_delta（参考量级：小打小闹 ±1~50，大机缘/大破财 ±50~500，后端会夹紧到最高 500）。
+【术法真实性铁律】：
+1. 若【天道最高指令】写明术法落空、并未修习，narrative 绝不可让木系缠绕、火系轰杀、神通法象真正生效。
+2. 此种情况只可描写拳脚、兵刃或灵力空转，不得写成玩家无师自通学成术法。
 【物品真实性铁律】（绝对不可违反）：
 1. 玩家行动中若提到使用/服用/祭出/捏碎/催动某件具体道具（丹药、符箓、法宝等），你必须先核对下方“背包物品”清单。
 2. 只有该物品明确出现在“背包物品”清单里，且数量大于 0，你才能让这次道具使用在剧情里真正生效。
@@ -107,7 +111,7 @@ export async function deduceAction(
 背包物品：${inventoryStr || "空无一物"}
 洞府：${caveInfo ? `${caveInfo.locationName}（等级 ${caveInfo.level}，灵气浓度 ${caveInfo.spiritualDensity}）` : '尚未建立洞府'}
 宗门：${sectInfo ? `${sectInfo.sectName ?? '未知'}（职位：${sectInfo.rank}，声望：${sectInfo.reputation}${sectInfo.isTraitor ? '，已叛宗！' : ''}）` : '散修，尚未加入任何宗门'}
-人际关系：${relationships && relationships.length > 0 ? relationships.map((r) => `${r.npc_name}(${r.relation_type ?? '相识'}，好感度${r.affinity ?? 0})`).join('，') : '孤身一人，尚无深交'}
+人际关系：${relationships && relationships.length > 0 ? relationships.map((r) => r.is_deceased ? `${r.npc_name}（已仙逝，不可再会）` : `${r.npc_name}(${r.relation_type ?? '相识'}，好感度${r.affinity ?? 0})`).join('，') : '孤身一人，尚无深交'}
 
 玩家行动："${action}"${outcomeInstruction}
 

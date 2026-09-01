@@ -44,7 +44,7 @@ Body（JSON）：
 
 ### `GET /api/player/:id`
 
-`:id` 为 `playerId`。返回该修士行（Prisma 原始字段，含 JSON 字符串列）。404：「查无此人」。
+`:id` 为 `playerId`。返回该修士行（Prisma 原始字段，含 JSON 字符串列），并附 `inventory`、`cave`、`sect`、`relationships`、`lifespanStatus`，以及世界历 `current_year`、`current_season`（来自 `world_state`，缺省 387 年春）。404：「查无此人」。
 
 ---
 

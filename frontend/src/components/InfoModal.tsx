@@ -1,7 +1,9 @@
 import React from 'react';
+import { CATALOG_REGIONS, listCraftRanks } from '../catalogDisplay';
+import { RegionMap } from './RegionMap';
 import { StatusCard, type PlayerCardData } from './StatusCard';
 
-export type InfoPanelType = '面板' | '背包' | '洞府' | '宗门' | '情缘';
+export type InfoPanelType = '面板' | '背包' | '洞府' | '宗门' | '情缘' | '地图' | '技艺';
 
 interface Props {
   type: InfoPanelType;
@@ -9,12 +11,14 @@ interface Props {
   onClose: () => void;
 }
 
-/** 信息详情弹窗：面板/背包/洞府/宗门/情缘，全部用前端已有数据秒开，不调后端、不耗 DeepSeek */
+/** 信息详情弹窗：只读，不调后端、不耗 DeepSeek */
 export const InfoModal: React.FC<Props> = ({ type, player, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-paper border-2 border-jade rounded-md shadow-lg p-5 w-[560px] max-h-[85vh] flex flex-col font-serif"
+        className={`bg-paper border-2 border-jade rounded-md shadow-lg p-5 max-h-[85vh] flex flex-col font-serif ${
+          type === '地图' ? 'w-[min(640px,calc(100%-2rem))]' : 'w-[560px]'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-jade text-white text-center py-2 rounded-sm font-bold tracking-widest text-lg shadow-sm mb-3">
@@ -57,7 +61,10 @@ export const InfoModal: React.FC<Props> = ({ type, player, onClose }) => {
                   </div>
                 </>
               ) : (
-                <div className="text-center text-textSub py-10">尚无洞府</div>
+                <div className="text-center text-textSub py-10 space-y-2">
+                  <div>尚无洞府</div>
+                  <div className="text-xs">客栈与所在地不是洞府。须自行开辟，或待宗门赐予。</div>
+                </div>
               )}
             </div>
           )}
@@ -87,6 +94,46 @@ export const InfoModal: React.FC<Props> = ({ type, player, onClose }) => {
               ) : (
                 <div className="text-center text-textSub py-10">散修之身，无门无派</div>
               )}
+            </div>
+          )}
+
+          {type === '地图' && (
+            <div className="space-y-2 text-sm">
+              <div className="text-textSub text-xs mb-2">
+                身在 <span className="text-textDark">{player.current_location || '未知之地'}</span>
+                。金圈为你所在。不调天机、点图不赶路，须在输入中自述。
+              </div>
+              <RegionMap currentLocation={player.current_location} />
+              <ul className="text-xs text-textSub space-y-1 pt-1">
+                {CATALOG_REGIONS.map((region) => (
+                  <li key={region.name}>
+                    <span className={player.current_location === region.name ? 'text-mystic' : 'text-textDark'}>
+                      {region.short}
+                    </span>
+                    {' · '}
+                    {region.hint}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {type === '技艺' && (
+            <div className="space-y-2 text-sm">
+              <div className="text-textSub text-xs mb-2">
+                未拜师、未炼成则未习。炼丹须在输入中写明「炼丹」与丹名。
+              </div>
+              {listCraftRanks().map((row) => (
+                <div
+                  key={row.title}
+                  className="flex justify-between items-center bg-[#F4EFE6] px-3 py-2 rounded border border-[#E5E0D5]"
+                >
+                  <span className="text-textDark">{row.title}</span>
+                  <span className={row.learned ? 'text-jade font-semibold' : 'text-textSub'}>
+                    {row.learned ? `${row.level} 级` : '未习'}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import type { PrismaClient, player_relationships } from '@prisma/client';
 import { RelationshipRepository } from '../repositories/relationship.repository';
+import { findLongestMatchingName } from '../utils/textMatch';
 import {
   getMaxLifespanForRealm,
   calculateBirthYear,
@@ -72,4 +73,20 @@ export class RelationshipService {
     }
     return notices;
   }
+}
+
+/**
+ * 已仙逝者不得再被当面拜访/请教/双修。点名即落空，避免模型把亡者演活。
+ */
+export function deceasedNpcForcedOutcome(
+  actionText: string,
+  relationships: ReadonlyArray<{ npc_name: string; is_deceased?: boolean | null }>,
+): string | null {
+  const deceasedNames = relationships
+    .filter((rel) => rel.is_deceased)
+    .map((rel) => rel.npc_name)
+    .filter(Boolean);
+  const name = findLongestMatchingName(actionText ?? '', deceasedNames);
+  if (!name) return null;
+  return `「${name}」已然仙逝。玩家此行不得与亡者当面交谈、请教或双修。叙事须写人去楼空、坟茔或旧物，绝不可让其活生生出场赐教。`;
 }
