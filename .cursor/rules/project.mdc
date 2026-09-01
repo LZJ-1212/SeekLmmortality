@@ -22,7 +22,11 @@
 - 总目：`docs/README.md`。改玩法或接口前先读对应 `docs/*.md`，避免只改代码导致文档双源。
 - L1 安检功能：`docs/intent_gateway.md`。架构：`docs/intent_gateway_architecture.md`。
 - L1 托管（I06）：`docs/hosting.md`。架构：`docs/hosting_architecture.md`。本机启动仍用 `docs/runbook.md`。
-- L1 手机浏览器（I11）：`docs/mobile.md`。架构：`docs/mobile_architecture.md`。未实现前不要先改布局。
+- L1 手机浏览器（I11）：`docs/mobile.md`。架构：`docs/mobile_architecture.md`。视觉总则：`docs/ui.md`。未实现前不要先改窄屏底栏。
+- 局内指令语义：`docs/command_ui.md`。电脑/手机分栏：`docs/ui.md`。
+- 玩家自由度（叙事自由、数值零主权）：`docs/player_agency.md`。
+- 情境锁（战中闭关等）：`docs/situation.md`。
+- 宣称奇迹（封闭骰、不破秒杀）：`docs/plausibility.md`。代码排期 `docs/roadmap.md` **A5 / S36**，未接线前不要让模型演神兵。
 - 开工顺序：`docs/roadmap.md`（阶段 A→E）。
 - **编码规范与仓库潜规则：** `.cursor/rules/项目编码规范与潜规则.mdc`（分层、测试、Git、UI、环境）。
 

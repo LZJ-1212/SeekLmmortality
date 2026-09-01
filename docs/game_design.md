@@ -3,17 +3,18 @@
 ## 一、 核心架构原则：代码为主，AI 为辅
 - **架构分离**：本游戏采用 Node.js + Express (后端) 与 React + Tailwind v3 (前端) 架构[cite: 1, 2]。
 - **防作弊铁律**：严禁将数值结算权交由 LLM。玩家的气血、灵力、修为、寿元、功德、业力等状态必须由 Node.js 后端进行硬核计算，得出具体数值增减后，通过 `forcedOutcome` 强行注入系统提示词，限制 AI 只能依据既定结果生成剧情。
-- **时间流逝法则**：时间流逝由 Node.js 严格换算。日常交互（对话/坊市）消耗 0.1~0.2 个月；历练消耗 1 个月；闭关必须精确按年换算为月数（如十年 = 120 个月）。寿元耗尽（年龄 > 寿元上限）则强制判定坐化，锁死玩家操作[cite: 1]。
+- **玩家自由度**：允许任意口吻试探世界；不允许一句话宣布胜负、境界或神兵。三圈边界见 [player_agency.md](./player_agency.md)。宣称「捡神器反杀」的骰子见 [plausibility.md](./plausibility.md)（代码 **A5**）。
+- **时间流逝法则**：时间流逝由 Node.js 严格换算。日常交互（对话/坊市）消耗 0.1~0.2 个月；历练消耗 1 个月；闭关必须精确按年换算为月数（如十年 = 120 个月）。寿元耗尽（年龄 > 寿元上限）则强制判定坐化，锁死玩家操作[cite: 1]。交手当口不得闭关/逛坊市，见 [situation.md](./situation.md)。
 
 ## 二、 前端 UI 与排版铁律 (React + Tailwind 宣纸古典风)
-- **大面板结构**：所有游戏界面使用 Tailwind 主题色类渲染宣纸白底（`bg-paper`）与彩色边框（`border-jade` 等）的大面板。
-- **禁用限制**：剧情、系统日志、AI 叙事严禁 emoji。界面音量控件允许克制图形（优先 SVG；若用 emoji 仅限声/乐按钮）。详见 [audio_system.md](./audio_system.md) 决议第 20 条。
-- **主题色板**：必须严格遵循 `tailwind.config.js` 中定制的修仙主题色板：
-  - 底色：宣纸白 `#FBF8F1`（主底色）、浅珊瑚 `#FBEDE9`（警告/战斗）、浅紫 `#F5EFF9`（机缘）、浅灰 `#E8E4DC`（进度条底）[cite: 3]。
-  - 边框与标题：青玉 `#6FA698`（主界面）、玄紫 `#8B6FA8`（雷劫/魔道）、朱砂 `#C05F55`（战斗/气血）、鎏金 `#C9A45C`（分隔线/财富）[cite: 3]。
-  - 数值色：气血 `#C05F55`、灵力 `#5E8FAE`、修为 `#A87E2E`、寿元 `#5C8C6E`[cite: 3]。
-- **选项展示**：选项必须直接在面板内列出，并附带语义标签（如 `〔机缘〕`、`〔风险〕`、`〔平和〕`）[cite: 3]。
-- **指令行**：常驻 14 指令（面板・修炼・突破·…・读档）。**宽屏**在局内左侧栏；**窄屏**在底栏，见 [mobile.md](./mobile.md)。禁止再叠一排已删除的桌面「快捷」色块按钮。
+
+电脑 / 手机分栏、色板、页面结构的完整设计见 **[ui.md](./ui.md)**。此处只留不可破的短铁律：
+
+- **大面板**：`bg-paper` + 主题边框（`border-jade` 等）。禁止新内联马卡龙色。
+- **禁 emoji**：剧情、系统日志、AI 叙事严禁 emoji。音量可用克制 SVG。详见 [audio_system.md](./audio_system.md) 决议第 20 条。
+- **色板**：以 `frontend/tailwind.config.js` 为准（宣纸 `#FBF8F1`、青玉 `#6FA698`、朱砂气血 `#C05F55`、修为 `#A87E2E`、寿元 `#5C8C6E` 等）。
+- **选项**：列在面板内，带 `〔机缘〕` `〔风险〕` `〔平和〕` 等标签。
+- **指令**：常驻 14 个汉字指令。语义见 [command_ui.md](./command_ui.md)。禁止再叠已删除的桌面「快捷」色块。窄屏底栏见 [mobile.md](./mobile.md)（I11 未做）。
 
 ## 三、 世界观与残酷修仙法则
 - **真实死亡与境界压制**：修仙界弱肉强食。玩家遭遇高出一个大境界的敌人时，后端强制减伤 60%，玩家伤害变为 40%[cite: 1, 3]。高出两个大境界直接秒杀[cite: 3]。AI 不得放水，玩家执意送死必须判定陨落[cite: 3]。
@@ -46,7 +47,7 @@
 11. 逆天改命体系[cite: 1]
 12. 轮回与读档机制[cite: 1]
 
-规划中（规格已写，代码未写）：功法、大事记、灵兽、大势、结局，以及心魔、毒誓、师徒、凡人亲缘、丹毒、地理、名声、情报、伪装、灵脉。S21 安全网关最小集已实现。目录见 [README.md](./README.md)；**开工顺序**见 [roadmap.md](./roadmap.md)。进度见 [project_status.md](./project_status.md)。
+规划中（规格已写，代码未写）：功法、大事记、灵兽、大势、结局，以及心魔、毒誓、师徒、凡人亲缘、丹毒、地理、名声、情报、伪装、灵脉。**S36 自由度规范已写**；宣称奇迹骰（A5）未接线。S21 安全网关最小集已实现。目录见 [README.md](./README.md)；**开工顺序**见 [roadmap.md](./roadmap.md)。进度见 [project_status.md](./project_status.md)。
 
 ## 六、 声音系统（规格先行）
 - 声音系统是独立子系统：只负责通道混音、配乐切换、旁白/天道/NPC 语音播放，不负责撰写剧情或计算数值。
@@ -57,4 +58,4 @@
 ## 七、 项目工作记录与其它文档
 - 完成度、测试、工时、上线：见 [project_status.md](./project_status.md)。
 - **工作顺序：** [roadmap.md](./roadmap.md)。
-- 启动： [runbook.md](./runbook.md)。接口：[api.md](./api.md)。内容表：[content_catalog.md](./content_catalog.md)。架构：[architecture.md](./architecture.md)。
+- 自由度：[player_agency.md](./player_agency.md)。UI：[ui.md](./ui.md)。启动： [runbook.md](./runbook.md)。接口：[api.md](./api.md)。内容表：[content_catalog.md](./content_catalog.md)。架构：[architecture.md](./architecture.md)。

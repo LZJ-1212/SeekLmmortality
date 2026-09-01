@@ -1,6 +1,6 @@
 # I11 手机适配架构（只设计不实现）
 
-依据 [mobile.md](./mobile.md) 的 **L1 最小集**。不改 Express / Prisma / 网关。只改前端布局与视口。
+依据 [mobile.md](./mobile.md) 的 **L1 最小集**。分栏总图与断点以 [ui.md](./ui.md) 为准。不改 Express / Prisma / 网关。只改前端布局与视口。
 
 ---
 
@@ -8,9 +8,9 @@
 
 | 项 | 决议 |
 |----|------|
-| 断点 | Tailwind `md:` = **768px**。`< md` 窄屏；`md+` 现桌面。 |
+| 断点 | `<768` 掌中底栏；`768–1023` 细竖条；`lg` **1024** 书房。见 [ui.md](./ui.md)。 |
 | 指令 UI | **同一套** `COMMANDS` / `handleCommand`。窄屏换位置（底栏），不换语义。 |
-| 检测方式 | **CSS 为主**（`md:flex` / `md:hidden`）。不另做 `window.innerWidth` 状态机，除非键盘高度必须用 JS。 |
+| 检测方式 | **CSS 为主**。书房用 `lg:`（1024）；I11 底栏用 `max-md:`（&lt;768）。不要用 User-Agent。键盘高度例外可用 JS。 |
 | 键盘 | 局内根节点用 `100dvh`（或 `visualViewport` 写入 CSS 变量 `--app-height`）。优先 `dvh`；iOS 仍挡输入再补 `visualViewport` 监听。 |
 | 安全区 | 底栏 `padding-bottom: env(safe-area-inset-bottom)`。 |
 | 点击目标 | 窄屏指令格 **最小约 44×36 CSS 像素**（可略扁）；主按钮（行动、踏入仙途）高度 ≥ 40px。 |
@@ -54,13 +54,15 @@ frontend/src/components/
 └─────────────────────────────┘
 ```
 
-宽屏（`md:`）：
+宽屏书房（`lg:` / ≥1024）：
 
 ```
-[ CommandMenu sidebar 104px ] [ 顶栏 + 状态条 + 日志 + 选项 + 输入 ]
+[ 左栏 420：StatusCard + 指令两列 ] [ 顶栏 + 日志 + 选项 + 输入 ]
 ```
 
-窄屏 **隐藏** 左侧 `CommandMenu`，在输入行下方渲染同一 `COMMANDS` 数组。
+768～1023：左侧 `CommandMenu rail` + 右侧日志（过渡，I11 不改这档的玩法）。
+
+窄屏 **隐藏** 左侧 `CommandMenu`，在输入行下方渲染同一 `COMMANDS` 数组（`dock`）。
 
 ---
 
@@ -75,7 +77,7 @@ frontend/src/components/
 ## 4. 开工顺序
 
 1. 死宽改 `w-full max-w-*`：`SaveList`、`CreateCharacter`、弹窗、`StatusCard`。
-2. `MainGame`：`md` 切换左栏 / 底栏；窄屏 `dvh` 列布局。
+2. `MainGame`：`<768` 底栏；`768–1023` 保持 rail；`lg` 保持书房。窄屏 `dvh` 列布局。
 3. `index.html` viewport-fit；底栏 safe-area。
 4. 真机或 DevTools 390 宽走完 [mobile.md](./mobile.md) 第 7 节；再 `md` 回归桌面。
 5. `frontend` `npm run build`。
@@ -88,7 +90,7 @@ frontend/src/components/
 
 | 测什么 | 方式 |
 |--------|------|
-| 宽屏布局未丢左栏 | DevTools ≥768 |
+| 宽屏布局未丢左栏书房 | DevTools ≥1024 |
 | 窄屏无整页横向滚动 | 390 宽走三页 |
 | 14 指令都能点且语义未改 | 对照桌面点同一指令 |
 | 键盘下能提交行动 | 真机优先；次选 DevTools 设备模式 |

@@ -7,7 +7,7 @@
 - 总设计：[docs/game_design.md](./game_design.md)
 - 文档总目：[docs/README.md](./README.md)
 - 声音规格：[docs/audio_system.md](./audio_system.md) · 声音架构：[docs/audio_architecture.md](./audio_architecture.md)
-- 本记录最后更新：2026-09-01（补：真实感系统 S26–S35 规格 + 工作顺序 roadmap）
+- 本记录最后更新：2026-09-02（文档对齐代码：口令在存档页、apiBase、断点、日限在情境锁之后；S36 / ui.md）
 
 完成度含义：0 未开工；1–39 规格或骨架；40–69 能跑但不完整；70–89 主路径可用、有缺口；90–99 测试较全、仅打磨；100 含上线验收（本项目尚无 100）。
 
@@ -23,8 +23,8 @@
 | 可玩性 | 本机可创角、行动、十二系统主路径可跑 |
 | 声音 | 规格已确认，代码未写；**人声可延后**，BGM/SFX 可先做 |
 | 上线 | 未上线；公开 GitHub + MIT；无账号、无支付、无限流；**API Key 未进仓库** |
-| 测试 | 后端 Vitest 约 297 条（2026-09-01）；前端无自动化测试；无正式 E2E |
-| 文档 | 见 [README.md](./README.md)；规格已齐，实现仍以代码为准 |
+| 测试 | 后端 Vitest（以 `backend` 下 `npm test` 为准；2026-09 起含情境锁）；前端无自动化测试；无正式 E2E |
+| 文档 | 见 [README.md](./README.md)；含 [player_agency.md](./player_agency.md) 自由度总则 |
 | 已知最大试玩风险 | 公网暴露 `/api` 且用你的 DeepSeek Key、无限流 |
 
 整体（已实现玩法代码）：约 **78%**。  
@@ -42,7 +42,7 @@
 | S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [game_design.md](./game_design.md) 一、四 | `playerState.service.ts`，`server.ts` `/api/action` | 90% | 有单测；行动接口手测过 | 前端 `player` 仍有 `any` |
 | S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | 同上 | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | 全境界手玩未铺满 |
 | S03 | 时间与岁月 | 闭关月数、pending_months、大限预警 | 同上 | `detectSeclusionMonths`、`advanceAge` | 90% | 有单测 | — |
-| S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节 | `combat.service.ts` | 85% | 有单测 | AI 报的敌人境界仍靠 prompt |
+| S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节；自由度 [player_agency.md](./player_agency.md) | `combat.service.ts` | 85% | 有单测 | AI 报的敌人境界仍靠 prompt；战中「捡神器反杀」仍可能被模型圆（**A5**） |
 | S05 | 功德业力 | 夹紧增量、天罚掷骰 | 同上 | `karma.service.ts` | 85% | 有单测 | — |
 | S06 | 百艺与洞府 | 炼丹器阵植、洞府灵气×闭关 | 同上 | `crafting.service.ts` `cave.service.ts` `cultivationFormula.service.ts` | 80% | 有单测 | 无功法系统（公式占位 1.0）；配方表偏少 |
 | S07 | 经济坊市 | 买卖/拍卖硬计价 | 无独立白皮书节，逻辑在代码 | `economy.service.ts` | 80% | 有单测 | 无真实玩家市场 |
@@ -50,11 +50,11 @@
 | S09 | 人际双修 | NPC 寿元、双修、传音符 | 代码即规格 | `npc.service.ts` `relationship.service.ts` | 80% | 有单测 | 前端情缘列表较简 |
 | S10 | 探索奇遇 | 1d100、地区分级 | 代码即规格 | `exploration.service.ts` | 80% | 有单测 | 九州地区表未填满 |
 | S11 | 逆天改命 | 大境三选一天赋乘数 | 代码即规格 | `talent.service.ts` | 85% | 有单测 | 天赋池偏少 |
-| S12 | 轮回与读档 | 轮回池遗泽、快照回滚 | 代码即规格 | `reincarnation*.ts` `snapshot.service.ts` | 80% | 有单测；手测过池与回滚 | **无读档 UI**（仅 API） |
+| S12 | 轮回与读档 | 轮回池遗泽、快照回滚 | 代码即规格 | `reincarnation*.ts` `snapshot.service.ts` `LoadModal.tsx` | 85% | 有单测；手测过池与回滚 | 局内「读档」弹窗已有；账号级云存档仍缺 |
 | S13 | 背包物品 | 字典+自定义物品、防幻觉使用 | 无独立 md | `inventory.service.ts` 路由 | 85% | 有单测 | — |
 | S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 代码 + 创角页说明 | `characterBuild.service.ts` | 85% | 有单测 | — |
 | S15 | 开场剧情 | 命格生成开场并起步 | 代码 | `opening.service.ts` | 85% | 有单测 | — |
-| S16 | 前端主界面 | 日志、选项、快捷指令、字号 | [game_design.md](./game_design.md) 二 | `MainGame.tsx` `StatusCard.tsx` | 70% | 无单测；构建通过 | 存档列表、设置页、移动端未做 |
+| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` | 80% | 无单测；构建通过 | 设置页、**I11 窄屏**未做；宽屏书房+存档列表已有 |
 | S17 | AI 叙事约束 | json_object + forcedOutcome | [game_design.md](./game_design.md) 一 | `ai.ts` | 75% | 无隔离单测 | 偶发不守铁律，靠拦截器兜底 |
 | S18 | 声音（人声） | 旁白/天道/NPC 朗读 | [audio_system.md](./audio_system.md) | 无 | 规格 95% / 代码 0% | 无 | **可延后** |
 | S19 | BGM 与 SFX | 配乐循环、情境切换、打击/雷/点击 | [audio_system.md](./audio_system.md) 一、八；架构混音器仍适用 | 无 | 0% | 无 | **可先于人声做**（创角+局内 BGM + 少量特效） |
@@ -74,6 +74,7 @@
 | S33 | 情报天机 | 买线索、真假骰 | [intelligence.md](./intelligence.md) | 无 | 规格 80% / 代码 0% | 无 | 阶段 E |
 | S34 | 伪装与神识 | 藏境、识破；战斗用真境 | [disguise.md](./disguise.md) | 无 | 规格 80% / 代码 0% | 无 | 阶段 E |
 | S35 | 灵脉争夺 | 占山门槛、征用、搬迁 | [spirit_veins.md](./spirit_veins.md) | 洞府已有 | 规格 80% / 代码 0% | 无 | 阶段 C |
+| S36 | 玩家自由度与宣称奇迹 | 三圈边界；战中神器/反杀走封闭仙缘骰，不破秒杀 | [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) · [situation.md](./situation.md) | 情境锁 `situation.service.ts` 已做；`miracle.service.ts` 无 | 规格 90% / 层 1 代码有 / 层 3 **0%** | 情境锁有测；奇迹骰无 | **待办 A5**：封闭词表 + `rollFn` 纯函数，L1 可不发物品 |
 
 ### 2.2 上线与工程（尚未当「游戏系统」但必须有）
 
@@ -82,18 +83,18 @@
 | I01 | 本地运行（XAMPP MySQL + 双 npm） | 90% | [runbook.md](./runbook.md) + `.cursor/rules/project.mdc` |
 | I02 | Git / GitHub | 90% | 公开库 + MIT；`.env` 已忽略；Key 未上传 |
 | I03 | 密钥安全 | 85% | 从未把 API Key 推上 GitHub；L1 仍须防公网刷接口 |
-| I04 | 接口鉴权 / 限流 | 90% | 口令 `PLAY_ACCESS_TOKEN` + `X-Play-Token`；每日行动上限（playerId + 北京日）。给朋友玩必须**配置口令**；未配则本机放行 |
-| I05 | 存档列表 | 70% | 薄做已落地：`GET /api/saves` + 前端存档列表页，免手抄 UUID；含单删/清空按钮与 `DELETE /api/saves`(/:id)。快照回滚 UI、账号仍缺 |
+| I04 | 接口鉴权 / 限流 | 90% | 口令 `PLAY_ACCESS_TOKEN` + `X-Play-Token`；每日行动上限。给朋友玩必须**配置口令**。本机直连即使配了口令也不验；穿透必验。 |
+| I05 | 存档列表 | 70% | 薄做已落地：`GET /api/saves` + 前端存档列表页，免手抄 UUID；单删/清空。局内快照回滚见 `LoadModal`（S12）。账号仍缺 |
 | I06 | 托管 | 规格 90% / 代码 50% | 前端 API 基址已抽 `apiBase.ts`（`VITE_API_BASE`）+ `.env.example`；隧道与 NSSM 保活待真机。规格 [hosting.md](./hosting.md) · 架构 [hosting_architecture.md](./hosting_architecture.md)。不要裸映射 3000 |
 | I07 | 内容填充 | 30% | 机制有、世界薄；L1 可先薄 |
 | I08 | 法律：BGM/隐私 | 10% | 朋友试玩用 CC0 曲即可 |
 | I09 | 商业：支付与回本 | 0% | **不必为 L1 做** |
 | I10 | 启动说明 | 90% | [runbook.md](./runbook.md)；L1 口令须另给朋友，勿写入公开 README |
-| I11 | 手机浏览器适配 | 规格 90% / 代码 0% | 竖屏能创角、行动、点指令；不改后端。规格 [mobile.md](./mobile.md) · 架构 [mobile_architecture.md](./mobile_architecture.md) |
+| I11 | 手机浏览器适配 | 规格 90% / 代码 0% | 竖屏能创角、行动、点指令；不改后端。视觉 [ui.md](./ui.md)；必做项 [mobile.md](./mobile.md) · [mobile_architecture.md](./mobile_architecture.md) |
 
 ### 2.3 规划中的玩法（规格已写）
 
-六套原规划 + 真实感十套。人天见各 md 与 [roadmap.md](./roadmap.md)。**L1 只强制阶段 A（S21 最小集 + 口令日限 + 部署）。**
+六套原规划 + 真实感十套 + **S36 自由度**。人天见各 md 与 [roadmap.md](./roadmap.md)。**公网试玩门槛是 A1–A3**（网关、口令日限、部署）；**A5** 挡「一句话反杀」被模型圆过去，不挡开隧道。
 
 索引：[docs/README.md](./README.md)「规划中的玩法」表。
 
@@ -103,7 +104,7 @@
 
 **权威排期（阶段 A→E、依赖、不要做的）：** [roadmap.md](./roadmap.md)。
 
-L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令日限）已落地**；A3 部署仍须做。存档 UI 为 A4。BGM 可插在 A、B 之间，不得推迟 A3。禁止跳去灵兽/人声而空着功法与大事记。
+L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令日限）已落地**；A3 部署仍须真机。存档 UI 为 A4（已落地）。**A5（S36 宣称奇迹封闭骰）规格已写、未接线。** BGM 可插在 A、B 之间，不得推迟 A3。禁止跳去灵兽/人声而空着功法与大事记。禁止用模型当「合不合理」裁判。
 
 ---
 
@@ -258,17 +259,21 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 
 | 文档 | 用途 |
 |------|------|
-| [game_design.md](./game_design.md) | 天道法则、UI 铁律、十二系统、修炼公式 |
+| [game_design.md](./game_design.md) | 天道法则、UI 短铁律、十二系统、修炼公式 |
+| [ui.md](./ui.md) | 电脑/手机 UI：宣纸、断点、书房 vs 掌中 |
 | [architecture.md](./architecture.md) | 已实现代码怎么分层 |
 | [api.md](./api.md) | HTTP 契约 |
 | [runbook.md](./runbook.md) | XAMPP / 前后端启动 |
 | [hosting.md](./hosting.md) | I06 L1 托管功能规格 |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 隧道拓扑、基址、保活 |
+| [player_agency.md](./player_agency.md) | S36 自由度总则：三圈边界 |
+| [situation.md](./situation.md) | 层 1 情境锁（已实现） |
+| [plausibility.md](./plausibility.md) | 层 3 宣称奇迹骰（A5 待办） |
 | [roadmap.md](./roadmap.md) | 完善顺序 A→E（权威） |
 | [content_catalog.md](./content_catalog.md) | 地区、配方、命格、天赋 |
 | [audio_system.md](./audio_system.md) | 声音实体、决议、RVC/代理答疑 |
 | [audio_architecture.md](./audio_architecture.md) | 声音目录、事件、接口签名 |
-| S20–S35 各 md | 规划系统规格，见 [README.md](./README.md) |
+| S20–S36 各 md | 规划系统规格，见 [README.md](./README.md) |
 | [project_status.md](./project_status.md) | 本文件：进度、测试、成本、上线、GitHub |
 | `.cursor/rules/project.mdc` | Cursor 开发红线 |
 | `.cursor/mcp.example.json` | MCP 模板 |
@@ -277,8 +282,11 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 
 ## 10. 当前下一动作
 
-**下一刀：** [roadmap.md](./roadmap.md) 阶段 A 仅剩 **I06 部署/穿透** 的真机落地（代码侧 API 基址已抽，隧道 + NSSM 保活待你在真机做）。S21 最小集、I04 口令日限、I05 存档列表均已落地。  
-完整顺序：A 试玩安全 → B 功法/丹毒/心魔 → C 记忆/亲缘/师徒/大势/地理/灵脉 → D 结局/毒誓/名声 → E 声音/灵兽/情报/伪装。
+**代码下一刀（待办 A5）：** `miracle.service.ts` —— 封闭词表检测 + 仙缘骰 + 不破差两大境秒杀；L1 可不发物品。规格 [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md)。
+
+**真机下一刀（A3 / I06）：** 穿透/保活仍须在你电脑上做（API 基址已抽）。
+
+S21 最小集、I04、I05、情境锁均已落地。公网门槛仍是 A3 真机；A5 为代码待办。完整顺序：A（安全 + A5 体感）→ B 功法/丹毒/心魔 → C 记忆/亲缘/师徒/大势/地理/灵脉 → D 结局/毒誓/名声 → E 声音/灵兽/情报/伪装。
 
 ---
 
@@ -292,12 +300,12 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 | 战斗有构筑 | 境界压制 + 天赋乘数 | **没有功法槽和招式**，打起来像掷骰+叙事 |
 | 世界在动 | 时间流逝、NPC 会老死 | **没有宗门战争、NPC 自己突破** |
 | 长线记忆 | 单回合 context | 玩久了 AI **忘前仇** |
-| 防捣乱 | 部分拦截器 | 玩家仍可输入「立刻飞升」浪费 Key |
+| 防捣乱 | 网关 + 情境锁 | 「立刻飞升」浪费 Key 仍可能；**战中神器反杀**仍靠模型圆（待 A5） |
 | 内容量 | 机制表偏短 | 地区、物品、事件 **不够撑一周目** |
 | 包装 | 宣纸 UI 雏形 | 无主菜单、存档栏、设置、音效氛围 |
 | 运营 | 无 | 无账号、客服、版本更新节奏 |
 
-S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26–S35 补「心魔、誓、师徒、凡人、丹毒、地理、人账、情报、伪装、灵脉」。做完会 **像一款能过日子的修仙**；现在已经 **像一个很好的内核**。排期见 [roadmap.md](./roadmap.md)。
+S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26–S35 补「心魔、誓、师徒、凡人、丹毒、地理、人账、情报、伪装、灵脉」；**S36** 补「自由度边界与宣称奇迹」。做完会 **像一款能过日子的修仙**；现在已经 **像一个很好的内核**。排期见 [roadmap.md](./roadmap.md)。
 
 ---
 

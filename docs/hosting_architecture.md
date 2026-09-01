@@ -1,6 +1,6 @@
-# I06 托管代码与部署架构（只设计不实现）
+# I06 托管代码与部署架构
 
-依据 [hosting.md](./hosting.md) 的 **L1 最小集**。本文件把规格里的「或」拍死，避免开工时现场争论。不含云厂商账号申请步骤（那是操作，写进开工后的 runbook 增补，不写进仓库的真实域名）。
+依据 [hosting.md](./hosting.md) 的 **L1 最小集**。前端 API 基址 **已落地**（`apiBase.ts`）；隧道与 NSSM 仍须真机。不含云厂商账号与真实域名。
 
 现有 S21 网关、Prisma、Express **不改职责**；I06 只改「谁从哪进、进程谁拉起、前端 API 基址从哪读」。
 
@@ -12,7 +12,7 @@
 |----|------|
 | L1 默认拓扑 | **拓扑 B（双 Origin + 隧道）**。不强制先买 VPS、不强制 Nginx。 |
 | L1 备选拓扑 | 拓扑 A（单 Origin 反代）留给已有 Nginx/Caddy 或以后上云。 |
-| 前端 API 基址 | **禁止继续写死** `http://localhost:3000`。抽到单一模块，开发缺省仍是本机 3000。 |
+| 前端 API 基址 | **已抽** `frontend/src/apiBase.ts`。禁止再在组件里写死 `http://localhost:3000`。未设 `VITE_API_BASE` 时缺省本机 3000。 |
 | 环境变量（前端） | `VITE_API_BASE`：空或未设 → `http://localhost:3000`；L1 设为 API 的公网 Origin（无尾斜杠）。**不要**把口令放进 `VITE_*`。 |
 | 环境变量（后端） | L1 必配 `PLAY_ACCESS_TOKEN`；`PLAY_CORS_ORIGIN` = 前端公网 Origin；`PORT=3000`；`DATABASE_URL` 仍指本机 MySQL。 |
 | MySQL | 只绑 `127.0.0.1:3306`。隧道映射列表**不准出现 3306**。 |
@@ -40,7 +40,7 @@
 
 后端：`PLAY_CORS_ORIGIN=https://front.example.tld`（与地址栏完全一致，含 https、无路径）。  
 前端构建/启动环境：`VITE_API_BASE=https://api.example.tld`。  
-创角页令牌 = 后端 `PLAY_ACCESS_TOKEN`。
+创角/局内请求带的令牌值 = 后端 `PLAY_ACCESS_TOKEN`（在**存档列表**页填写，不是创角页）。
 
 ### 拓扑 A（备选）：单 Origin
 
@@ -54,14 +54,14 @@
 
 ---
 
-## 2. 前端改动（I06 开工时必做）
+## 2. 前端 API 基址（已落地）
 
-当前写死点：`CreateCharacter.tsx`、`MainGame.tsx` 内 `http://localhost:3000`。
+组件禁止再硬编码 `http://localhost:3000`。统一：
 
 ```
 frontend/src/
-└── apiBase.ts          # getApiBase(): string ；拼 URL 只用这里
-└── playToken.ts        # 已有；apiFetch 继续附 X-Play-Token
+└── apiBase.ts          # getApiBase(): string
+└── playToken.ts        # apiFetch 附 X-Play-Token
 ```
 
 约定：
@@ -71,7 +71,7 @@ frontend/src/
 - **禁止**新增第二套 `fetch` 基址。库存档 UI（I05）也必须用 `getApiBase()`。
 - Vite 环境变量只有启动时注入：改 `.env` 后要重启 `npm run dev`。L1 用 `frontend/.env.local`（已 gitignore 的 `.env*` 规则须确认 `!.env.example` 仍在；**不要**提交含真实域名的 `.env.local`）。
 
-可在仓库加 `frontend/.env.example`：
+仓库已有 `frontend/.env.example`（只写注释，不要填真实域名）：
 
 ```
 # VITE_API_BASE=          本机留空即 localhost:3000；L1 填 API 公网 Origin
@@ -123,14 +123,13 @@ NSSM 的可执行文件路径、本机目录 **不写进 Git**。架构只规定
 
 ---
 
-## 6. 开工顺序（实现时）
+## 6. 开工顺序（剩下的是真机）
 
-1. 落地 `apiBase.ts`，替换两处组件硬编码；本机不设 `VITE_API_BASE` 时行为与现在一致。  
-2. `frontend` `npm run build` 过。  
-3. 配口令与 CORS，开隧道，用第二台设备或无痕+关本机 hosts 幻想验证。  
-4. 再包 NSSM；先手动能玩再保活。  
+1. ~~落地 `apiBase.ts`~~ **已做**。本机不设 `VITE_API_BASE` 时打 localhost:3000。  
+2. 给朋友玩：配口令与 CORS，设 `VITE_API_BASE` 为 API 公网 Origin，开隧道；用第二台设备或无痕验证。  
+3. 再包 NSSM；先手动能玩再保活。  
 
-禁止先买云再改基址：基址不改，上云同样会打错 Host。
+禁止未改基址就只开前端隧道：朋友请求会打到他们自己的 3000。
 
 ---
 

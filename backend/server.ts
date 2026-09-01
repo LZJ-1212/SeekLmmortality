@@ -73,6 +73,7 @@ import { isEligibleForSamsara, resolveLegacyBlessing } from './src/services/rein
 import { ReincarnationDbService } from './src/services/reincarnationDb.service';
 import { SnapshotService } from './src/services/snapshot.service';
 import { SaveService } from './src/services/save.service';
+import { evaluateSituation, nextSceneContext, parseSceneContext } from './src/services/situation.service';
 // S21 安全网关：口令 / 净化 / 注入黑名单 / 创角校验 / 每日行动配额
 import {
   requirePlayToken,
@@ -412,6 +413,14 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
       return res.status(403).json({ status: 'error', message: '大限已至，道消身陨，万事皆休。' });
     }
 
+    // 世界状态：情境锁 + 年份/旧友检测复用
+    const worldState = await prisma.world_state.findUnique({ where: { save_id: player.save_id } });
+    const sceneContext = parseSceneContext(worldState?.scene_context);
+    const situation = evaluateSituation(sceneContext, action);
+    if (!situation.ok) {
+      return res.status(400).json({ status: 'error', message: situation.message });
+    }
+
     // S21 层 B：每日行动配额（仅在口令/净化/黑名单/玩家存在/未死亡全部通过后计数）
     const quotaResult = await quotaService.tryConsumeDailyAction(playerId);
     if (!quotaResult.ok) {
@@ -422,8 +431,6 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
     const cave = await caveService.getOrCreateCave(player.save_id, player.current_location ?? '青岳·天机坊市');
     // 宗门：可能为 null（尚未加入任何宗门，即"散修"），这是合法状态，不做懒加载兜底
     const playerSect = await sectService.getSect(player.save_id);
-    // 世界状态提前取出，供"旧友寿元耗尽"检测使用；后面推进年份/季节时复用同一份数据，不重复查询
-    const worldState = await prisma.world_state.findUnique({ where: { save_id: player.save_id } });
     // 人际关系：全部现有关系，供双修目标匹配 + 旧友寿元耗尽检测复用
     const relationships = await relationshipService.getAll(player.save_id);
     // 逆天改命天赋：已拥有的天赋列表，供战斗/修炼计算读取全局乘数
@@ -833,10 +840,19 @@ app.post('/api/action', requirePlayToken, async (req: Request, res: Response) =>
         worldState.pending_months ?? 0,
         monthsPassed,
       );
+      const nextScene = nextSceneContext({
+        inCombat: Boolean(combat?.in_combat),
+        isDead: isDeadNow,
+      });
       transactionOps.push(
         prisma.world_state.update({
           where: { save_id: player.save_id },
-          data: { current_year: newYear, current_season: newSeason, pending_months: newWorldPendingMonths },
+          data: {
+            current_year: newYear,
+            current_season: newSeason,
+            pending_months: newWorldPendingMonths,
+            scene_context: nextScene,
+          },
         })
       );
     }

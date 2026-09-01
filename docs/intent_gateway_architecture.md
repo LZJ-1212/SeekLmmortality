@@ -15,7 +15,7 @@
 | 已配置 | **穿透流量**必带令牌；浏览器直连本机 3000 不验（无 `Cf-Ray` / `X-Forwarded-For`） |
 | 日限键 | **`playerId` + 北京时间自然日**（`YYYY-MM-DD`，UTC+8） |
 | 日限存储 | MySQL 表，进程重启不丢；禁止只放内存 |
-| 日限何时 +1 | 仅 `POST /api/action`：口令、长度、黑名单、玩家存在、未死亡 **全部通过之后**、层 G 之前。400/401/404/403 死亡锁 **不计数** |
+| 日限何时 +1 | 仅 `POST /api/action`：口令、长度、黑名单、玩家存在、未死亡、**情境锁通过** 之后、其余层 G 之前。情境锁 400、其它 400/401/404/403 死亡锁 **不计数** |
 | `create-player` | 要口令 + 字段长度；**不走日限**（尚无 playerId） |
 | CORS | `PLAY_CORS_ORIGIN` 有值则放行该列表（逗号分隔）以及本机 `localhost:5173` / `127.0.0.1:5173`；未配则维持现况（本机任意） |
 | 层 E/F | 本目录不建分类器文件 |
@@ -169,7 +169,7 @@ server.ts
   → requirePlayToken.middleware
   → createPlayerLimits | actionSanitize | injectionBlocklist | quota.service
        → quota.repository → prisma
-playToken.ts（前）← CreateCharacter / MainGame
+playToken.ts（前）← SaveList（填令）/ CreateCharacter / MainGame（只带头发请求）
 ```
 
 `gateway/` **不** import `ai.ts`。`ai.ts` **不** import `gateway/`。

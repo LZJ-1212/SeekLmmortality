@@ -5,7 +5,7 @@ alwaysApply: true
 
 # 项目编码规范与潜规则
 
-与 [project.mdc](./project.mdc) 分工：那份管架构隔离、密钥、数值/AI 铁律、Prisma 5、主题色。**本份管怎么写代码、测什么、仓库里不要干什么。** 玩法规格与开工顺序：`docs/README.md`、`docs/roadmap.md`。
+与 [project.mdc](./project.mdc) 分工：那份管架构隔离、密钥、数值/AI 铁律、Prisma 5、主题色。**本份管怎么写代码、测什么、仓库里不要干什么。** 玩法规格与开工顺序：`docs/README.md`、`docs/roadmap.md`。玩家能说什么、天道锁什么：`docs/player_agency.md`。
 
 对玩家说明用中文。标识符用英文（`getOrCreateCave`，不要 `getDongfu`）。
 
@@ -14,7 +14,7 @@ alwaysApply: true
 ## 1. 动手前
 
 - 先读再改，禁止凭记忆改路径。已落地系统以 **代码为准**；规划中系统以 **对应 `docs/*.md` 为准**，禁止只改一边造成双源。
-- 新玩法先对规格，再写纯函数 Service，再挂 `/api/action` 拦截器，最后才改 UI。禁止先让 DeepSeek「演」出数值。
+- 新玩法先对规格，再写纯函数 Service，再挂 `/api/action` 拦截器，最后才改 UI。禁止先让 DeepSeek「演」出数值。宣称奇迹、战中神器等先对 `docs/player_agency.md` / `docs/plausibility.md`，排期 **A5**。
 - 开工顺序跟 `docs/roadmap.md` 阶段 A→E。不要为了「更修仙」先做灵兽/人声而空着 S21/S20。
 - 改配方、地区、命格、功法名：同步 `docs/content_catalog.md`（或实现时立刻补表）。
 
@@ -77,7 +77,7 @@ export function rollX(chance: number, rollFn: () => number = Math.random) {
 ## 5. 前端
 
 - 函数组件 + Hooks，禁止 Class Component。
-- 样式只用 `tailwind.config.js` 主题类（`bg-paper`、`border-jade`、`text-blood`、`bg-gold` 等）。禁止新内联一套马卡龙色。
+- 样式只用 `tailwind.config.js` 主题类（`bg-paper`、`border-jade`、`text-blood`、`bg-gold` 等）。禁止新内联一套马卡龙色。电脑/手机布局见 `docs/ui.md`。
 - **剧情、系统日志、选项、AI 叙事禁止 emoji。** 音量按钮可用克制 SVG。
 - 接口默认 `http://localhost:3000`；改端口必须前后端一起改。
 - 创角选项文案必须能在 `characterBuild.service` / 内容表里对上，禁止前端有、后端当未知丢掉。
@@ -103,7 +103,8 @@ export function rollX(chance: number, rollFn: () => number = Math.random) {
 - 对玩家短讯用文言/白话修仙口吻，不要程序员报错堆栈上屏；日志可以 `console.error`。
 - 死亡锁：`is_game_over` 或气血/寿元判定死后，action 直接拒绝，不再调模型。
 - 时间：对话买卖 0.1～0.2 月；历练 1 月；闭关年→月。不要让 AI 说「瞬息十年」却不扣 `monthsPassed`。
-- 境界压制：差 1 大境输出 40%；差 2 境秒杀。功法、灵兽、伪装、心魔都 **不能** 取消这条。
+- 境界压制：差 1 大境输出 40%；差 2 境秒杀。功法、灵兽、伪装、心魔、**仙缘骰**都 **不能** 取消这条。
+- 玩家自由度：叙事可胡写；改气血/胜负/物品必须走拦截器。总则 `docs/player_agency.md`。禁止用模型判「合不合理」。
 - 功德 vs 名声（S32）：天账与人账分开，未实现前不要用业力冒充「城里不能买东西」。
 
 ---

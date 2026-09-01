@@ -1,11 +1,11 @@
 # HTTP 接口（已实现）
 
-与代码同步日期：2026-09-01。实现以 `backend/server.ts` 与 `backend/src/routes/inventory.routes.ts` 为准。本文件只描述契约，不写实现。
+与代码同步日期：2026-09-02。实现以 `backend/server.ts` 与 `backend/src/routes/inventory.routes.ts` 为准。本文件只描述契约，不写实现。
 
 - 基址：本机 `http://localhost:3000`（`PORT` 可改，前端默认仍打 3000）。
 - 通用成功：`{ status: "success", ... }`；失败：`{ status: "error", message: string }`。
-- **鉴权与限流（S21 最小集已实现）**：配置 `PLAY_ACCESS_TOKEN` 后，除 `GET /api/ping` 外的接口须带 `X-Play-Token` 头，否则 401；`POST /api/action` 另有每日 60 次配额（`ACTION_DAILY_LIMIT` 可改），超限 429。未配置口令时本机放行。规格见 [intent_gateway.md](./intent_gateway.md) 与 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。勿把本机 3000 裸映射公网。
-- 前端默认：Vite `http://localhost:5173`，创角与行动 `fetch` 写死 3000。
+- 前端默认：Vite `http://localhost:5173`；请求基址见 `frontend/src/apiBase.ts`（`VITE_API_BASE`，未设则本机 3000）。
+- **口令：** 已配 `PLAY_ACCESS_TOKEN` 时，**穿透流量**须带 `X-Play-Token`，否则 401；浏览器直连本机可不验。未配口令则不校验（禁止此时做公网映射，见 [hosting.md](./hosting.md)）。`POST /api/action` 另有每日 60 次配额，超限 429。规格见 [intent_gateway.md](./intent_gateway.md)。
 
 ---
 
@@ -88,7 +88,7 @@ Body：`{ playerId, action }`。`action` 为自然语言或快捷指令文本。
 | `exploration` / `regionDanger` | 奇遇与越境惩罚 |
 | `player` | 更新后的修士行 |
 
-死亡锁之后该接口拒绝一切行动。读档回滚见下方快照接口。
+死亡锁之后该接口拒绝一切行动。上一回合若为交手（`world_state.scene_context=combat`），本回合输入闭关/坊市/拍卖/炼器炼丹/双修 → **400**，不调模型、不占日限，见 [situation.md](./situation.md)。宣称「捡神器反杀」**不**走 400，待 **A5** 封闭骰写入 `forcedOutcome`，见 [plausibility.md](./plausibility.md)；自由度总则 [player_agency.md](./player_agency.md)。读档回滚见下方快照接口。
 
 ---
 

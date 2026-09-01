@@ -27,6 +27,7 @@
 - 多玩家实时战场、拍卖行 MMO
 - 夺舍改存档身份（S27 明确一周目禁用）
 - 每个系统先做一块大 UI；优先快捷指令 + 日志 + 天机簿只读
+- 用大模型给每句打「合不合理」分（见 [player_agency.md](./player_agency.md)）
 
 ---
 
@@ -42,8 +43,9 @@
 | A2 | I04 | 口令 + 每存档日限 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | 1–2 |
 | A3 | I06 | 穿透/小主机 + 进程保活 | [hosting.md](./hosting.md) · [hosting_architecture.md](./hosting_architecture.md) | 1–3 |
 | A4 | I05 薄做 | **存档列表 UI**（免手抄 UUID） | 前端；无独立玩法规格 | 2–4 |
+| A5 | S36 薄做 | 宣称奇迹封闭骰：狂句必骰、失败落空、**不破**差两大境秒杀；L1 可不发物品 | [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | 2–4 |
 
-A 合计约 5–12 人天。不做完 A 不准公网试玩。
+A 合计约 7–16 人天。**A1–A3 未完不准公网试玩**（Key 安全）。A4 存档列表已落地。A5 是试玩体感（狂句骰子），规格已写、代码未接，可与 I06 真机并行，**不挡**开隧道，不得用模型分类代替。
 
 朋友若用**手机浏览器**：阶段 A 完成后可选 **I11**（[mobile.md](./mobile.md)），不进上表强制序。
 
@@ -89,7 +91,7 @@ A 合计约 5–12 人天。不做完 A 不准公网试玩。
 ### 贯穿全程
 
 - **I07 内容**：每做完一个玩法系统，立刻往 [content_catalog.md](./content_catalog.md) 加一薄层（3～8 条地名/配方/人名），禁止「系统做完表是空的」。
-- 前端设置页、移动端：**不挡**阶段 A→E 玩法；手机浏览器适配见 **I11** [mobile.md](./mobile.md) · [mobile_architecture.md](./mobile_architecture.md)，可在 L1 朋友试玩之后做，**禁止**为此推迟 S20。
+- 前端设置页、移动端：**不挡**阶段 A→E 玩法；手机浏览器适配见 **I11** [ui.md](./ui.md) · [mobile.md](./mobile.md)，可在 L1 朋友试玩之后做，**禁止**为此推迟 S20。
 
 ---
 
@@ -101,7 +103,7 @@ A 合计约 5–12 人天。不做完 A 不准公网试玩。
 
 ## 4. 阶段完成的主观验收
 
-- **A：** 朋友用浏览器能玩；无口令打不进 action。  
+- **A：** 朋友用浏览器能玩；无口令打不进 action。战中闭关被拒；喊「捡神器反杀」走骰子而非模型开挂（A5 落地后）。  
 - **B：** 换功法能感到闭关快慢不同；乱吞丹会残。  
 - **C：** 闭关十年后坊市有新传闻；归乡可能奔丧。  
 - **D：** 飞升/魔途/破誓有标题；城里杀人进不了坊市。  

@@ -141,6 +141,7 @@ model world_state {
   pending_months  Float?  @default(0) // 未满一季度（3个月）的零碎月份累加器，用于推进季节/年份
   global_events   String? @db.LongText
   triggered_clues String? @db.LongText
+  scene_context   String? @default("none") @db.VarChar(20) // none | combat：情境锁，交手未歇禁止闭关等
   saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")
 }
 

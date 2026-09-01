@@ -50,7 +50,7 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
   const isNearingLifespanLimit = player.lifespanStatus?.isNearingLifespanLimit ?? false;
 
   return (
-    <div className="w-[420px] bg-paper border-2 border-jade rounded-md shadow-lg p-4 font-serif text-textMain select-none flex-shrink-0 h-fit">
+    <div className="w-full bg-paper border-2 border-jade rounded-md shadow-lg p-4 font-serif text-textMain select-none">
 
       <div className="bg-jade text-white text-center py-1.5 rounded-sm font-bold tracking-widest text-lg shadow-sm">
         状态卡 · 初始

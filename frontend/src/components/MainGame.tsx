@@ -3,6 +3,7 @@ import { apiFetch } from '../playToken';
 import { CommandMenu, type Command } from './CommandMenu';
 import { InfoModal, type InfoPanelType } from './InfoModal';
 import { LoadModal } from './LoadModal';
+import { StatusCard } from './StatusCard';
 
 // 定义每条日志的格式
 interface LogEntry {
@@ -76,6 +77,16 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
   const [isChoosingTalent, setIsChoosingTalent] = useState(false);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const [isWideLayout, setIsWideLayout] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsWideLayout(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // 开局剧情：把玩家创角定下的命格织成的身世写进日志，并按剧情给出的方向初始化起步选项
   useEffect(() => {
@@ -255,6 +266,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
 
   // 左侧指令菜单分发
   const handleCommand = (cmd: Command) => {
+    if (cmd === '面板' && isWideLayout) return;
     if (INFO_COMMANDS.has(cmd)) {
       setActiveCommand(cmd);
       return;
@@ -313,13 +325,29 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
   if (!playerData) return <div className="p-10 text-center font-serif">天道演算中...</div>;
 
   return (
-    <div className="flex h-screen bg-[#EFECE6] p-4 gap-3">
-      {/* 左侧竖排指令菜单（传统 MUD 风） */}
-      <CommandMenu
-        activeCommand={activeCommand}
-        onCommand={handleCommand}
-        disabledAction={isProcessing || isDead}
-      />
+    <div className="flex h-screen bg-[#EFECE6] p-4 gap-3 min-h-0">
+      {/* 宽屏（≥1024）：常驻面板 + 其下两列指令 */}
+      <aside className="hidden lg:flex w-[420px] shrink-0 flex-col min-h-0 gap-3">
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <StatusCard player={playerData} />
+        </div>
+        <CommandMenu
+          variant="underPanel"
+          activeCommand={activeCommand}
+          onCommand={handleCommand}
+          disabledAction={isProcessing || isDead}
+        />
+      </aside>
+
+      {/* 不足 1024：细竖条指令（I11 窄屏底栏尚未落地） */}
+      <div className="flex lg:hidden self-stretch shrink-0">
+        <CommandMenu
+          variant="rail"
+          activeCommand={activeCommand}
+          onCommand={handleCommand}
+          disabledAction={isProcessing || isDead}
+        />
+      </div>
 
       {/* 逆天改命：天赋三选一弹层，出现时遮罩全屏，强制玩家先做出抉择 */}
       {talentChoices.length > 0 && (
@@ -347,7 +375,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
       )}
 
       {/* 信息详情弹窗（面板/背包/洞府/宗门/情缘） */}
-      {activeCommand && INFO_COMMANDS.has(activeCommand) && (
+      {activeCommand && INFO_COMMANDS.has(activeCommand) && !(activeCommand === '面板' && isWideLayout) && (
         <InfoModal
           type={activeCommand as InfoPanelType}
           player={playerData}
@@ -393,7 +421,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         </div>
 
         {/* 精简状态条：核心数值常驻可见，详情点左侧「面板」查看 */}
-        <div className="bg-[#F4EFE6] border-b border-gold border-opacity-50 px-4 py-1.5 text-xs text-textSub flex flex-wrap gap-x-4 gap-y-1">
+        <div className="lg:hidden bg-[#F4EFE6] border-b border-gold border-opacity-50 px-4 py-1.5 text-xs text-textSub flex flex-wrap gap-x-4 gap-y-1">
           <span><strong className="text-textDark">{playerData.name}</strong> {playerData.gender} · {playerData.age} 岁</span>
           <span>{playerData.realm_major}·{playerData.realm_minor}</span>
           <span>气血 {playerData.hp}/{playerData.max_hp}</span>
