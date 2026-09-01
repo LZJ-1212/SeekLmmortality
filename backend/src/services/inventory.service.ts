@@ -161,6 +161,25 @@ export class InventoryService {
     return null;
   }
 
+  /** [查] 获取物品字典中的全部物品名称，供坊市/拍卖等场景匹配玩家提到的具体物品 */
+  async listAllTemplateNames(): Promise<string[]> {
+    const templates = await this.repo.listAllTemplateNames();
+    return templates.map((t) => t.name);
+  }
+
+  /** [查] 按名称查询物品字典模板（含 base_price/rarity 等定价信息） */
+  async getTemplateByName(name: string): Promise<items_template | null> {
+    return this.repo.findTemplateByName(name);
+  }
+
+  /** [查] 查询玩家当前持有某个字典物品的数量（未持有返回 0），供坊市出售场景校验库存 */
+  async getOwnedQuantityByName(saveId: string, name: string): Promise<number> {
+    const template = await this.repo.findTemplateByName(name);
+    if (!template) return 0;
+    const existing = await this.repo.findRegularEntry(saveId, template.id);
+    return existing?.quantity ?? 0;
+  }
+
   /**
    * [增] 获得一件物品（可为字典物品，也可为 AI 新发明的自定义物品）。
    * - 字典物品：若已存在则叠加数量，否则新建条目。

@@ -32,14 +32,19 @@ model player_inventory {
   items_template items_template? @relation(fields: [item_id], references: [id])
 }
 
+// 人际与情缘双修（财侣法地之"侣"）：NPC 拥有独立的境界与寿元，寿元耗尽会有传音符送来讯息
 model player_relationships {
-  id            String  @id @db.VarChar(36)
-  save_id       String  @db.VarChar(36)
-  npc_name      String  @db.VarChar(50)
-  affinity      Int?    @default(0)
-  relation_type String? @db.VarChar(20)
-  flags         String? @db.LongText
-  saves         saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_relationships_ibfk_1")
+  id               String   @id @db.VarChar(36)
+  save_id          String   @db.VarChar(36)
+  npc_name         String   @db.VarChar(50)
+  affinity         Int?     @default(0)
+  relation_type    String?  @db.VarChar(20)
+  flags            String?  @db.LongText
+  npc_realm_major  String?  @db.VarChar(20) // NPC 当前大境界，决定其寿元上限
+  npc_birth_year   Int?     // NPC 出生的天玄历年份；当前年龄 = world_state.current_year - npc_birth_year（无需逐回合更新）
+  npc_max_lifespan Int?     // NPC 寿元上限（岁），由 npc_realm_major 换算得出
+  is_deceased      Boolean? @default(false) // 是否已因寿元耗尽而仙逝（避免重复推送传音符）
+  saves            saves    @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_relationships_ibfk_1")
 
   @@index([save_id], map: "save_id")
 }
@@ -91,6 +96,42 @@ model saves {
   player_relationships player_relationships[]
   players              players?
   world_state          world_state?
+  player_cave          player_cave?
+  player_sect          player_sect?
+  save_snapshot        save_snapshot[]
+}
+
+// 修仙百艺与洞府（生活经营）：洞府的灵气浓度直接决定闭关修炼的收益倍率
+model player_cave {
+  save_id           String  @id @db.VarChar(36)
+  level             Int?    @default(1) // 洞府等级，等级越高上限越高，可通过灵石升级
+  spiritual_density Int?    @default(10) // 灵气浓度 1~100，决定闭关修炼的“灵气系数”
+  location_name     String? @default("寻常山洞") @db.VarChar(50) // 洞府所在地区，不同地区基础灵气浓度不同
+  formations        String? @db.LongText // 已布置的阵法（JSON 数组），为阵法系统预留
+  saves             saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_cave_ibfk_1")
+}
+
+// 宗门势力运转（凡尘地位）：宗门职位由声望值在代码中晋升；is_traitor 一旦为 true 即永久生效
+model player_sect {
+  save_id    String   @id @db.VarChar(36)
+  sect_name  String?  @db.VarChar(50) // 所属宗门名称；null 表示尚未加入任何宗门（散修）
+  rank       String?  @default("试炼弟子") @db.VarChar(30) // 职位，完全由代码依据 reputation 阈值计算，绝不由 AI 决定
+  reputation Int?     @default(0) // 声望值（贡献度），决定职位晋升
+  is_traitor Boolean? @default(false) // 叛宗标记：一旦为 true，随机事件生成必须强制加入"被执法堂追杀"的因果
+  saves      saves    @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "player_sect_ibfk_1")
+}
+
+// 轮回与读档机制（宿命延续）：常规读档用时间戳快照回滚；saves.in_samsara_pool 复用为"轮回标记"
+model save_snapshot {
+  id                    String   @id @db.VarChar(36)
+  save_id               String   @db.VarChar(36)
+  created_at            DateTime @default(now()) @db.Timestamp(0) // 快照时间戳，读档回滚的定位依据
+  label                 String?  @db.VarChar(100) // 供读档列表展示的简短说明（如最近一条剧情摘要）
+  player_snapshot       Json // 快照时刻 players 表这一行的完整数据
+  world_state_snapshot  Json? // 快照时刻 world_state 表这一行的完整数据
+  saves                 saves    @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "save_snapshot_ibfk_1")
+
+  @@index([save_id], map: "save_id")
 }
 
 model world_state {

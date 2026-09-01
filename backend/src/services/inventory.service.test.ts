@@ -169,6 +169,43 @@ describe('InventoryService.removeItemByName（删/消耗）', () => {
   });
 });
 
+describe('InventoryService 供坊市/拍卖场景使用的查询方法', () => {
+  let repo: InventoryRepository;
+  let service: InventoryService;
+
+  beforeEach(() => {
+    repo = createMockRepo();
+    service = new InventoryService({} as any, repo);
+  });
+
+  it('listAllTemplateNames：应返回物品字典里全部物品的名称列表', async () => {
+    (repo.listAllTemplateNames as any).mockResolvedValue([{ name: '聚气丹' }, { name: '筑基丹' }]);
+    const result = await service.listAllTemplateNames();
+    expect(result).toEqual(['聚气丹', '筑基丹']);
+  });
+
+  it('getTemplateByName：应返回完整的物品字典模板（含 base_price）', async () => {
+    (repo.findTemplateByName as any).mockResolvedValue({ id: 'tpl-1', name: '聚气丹', base_price: 20 });
+    const result = await service.getTemplateByName('聚气丹');
+    expect(result?.base_price).toBe(20);
+  });
+
+  it('getOwnedQuantityByName：字典物品存在且已持有时应返回真实数量', async () => {
+    (repo.findTemplateByName as any).mockResolvedValue({ id: 'tpl-1', name: '聚气丹' });
+    (repo.findRegularEntry as any).mockResolvedValue({ id: 'inv-1', quantity: 5 });
+    expect(await service.getOwnedQuantityByName('save-1', '聚气丹')).toBe(5);
+  });
+
+  it('getOwnedQuantityByName：物品不在字典中或背包里没有时应返回 0', async () => {
+    (repo.findTemplateByName as any).mockResolvedValue(null);
+    expect(await service.getOwnedQuantityByName('save-1', '不存在的物品')).toBe(0);
+
+    (repo.findTemplateByName as any).mockResolvedValue({ id: 'tpl-1', name: '聚气丹' });
+    (repo.findRegularEntry as any).mockResolvedValue(null);
+    expect(await service.getOwnedQuantityByName('save-1', '聚气丹')).toBe(0);
+  });
+});
+
 describe('InventoryService 其他增删改查方法', () => {
   let repo: InventoryRepository;
   let service: InventoryService;

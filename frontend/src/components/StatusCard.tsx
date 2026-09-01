@@ -10,6 +10,10 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
   const roots = player.spiritual_roots.elements || [];
   const elementColors: Record<string, string> = { '金': 'bg-gold', '木': 'bg-wood', '水': 'bg-water', '火': 'bg-blood', '土': 'bg-[#B08A4E]', '雷': 'bg-thunder', '风': 'bg-[#7F9C9C]', '冰': 'bg-sect' };
 
+  // 大限压迫感：剩余寿元与预警状态（优先使用后端算好的 lifespanStatus，缺失时前端兜底计算）
+  const remainingYears = player.lifespanStatus?.remainingYears ?? Math.max(0, player.max_lifespan - player.age);
+  const isNearingLifespanLimit = player.lifespanStatus?.isNearingLifespanLimit ?? false;
+
   return (
     <div className="w-[420px] bg-paper border-2 border-jade rounded-md shadow-lg p-4 font-serif text-textMain select-none flex-shrink-0 h-fit">
 
@@ -18,19 +22,42 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
       </div>
       <div className="my-2.5 border-b border-gold opacity-80" />
 
+      {/* 大限将至：寿元告急的持续性视觉压迫 */}
+      {isNearingLifespanLimit && (
+        <div className="mb-2 bg-blood text-white text-xs text-center py-1.5 rounded-sm font-bold tracking-wider animate-pulse shadow-sm">
+          〔大限将至〕寿元仅剩 {remainingYears} 年，与天夺命，刻不容缓！
+        </div>
+      )}
+
       <div className="space-y-1.5 text-sm">
         <div className="flex justify-between items-center">
           {/* 动态渲染姓名、性别、年龄 */}
           <span>道号 <strong className="text-textDark">{player.name}</strong> · {player.gender} · {player.age} 岁</span>
           <span className="text-xs text-textSub">寿元
-            <span className="ml-1 text-textMain font-semibold">{player.age}/{player.max_lifespan}</span>
+            <span className={`ml-1 font-semibold ${isNearingLifespanLimit ? 'text-blood' : 'text-textMain'}`}>
+              {player.age}/{player.max_lifespan}
+            </span>
+            <span className={`ml-1.5 ${isNearingLifespanLimit ? 'text-blood font-bold' : 'text-textSub'}`}>
+              （剩 {remainingYears} 年）
+            </span>
           </span>
         </div>
 
         <div className="flex justify-between">
           {/* 动态渲染境界 */}
           <span>境界 <strong className="text-textDark">{player.realm_major} · {player.realm_minor}</strong></span>
-          <span className="text-textSub">宗门 <span className="text-jade font-medium">散修</span></span>
+          <span className="text-textSub">
+            {player.sect?.sect_name ? (
+              <>
+                {player.sect.sect_name}
+                <span className={`ml-1 font-medium ${player.sect.is_traitor ? 'text-blood' : 'text-jade'}`}>
+                  {player.sect.rank}
+                </span>
+              </>
+            ) : (
+              <>宗门 <span className="text-jade font-medium">散修</span></>
+            )}
+          </span>
         </div>
 
         {/* 动态渲染六维属性 */}
@@ -74,12 +101,42 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
           <span>业力: <strong className="text-textSub">{player.karma}</strong></span>
         </div>
         <div className="text-[11px] text-textSub truncate">所在地: {player.current_location}</div>
+        {player.cave && (
+          <div className="text-[11px] text-textSub truncate">
+            洞府: {player.cave.location_name} · 等级 {player.cave.level} · 灵气浓度
+            <span className="text-jade font-semibold ml-0.5">{player.cave.spiritual_density}</span>
+          </div>
+        )}
       </div>
+
+      {/* ===== 人际关系区域 ===== */}
+      {player.relationships && player.relationships.length > 0 && (
+        <div className="mt-3 pt-2 border-t border-gold border-opacity-50">
+          <div className="flex justify-between items-center text-xs mb-1">
+            <span className="text-textSub font-bold">情缘</span>
+            <span className="text-textSub text-[10px]">{player.relationships.length} 人</span>
+          </div>
+          <div className="space-y-1 text-xs max-h-[80px] overflow-y-auto">
+            {player.relationships.map((rel: any) => (
+              <div
+                key={rel.id}
+                className={`flex justify-between items-center px-2 py-1 rounded border ${rel.is_deceased ? 'bg-[#EFECE6] border-[#E5E0D5] opacity-60' : 'bg-[#F5EFF9] border-mystic'}`}
+              >
+                <span className={rel.is_deceased ? 'text-textSub line-through' : 'text-textDark'}>
+                  {rel.npc_name}
+                  <span className="ml-1 text-[10px] text-textSub">（{rel.relation_type || '相识'}{rel.is_deceased ? '·已仙逝' : ''}）</span>
+                </span>
+                {!rel.is_deceased && <span className="text-mystic text-[10px]">好感 {rel.affinity}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ===== 背包区域 ===== */}
       <div className="mt-3 pt-2 border-t border-gold border-opacity-50">
         <div className="flex justify-between items-center text-xs">
-          <span className="text-textSub font-bold">🎒 背包</span>
+          <span className="text-textSub font-bold">背包</span>
           <span className="text-textSub text-[10px]">
             {player.inventory?.length || 0} 件
           </span>

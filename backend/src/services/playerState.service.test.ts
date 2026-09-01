@@ -8,6 +8,10 @@ import {
   getDeathReason,
   isDead,
   resolveBreakthroughAttempt,
+  detectSeclusionMonths,
+  DEFAULT_SECLUSION_MONTHS,
+  getLifespanStatus,
+  describeMonths,
   type RealmLaw,
 } from './playerState.service';
 
@@ -125,32 +129,42 @@ describe('getDeathReason / isDead / isLifespanExhausted（死亡判定）', () =
   });
 });
 
-describe('resolveBreakthroughAttempt（境界突破的确定性数值结算，不依赖 AI 自己计算数值）', () => {
+describe('resolveBreakthroughAttempt（境界突破 / 渡雷劫的确定性数值结算，不依赖 AI 自己计算数值）', () => {
   const REALM_LAWS: Record<string, RealmLaw> = {
     '炼气·初期': { next: '炼气·中期', reqCultivation: 100, isMajor: false },
     '炼气·圆满': {
-      next: '筑基·初期',
-      reqCultivation: 800,
-      isMajor: true,
-      baseSuccess: 0.7,
-      tribulationDamage: 60,
-      newLifespan: 200,
+      next: '筑基·初期', reqCultivation: 800, isMajor: true,
+      tribulationTier: '人道', baseSuccess: 0.7, tribulationDamagePercent: 0.3,
+      deathChanceOnFailure: 0, maxHpGain: 100, newLifespan: 200,
+    },
+    '元婴·圆满': {
+      next: '化神·初期', reqCultivation: 46000, isMajor: true,
+      tribulationTier: '地道', baseSuccess: 0.5, tribulationDamagePercent: 0.5,
+      deathChanceOnFailure: 0, maxHpGain: 800, newLifespan: 1500,
+    },
+    '金丹·圆满': {
+      next: '元婴·初期', reqCultivation: 13000, isMajor: true,
+      tribulationTier: '天道', baseSuccess: 0.3, tribulationDamagePercent: 0.7,
+      deathChanceOnFailure: 0.5, maxHpGain: 400, newLifespan: 800,
     },
   };
 
+  const baseInput = { hp: 100, maxHp: 100, maxLifespan: 100, daoHeart: 10, merit: 0 };
+
   it('异常路径：当前境界不在法则表中时，突破应失败且状态不变', () => {
     const result = resolveBreakthroughAttempt(
-      { realmMajor: '未知境界', realmMinor: '未知', cultivation: 999, hp: 100, maxHp: 100, maxLifespan: 100, daoHeart: 10 },
+      { ...baseInput, realmMajor: '未知境界', realmMinor: '未知', cultivation: 999 },
       REALM_LAWS,
     );
     expect(result.success).toBe(false);
+    expect(result.diedFromTribulation).toBe(false);
     expect(result.patch.hp).toBe(100);
     expect(result.patch.cultivation).toBe(999);
   });
 
   it('异常路径：修为不足时突破失败，应扣除固定 10 点气血，境界不变', () => {
     const result = resolveBreakthroughAttempt(
-      { realmMajor: '炼气', realmMinor: '初期', cultivation: 50, hp: 100, maxHp: 100, maxLifespan: 100, daoHeart: 10 },
+      { ...baseInput, realmMajor: '炼气', realmMinor: '初期', cultivation: 50 },
       REALM_LAWS,
     );
     expect(result.success).toBe(false);
@@ -159,9 +173,9 @@ describe('resolveBreakthroughAttempt（境界突破的确定性数值结算，�
     expect(result.patch.realmMinor).toBe('初期');
   });
 
-  it('正常路径：小境界修为达标直接突破成功，修为清零，气血不受影响', () => {
+  it('正常路径：小境界修为达标直接突破成功，修为清零，气血不受影响，无需渡劫', () => {
     const result = resolveBreakthroughAttempt(
-      { realmMajor: '炼气', realmMinor: '初期', cultivation: 150, hp: 80, maxHp: 100, maxLifespan: 100, daoHeart: 10 },
+      { ...baseInput, realmMajor: '炼气', realmMinor: '初期', cultivation: 150, hp: 80 },
       REALM_LAWS,
     );
     expect(result.success).toBe(true);
@@ -169,31 +183,34 @@ describe('resolveBreakthroughAttempt（境界突破的确定性数值结算，�
     expect(result.patch.realmMinor).toBe('中期');
     expect(result.patch.cultivation).toBe(0);
     expect(result.patch.hp).toBe(80);
+    expect(result.isMajorBreakthroughSuccess).toBe(false); // 小境界水到渠成，不触发天赋三选一
   });
 
-  it('正常路径：大境界突破成功时（注入必定成功的 rollFn），气血回满至新上限、寿元上限提升、修为清零', () => {
+  it('正常路径：大境界（人道劫）突破成功时，气血回满至新上限、寿元上限提升、修为清零', () => {
     const result = resolveBreakthroughAttempt(
-      { realmMajor: '炼气', realmMinor: '圆满', cultivation: 900, hp: 30, maxHp: 200, maxLifespan: 100, daoHeart: 10 },
+      { ...baseInput, realmMajor: '炼气', realmMinor: '圆满', cultivation: 900, hp: 30, maxHp: 200 },
       REALM_LAWS,
-      () => 0, // roll = 0，必定 <= successRate，触发成功分支
+      { successRoll: () => 0 }, // roll = 0，必定 <= successRate，触发成功分支
     );
     expect(result.success).toBe(true);
     expect(result.patch.realmMajor).toBe('筑基');
     expect(result.patch.realmMinor).toBe('初期');
-    expect(result.patch.maxHp).toBe(300);
+    expect(result.patch.maxHp).toBe(300); // 200 + maxHpGain(100)
     expect(result.patch.hp).toBe(300); // 伤势完全恢复
     expect(result.patch.cultivation).toBe(0);
     expect(result.patch.maxLifespan).toBe(200);
+    expect(result.isMajorBreakthroughSuccess).toBe(true); // 大境界渡劫成功，应触发天赋三选一
   });
 
-  it('异常路径：大境界突破失败时（注入必定失败的 rollFn），应扣除固定雷劫伤害与 100 点修为', () => {
+  it('异常路径：大境界（人道劫）突破失败时，按气血上限百分比扣伤害与固定 100 点修为，不会陨落', () => {
     const result = resolveBreakthroughAttempt(
-      { realmMajor: '炼气', realmMinor: '圆满', cultivation: 900, hp: 200, maxHp: 200, maxLifespan: 100, daoHeart: 10 },
+      { ...baseInput, realmMajor: '炼气', realmMinor: '圆满', cultivation: 900, hp: 200, maxHp: 200 },
       REALM_LAWS,
-      () => 0.999, // roll 接近 1，必定 > successRate，触发失败分支
+      { successRoll: () => 0.999 }, // roll 接近 1，必定 > successRate，触发失败分支
     );
     expect(result.success).toBe(false);
-    expect(result.patch.hp).toBe(140); // 200 - 60 雷劫伤害
+    expect(result.diedFromTribulation).toBe(false);
+    expect(result.patch.hp).toBe(140); // 200 - (200*0.3=60) 雷劫伤害
     expect(result.patch.cultivation).toBe(800); // 900 - 100
     expect(result.patch.realmMajor).toBe('炼气'); // 境界不变
     expect(result.patch.maxLifespan).toBe(100); // 寿元上限不变
@@ -201,11 +218,168 @@ describe('resolveBreakthroughAttempt（境界突破的确定性数值结算，�
 
   it('边界情况：大境界突破失败时气血/修为不会扣成负数', () => {
     const result = resolveBreakthroughAttempt(
-      { realmMajor: '炼气', realmMinor: '圆满', cultivation: 850, hp: 20, maxHp: 200, maxLifespan: 100, daoHeart: 10 },
+      { ...baseInput, realmMajor: '炼气', realmMinor: '圆满', cultivation: 850, hp: 20, maxHp: 200 },
       REALM_LAWS,
-      () => 0.999,
+      { successRoll: () => 0.999 },
     );
     expect(result.patch.hp).toBe(0); // 20 - 60，夹紧到 0
     expect(result.patch.cultivation).toBe(750); // 850 - 100
+  });
+
+  it('正常路径：功德（merit）会提升渡劫成功率，命中「功德抵御雷劫」的法则', () => {
+    // baseSuccess 0.5 + daoHeart(10)*0.01=0.1 + merit(200)*0.0005=0.1 => successRate = 0.7
+    const withHighMerit = resolveBreakthroughAttempt(
+      { ...baseInput, realmMajor: '元婴', realmMinor: '圆满', cultivation: 50000, merit: 200 },
+      REALM_LAWS,
+      { successRoll: () => 0.69 }, // 恰好命中提升后的成功率区间
+    );
+    expect(withHighMerit.success).toBe(true);
+
+    const withoutMerit = resolveBreakthroughAttempt(
+      { ...baseInput, realmMajor: '元婴', realmMinor: '圆满', cultivation: 50000, merit: 0 },
+      REALM_LAWS,
+      { successRoll: () => 0.69 }, // 同样的骰子结果，没有功德加成时应该失败（0.5+0.1=0.6 < 0.69）
+    );
+    expect(withoutMerit.success).toBe(false);
+  });
+
+  it('边界情况：功德加成有上限（不会无限提升成功率）', () => {
+    // merit 极高时，加成应被夹在 MAX_MERIT_SUCCESS_BONUS(0.15) 以内：0.5+0.1(道心)+0.15(功德上限)=0.75
+    const result = resolveBreakthroughAttempt(
+      { ...baseInput, realmMajor: '元婴', realmMinor: '圆满', cultivation: 50000, merit: 999999 },
+      REALM_LAWS,
+      { successRoll: () => 0.76 }, // 超出加成上限后的成功率，理应失败
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it('异常路径（“九死一生”核心场景）：天道劫突破失败后，命中陨落判定应直接死亡（气血归零）', () => {
+    const result = resolveBreakthroughAttempt(
+      { realmMajor: '金丹', realmMinor: '圆满', cultivation: 20000, hp: 500, maxHp: 500, maxLifespan: 800, daoHeart: 0, merit: 0 },
+      REALM_LAWS,
+      { successRoll: () => 0.99, deathRoll: () => 0 }, // 先渡劫失败，再命中 50% 的陨落判定
+    );
+    expect(result.success).toBe(false);
+    expect(result.diedFromTribulation).toBe(true);
+    expect(result.patch.hp).toBe(0);
+  });
+
+  it('边界情况：天道劫突破失败但陨落判定未命中时，应退化为普通重伤而非死亡', () => {
+    const result = resolveBreakthroughAttempt(
+      { realmMajor: '金丹', realmMinor: '圆满', cultivation: 20000, hp: 500, maxHp: 500, maxLifespan: 800, daoHeart: 0, merit: 0 },
+      REALM_LAWS,
+      { successRoll: () => 0.99, deathRoll: () => 0.99 }, // 渡劫失败，但陨落判定(0.5)未命中
+    );
+    expect(result.success).toBe(false);
+    expect(result.diedFromTribulation).toBe(false);
+    expect(result.patch.hp).toBe(150); // 500 - (500*0.7=350)
+  });
+
+  it('边界情况：道心足够高时，可以把陨落概率压到 0，彻底避免九死一生的死亡分支', () => {
+    // deathChance = max(0, 0.5 - daoHeart*0.002)，daoHeart=250 时 -> 0.5-0.5=0
+    const result = resolveBreakthroughAttempt(
+      { realmMajor: '金丹', realmMinor: '圆满', cultivation: 20000, hp: 500, maxHp: 500, maxLifespan: 800, daoHeart: 250, merit: 0 },
+      REALM_LAWS,
+      { successRoll: () => 0.99, deathRoll: () => 0 }, // deathRoll 给到最容易触发死亡的值，但 deathChance 已被压到 0
+    );
+    expect(result.diedFromTribulation).toBe(false);
+  });
+});
+
+describe('detectSeclusionMonths（闭关时长解析——防止 AI 随口决定“十年”到底是几个月）', () => {
+  it('正常路径：未提到"闭关"的普通行动应返回 null，交由 AI 决定普通时间消耗', () => {
+    expect(detectSeclusionMonths('出城历练，寻访机缘')).toBeNull();
+    expect(detectSeclusionMonths('在坊市里逛逛')).toBeNull();
+  });
+
+  it('正常路径：阿拉伯数字 + 年', () => {
+    expect(detectSeclusionMonths('闭关10年')).toBe(120);
+    expect(detectSeclusionMonths('决定闭关 3 年潜心修炼')).toBe(36);
+  });
+
+  it('正常路径：中文数字 + 年（覆盖十/几十/百等常见写法）', () => {
+    expect(detectSeclusionMonths('闭关十年')).toBe(120);
+    expect(detectSeclusionMonths('闭关二十年')).toBe(240);
+    expect(detectSeclusionMonths('闭关三十年')).toBe(360);
+    expect(detectSeclusionMonths('闭关一百年')).toBe(1200);
+    expect(detectSeclusionMonths('闭关一百二十年')).toBe(1440);
+  });
+
+  it('边界情况："半年/半载"应转换成 6 个月', () => {
+    expect(detectSeclusionMonths('闭关半年')).toBe(6);
+    expect(detectSeclusionMonths('准备闭关半载')).toBe(6);
+  });
+
+  it('正常路径：按月/按天指定时长', () => {
+    expect(detectSeclusionMonths('闭关三个月')).toBe(3);
+    expect(detectSeclusionMonths('闭关7天')).toBeCloseTo(7 / 30);
+    expect(detectSeclusionMonths('闭关三十天')).toBeCloseTo(1);
+  });
+
+  it('边界情况：提到"闭关"但没有写明具体时长，应使用默认时长（1 年）', () => {
+    expect(detectSeclusionMonths('找个洞府闭关修炼')).toBe(DEFAULT_SECLUSION_MONTHS);
+    expect(DEFAULT_SECLUSION_MONTHS).toBe(12);
+  });
+});
+
+describe('getLifespanStatus（寿元危机预警——大限压迫感）', () => {
+  it('正常路径：寿元充足时不应触发预警', () => {
+    const status = getLifespanStatus(30, 100);
+    expect(status.remainingYears).toBe(70);
+    expect(status.isNearingLifespanLimit).toBe(false);
+    expect(status.warningMessage).toBeNull();
+  });
+
+  it('核心场景：剩余寿元低于上限 10% 时应触发「大限将至」预警', () => {
+    const status = getLifespanStatus(92, 100); // 剩余 8 年 <= 阈值 10 年
+    expect(status.remainingYears).toBe(8);
+    expect(status.isNearingLifespanLimit).toBe(true);
+    expect(status.warningMessage).toContain('大限将至');
+    expect(status.warningMessage).toContain('8');
+  });
+
+  it('边界情况：寿元已经耗尽（remainingYears=0）时不应再展示"大限将至"预警（应直接判定死亡，不是预警）', () => {
+    const status = getLifespanStatus(101, 100);
+    expect(status.remainingYears).toBe(0);
+    expect(status.isNearingLifespanLimit).toBe(false);
+    expect(status.warningMessage).toBeNull();
+  });
+
+  it('边界情况：高境界寿元动辄成千上万年时，预警阈值应封顶在 50 年，而不是荒谬的几千年前就开始警告', () => {
+    const farFromDeath = getLifespanStatus(9000, 99999); // 剩余远超 50 年
+    expect(farFromDeath.isNearingLifespanLimit).toBe(false);
+
+    const nearDeath = getLifespanStatus(99999 - 40, 99999); // 剩余 40 年 <= 封顶阈值 50
+    expect(nearDeath.isNearingLifespanLimit).toBe(true);
+  });
+
+  it('边界情况：低境界寿元很短时，预警阈值至少保底 3 年，避免形同虚设', () => {
+    const status = getLifespanStatus(17, 20); // 上限 20 年的 10% 只有 2 年，应保底到 3 年
+    expect(status.remainingYears).toBe(3);
+    expect(status.isNearingLifespanLimit).toBe(true);
+  });
+});
+
+describe('describeMonths（把月数格式化成人类可读的中文时长，供 forcedOutcome 使用）', () => {
+  it('正常路径：整年', () => {
+    expect(describeMonths(120)).toBe('10年');
+    expect(describeMonths(12)).toBe('1年');
+  });
+
+  it('正常路径：年 + 月的组合', () => {
+    expect(describeMonths(14)).toBe('1年2个月');
+  });
+
+  it('边界情况：不足一年，只有月份', () => {
+    expect(describeMonths(3)).toBe('3个月');
+  });
+
+  it('边界情况：不足一个月，换算成天', () => {
+    expect(describeMonths(0.2)).toBe('6天');
+  });
+
+  it('边界情况：0 或负数应返回"片刻"', () => {
+    expect(describeMonths(0)).toBe('片刻');
+    expect(describeMonths(-1)).toBe('片刻');
   });
 });

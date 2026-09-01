@@ -8,10 +8,42 @@ interface LogEntry {
   content: string;
 }
 
-export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
+interface OpeningOption {
+  tag: string;
+  text: string;
+}
+interface Opening {
+  paragraphs: string[];
+  options: OpeningOption[];
+}
+
+const FONT_SIZE_KEY = 'sl_font_size';
+const FONT_SIZE_MIN = 12;
+const FONT_SIZE_MAX = 24;
+
+// 常驻快捷指令：面板底部始终可用的高频行动，点击即触发对应标准行动文本
+const QUICK_COMMANDS: OpeningOption[] = [
+  { tag: '平和', text: '闭关修炼' },
+  { tag: '风险', text: '尝试突破境界' },
+  { tag: '平和', text: '查看洞府' },
+  { tag: '机缘', text: '前往坊市' },
+  { tag: '风险', text: '出门历练' },
+  { tag: '机缘', text: '四处打听' },
+];
+
+export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ playerId, opening }) => {
   const [inputText, setInputText] = useState('');
   const [playerData, setPlayerData] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // 字体大小：读取本地持久化的偏好，越界则回退到默认 15px
+  const [fontSize, setFontSize] = useState<number>(() => {
+    const saved = Number(localStorage.getItem(FONT_SIZE_KEY));
+    return saved >= FONT_SIZE_MIN && saved <= FONT_SIZE_MAX ? saved : 15;
+  });
+  useEffect(() => {
+    localStorage.setItem(FONT_SIZE_KEY, String(fontSize));
+  }, [fontSize]);
 
   // 初始默认的三个动态选项
   const [actionOptions, setActionOptions] = useState([
@@ -24,7 +56,23 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
     { id: 1, type: 'system', content: '—— 仙路已开，凡尘录入 ——' }
   ]);
 
+  // 逆天改命：大境界渡劫成功后的天赋三选一（Rogue-like），非空时需强制玩家先选择
+  const [talentChoices, setTalentChoices] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [isChoosingTalent, setIsChoosingTalent] = useState(false);
+
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // 开局剧情：把玩家创角定下的命格织成的身世写进日志，并按剧情给出的方向初始化起步选项
+  useEffect(() => {
+    if (opening.paragraphs.length > 0) {
+      const base: LogEntry[] = [{ id: 1, type: 'system', content: '—— 仙路已开，凡尘录入 ——' }];
+      const storyLogs: LogEntry[] = opening.paragraphs.map((p, i) => ({ id: i + 2, type: 'narrative', content: p }));
+      setLogs([...base, ...storyLogs]);
+    }
+    if (opening.options.length > 0) {
+      setActionOptions(opening.options);
+    }
+  }, [opening]);
 
   // 初次加载数据
   useEffect(() => {
@@ -52,7 +100,7 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
     : false;
 
   const handleAction = async (actionDesc: string) => {
-    if (!actionDesc.trim() || isProcessing || isDead) return;
+    if (!actionDesc.trim() || isProcessing || isDead || talentChoices.length > 0) return;
 
     setLogs(prev => [...prev, { id: Date.now(), type: 'player', content: `> ${actionDesc}` }]);
     setInputText('');
@@ -75,12 +123,37 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
 
         setLogs(prev => [...prev, { id: Date.now() + 1, type: 'narrative', content: finalNarrative }]);
 
-        // 如果死亡，追加天道提示（区分气血耗尽 / 寿元耗尽两种死因）
+        // 如果死亡，追加天道提示（区分气血耗尽 / 寿元耗尽 / 渡劫陨落三种死因）
         if (result.data.isDead) {
-          const deathMessage = result.data.deathReason === 'lifespan_exhausted'
-            ? '【天道无情】 寿元耗尽，大限已至，你已坐化飞灰...'
-            : '【天道无情】 气血耗尽，你已身陨道消...';
+          const deathMessages: Record<string, string> = {
+            lifespan_exhausted: '【天道无情】 寿元耗尽，大限已至，你已坐化飞灰...',
+            tribulation_failure: '【天道无情】 渡劫失败，雷霆加身，道消身陨于这场九死一生的天劫之中...',
+            realm_suppression: '【境界压制】 敌人境界远超于你，如遭天神降世，绝无反抗之力，当场陨落...',
+            karma_retribution: '【天理难容】 业力反噬彻底降临，恶贯满盈终有此报，当场被天罚轰灭...',
+            region_danger: '【去之即死】 强闯远超自身境界的绝地禁区，天地法则本身便足以碾碎凡躯，当场殒命...',
+            hp_exhausted: '【天道无情】 气血耗尽，你已身陨道消...',
+          };
+          const deathMessage = deathMessages[result.data.deathReason] ?? deathMessages.hp_exhausted;
           setLogs(prev => [...prev, { id: Date.now() + 2, type: 'system', content: deathMessage }]);
+        }
+
+        // 逆天改命：大境界渡劫成功，弹出天赋三选一，强制玩家先做出抉择
+        if (result.data.talentChoices && result.data.talentChoices.length > 0) {
+          setTalentChoices(result.data.talentChoices);
+        }
+
+        // 宗门势力：晋升喜讯 / 叛宗警示
+        if (result.data.sectPromotion) {
+          setLogs(prev => [...prev, {
+            id: Date.now() + 3, type: 'system',
+            content: `【宗门喜讯】 凭借声望积累，职位由「${result.data.sectPromotion.fromRank}」晋升为「${result.data.sectPromotion.toRank}」！`
+          }]);
+        }
+        if (result.data.sectBetrayed) {
+          setLogs(prev => [...prev, {
+            id: Date.now() + 4, type: 'system',
+            content: '【叛出师门】 你已彻底叛出宗门，从此背负叛徒之名，执法堂的缉杀令将随时降临，再无宁日……'
+          }]);
         }
 
         // 更新动态按钮
@@ -105,7 +178,11 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
           setPlayerData({
             ...result.data.player,
             spiritual_roots: JSON.parse(result.data.player.spiritual_roots),
-            talents: JSON.parse(result.data.player.talents)
+            talents: JSON.parse(result.data.player.talents),
+            lifespanStatus: result.data.lifespanStatus,
+            cave: result.data.cave,
+            sect: result.data.sect,
+            relationships: result.data.relationships
           });
         }
         // ======================================================
@@ -117,6 +194,43 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
       setLogs(prev => [...prev, { id: Date.now() + 1, type: 'system', content: '【天机中断】 无法沟通天道引擎。' }]);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleChooseTalent = async (talentId: string, talentName: string) => {
+    if (isChoosingTalent) return;
+    setIsChoosingTalent(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/talents/choose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, talentId })
+      });
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        setLogs(prev => [...prev, {
+          id: Date.now(), type: 'system',
+          content: `【逆天改命】 天道垂青，你选择了天赋「${talentName}」，从此道途更进一步！`
+        }]);
+        setTalentChoices([]);
+
+        const refreshResponse = await fetch(`http://localhost:3000/api/player/${playerId}`);
+        const refreshData = await refreshResponse.json();
+        if (refreshData.status === 'success') {
+          setPlayerData({
+            ...refreshData.data,
+            spiritual_roots: JSON.parse(refreshData.data.spiritual_roots),
+            talents: JSON.parse(refreshData.data.talents)
+          });
+        }
+      } else {
+        setLogs(prev => [...prev, { id: Date.now(), type: 'system', content: `【天道反噬】 ${result.message}` }]);
+      }
+    } catch (error) {
+      setLogs(prev => [...prev, { id: Date.now(), type: 'system', content: '【天机中断】 天赋选择失败，无法沟通天道引擎。' }]);
+    } finally {
+      setIsChoosingTalent(false);
     }
   };
 
@@ -136,16 +250,65 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
 
   return (
     <div className="flex h-screen bg-[#EFECE6] p-4 gap-4">
+      {/* 逆天改命：天赋三选一弹层，出现时遮罩全屏，强制玩家先做出抉择 */}
+      {talentChoices.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-paper border-2 border-gold rounded-md shadow-lg p-5 w-[560px] font-serif">
+            <div className="bg-gold text-white text-center py-2 rounded-sm font-bold tracking-widest text-lg shadow-sm mb-4">
+              逆天改命 · 天道垂青
+            </div>
+            <p className="text-center text-textSub text-sm mb-4">大境界渡劫已成，天道赐下三条机缘，请择其一，从此镶入道途，再不可更改：</p>
+            <div className="space-y-2">
+              {talentChoices.map((talent) => (
+                <button
+                  key={talent.id}
+                  onClick={() => handleChooseTalent(talent.id, talent.name)}
+                  disabled={isChoosingTalent}
+                  className="w-full text-left bg-[#F5EFF9] border border-mystic rounded p-3 hover:bg-mystic hover:text-white transition-colors disabled:opacity-50"
+                >
+                  <div className="font-bold text-mystic group-hover:text-white">{talent.name}</div>
+                  <div className="text-xs text-textSub mt-1">{talent.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <StatusCard player={playerData} />
 
       <div className="flex-1 flex flex-col bg-paper border-2 border-jade rounded-md shadow-lg font-serif overflow-hidden">
 
-        <div className="bg-jade text-white px-4 py-2 font-bold tracking-widest text-lg shadow-sm flex justify-between">
+        <div className="bg-jade text-white px-4 py-2 font-bold tracking-widest text-lg shadow-sm flex justify-between items-center">
           <span>九州大世界</span>
-          <span className="text-sm font-normal opacity-80">{isDead ? '寂灭' : '天玄历'}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-xs font-normal">
+              <button
+                onClick={() => setFontSize(f => Math.max(FONT_SIZE_MIN, f - 1))}
+                disabled={fontSize <= FONT_SIZE_MIN}
+                className="w-7 h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
+                title="缩小字体"
+              >
+                A-
+              </button>
+              <span className="opacity-90 w-5 text-center">{fontSize}</span>
+              <button
+                onClick={() => setFontSize(f => Math.min(FONT_SIZE_MAX, f + 1))}
+                disabled={fontSize >= FONT_SIZE_MAX}
+                className="w-7 h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
+                title="放大字体"
+              >
+                A+
+              </button>
+            </div>
+            <span className="text-sm font-normal opacity-80">{isDead ? '寂灭' : '天玄历'}</span>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3 text-textMain leading-relaxed text-sm">
+        <div
+          className="flex-1 overflow-y-auto p-6 space-y-3 text-textMain leading-relaxed"
+          style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}
+        >
           {logs.map(log => (
             <div key={log.id} className={`
               ${log.type === 'system' ? 'text-center text-mystic font-bold bg-mysticBg p-2 rounded' : ''}
@@ -190,6 +353,21 @@ export const MainGame: React.FC<{ playerId: string }> = ({ playerId }) => {
             >
               行 动
             </button>
+          </div>
+
+          {/* 常驻快捷指令行：高频行动一键触发，无论动态选项如何变化都始终可用 */}
+          <div className="flex gap-1.5 mt-3 pt-3 border-t border-[#E5E0D5] flex-wrap items-center">
+            <span className="text-[11px] text-textSub mr-1 select-none">快捷</span>
+            {QUICK_COMMANDS.map((cmd) => (
+              <button
+                key={cmd.text}
+                onClick={() => handleAction(cmd.text)}
+                disabled={isProcessing || isDead}
+                className={`px-2.5 py-1 text-white text-xs rounded shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${getTagColor(cmd.tag)}`}
+              >
+                {cmd.text}
+              </button>
+            ))}
           </div>
         </div>
 

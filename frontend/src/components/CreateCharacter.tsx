@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
 
 // 1. 严格定义接收的 Props
+interface OpeningOption {
+  tag: string;
+  text: string;
+}
+interface Opening {
+  paragraphs: string[];
+  options: OpeningOption[];
+}
 interface Props {
-  onCreated: (playerId: string) => void;
+  onCreated: (playerId: string, opening: Opening) => void;
 }
 
 export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
@@ -26,6 +34,46 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
   const constitutions = ['凡体', '先天道体', '剑灵体', '九阳圣体', '冰魄灵体', '玄阴体', '纯阳体', '混沌体'];
   const rootElements = ['金', '木', '水', '火', '土', '雷', '风', '冰'];
   const talentList = ['天资聪颖', '过目不忘', '身轻如燕', '天生道心', '气运加身', '百脉俱通'];
+
+  // 命格影响说明：与后端 characterBuild.service.ts 的效果一一对应，让玩家一眼看懂每个选择会带来什么
+  const originEffects: Record<string, string> = {
+    '农家子': '仙缘+1 · 初始灵石+10',
+    '猎户之后': '遁速+2',
+    '商贾之家': '初始灵石+80',
+    '官宦子弟': '悟性+1 · 灵石+50',
+    '将门之后': '战斗伤害+10% · 气血上限+10',
+    '没落世家': '悟性+2 · 灵石+20',
+    '市井孤儿': '仙缘+2 · 道心+1',
+    '书香门第': '悟性+3',
+    '方外遗孤': '神识+3',
+    '妖族后裔': '气血上限+30 · 遁速+1',
+  };
+  const pursuitEffects: Record<string, string> = {
+    '问道飞升': '修炼速度+10%',
+    '逍遥长生': '寿元上限+20年',
+    '快意恩仇': '战斗伤害+10%',
+    '守护所爱': '受伤减免10%',
+    '问鼎天下': '修炼速度+5% · 伤害+5%',
+    '随心所欲': '仙缘+2',
+  };
+  const constitutionEffects: Record<string, string> = {
+    '凡体': '无特殊加成',
+    '先天道体': '修炼速度+20% · 寿元+20年',
+    '剑灵体': '战斗伤害+15%',
+    '九阳圣体': '气血上限+50 · 伤害+10%',
+    '冰魄灵体': '受伤减免10% · 神识+1',
+    '玄阴体': '修炼速度+10%',
+    '纯阳体': '战斗伤害+20%',
+    '混沌体': '修炼速度+10% · 伤害+10%',
+  };
+  const talentEffects: Record<string, string> = {
+    '天资聪颖': '修炼速度+10%',
+    '过目不忘': '修炼速度+5% · 悟性+2',
+    '身轻如燕': '受伤减免5% · 遁速+2',
+    '天生道心': '修炼速度+10% · 道心+2',
+    '气运加身': '仙缘+3',
+    '百脉俱通': '修炼速度+10%',
+  };
   const elementColors: Record<string, string> = { '金':'bg-gold', '木':'bg-wood', '水':'bg-water', '火':'bg-blood', '土':'bg-[#B08A4E]', '雷':'bg-thunder', '风':'bg-[#7F9C9C]', '冰':'bg-sect' };
 
   const handleAttrChange = (key: keyof typeof attributes, delta: number) => {
@@ -70,10 +118,10 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
       const data = await response.json();
       
       if (data.status === 'success') {
-        alert("✨ " + data.message);
-        // 2. 只有后端明确返回了 data.playerId 时，才触发界面切换
+        alert(data.message);
+        // 2. 只有后端明确返回了 data.playerId 时，才触发界面切换，并携带开场剧情
         if (data.data && data.data.playerId) {
-          onCreated(data.data.playerId);
+          onCreated(data.data.playerId, data.data.opening ?? { paragraphs: [], options: [] });
         } else {
           console.error("后端未返回 playerId", data);
         }
@@ -120,6 +168,12 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
           </div>
         </div>
 
+        <div className="mb-4 -mt-2 text-[11px] text-textSub leading-relaxed">
+          <span className="text-textDark">出身：</span>{originEffects[origin] ?? ''}
+          <span className="mx-2">｜</span>
+          <span className="text-textDark">道途：</span>{pursuitEffects[daoPursuit] ?? ''}
+        </div>
+
         <div className="bg-[#F4EFE6] p-3 rounded border border-[#E5E0D5] mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="font-bold text-textDark">先天六维</span>
@@ -139,6 +193,9 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mt-2 text-[10px] text-textSub leading-relaxed border-t border-[#E5E0D5] pt-1">
+            资质→修炼速度 ｜ 悟性→炼丹炼器 ｜ 神识→阵法灵植 ｜ 遁速→战斗闪避 ｜ 道心→突破·修炼 ｜ 仙缘→奇遇触发
           </div>
         </div>
 
@@ -161,6 +218,7 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
                 {constitutions.map(c => <option key={c}>{c}</option>)}
              </select>
            </div>
+           <div className="mt-1 text-[10px] text-textSub">{constitutionEffects[constitution] ?? ''}</div>
         </div>
 
         <div className="bg-[#F4EFE6] p-3 rounded border border-[#E5E0D5] mb-4 text-sm">
@@ -174,6 +232,11 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
                  {t}
                </button>
              ))}
+           </div>
+           <div className="mt-2 text-[10px] text-textSub leading-relaxed border-t border-[#E5E0D5] pt-1">
+             {selectedTalents.length > 0
+               ? selectedTalents.map(t => `${t}：${talentEffects[t] ?? ''}`).join(' ｜ ')
+               : '点击上方天赋查看效果（最多选 3 个）'}
            </div>
         </div>
 
