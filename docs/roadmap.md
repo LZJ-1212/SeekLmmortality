@@ -26,72 +26,84 @@
 - 全自动炼丹小游戏、气/经脉物理引擎
 - 多玩家实时战场、拍卖行 MMO
 - 夺舍改存档身份（S27 明确一周目禁用）
-- 每个系统先做一块大 UI；优先快捷指令 + 日志 + 天机簿只读
 - 用大模型给每句打「合不合理」分（见 [player_agency.md](./player_agency.md)）
+- 把「永远不做界面、只靠打字 + 日志」写成产品决议；整体界面走 **I19**
 
 ---
 
 ## 2. 工作顺序（必须按阶段，禁止跳去 E 再回头补 A）
 
-1 人天 ≈ 专注 6–8 小时。人天为量级。
+完成度与 [project_status.md](./project_status.md) 对齐：已完成 / 部分完成 / 未完成。细节百分比以进度表为准。
 
 ### 阶段 A — 能给熟人玩、Key 不炸（挡 L1）
 
-| 序 | ID | 做什么 | 文档 | 人天 |
-|----|-----|--------|------|------|
-| A1 | S21 最小集 | 长度、黑名单、不调 AI 的拒绝 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | 1–3 |
-| A2 | I04 | 口令 + 每存档日限 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | 1–2 |
-| A3 | I06 | 穿透/小主机 + 进程保活 | [hosting.md](./hosting.md) · [hosting_architecture.md](./hosting_architecture.md) | 1–3 |
-| A4 | I05 薄做 | **存档列表 UI**（免手抄 UUID） | 前端；无独立玩法规格 | 2–4 |
-| A5 | S36 薄做 | 宣称奇迹封闭骰：狂句必骰、失败落空、**不破**差两大境秒杀；L1 可不发物品 | [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | 2–4 |
+| 序 | ID | 做什么 | 文档 | 完成度 |
+|----|-----|--------|------|--------|
+| A1 | S21 最小集 | 长度、黑名单、不调 AI 的拒绝 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | **已完成**（层 E/F 分类器未做） |
+| A2 | I04 | 口令 + 每存档日限 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | **已完成** |
+| A3 | I06 | 穿透/小主机 + 进程保活 | [hosting.md](./hosting.md) · [hosting_architecture.md](./hosting_architecture.md) | **部分完成**（基址已抽；真机隧道/保活未做） |
+| A4 | I05 薄做 | **存档列表 UI**（免手抄 UUID） | 前端；无独立玩法规格 | **已完成**（薄做；账号云存档仍缺） |
+| A5 | S36 薄做 | 宣称奇迹封闭骰：狂句必骰、失败落空、**不破**差两大境秒杀；L1 可不发物品 | [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | **未完成**（规格已有；`miracle.service.ts` 未接。情境锁已落地） |
 
-A 合计约 7–16 人天。**A1–A3 未完不准公网试玩**（Key 安全）。A4 存档列表已落地。A5 是试玩体感（狂句骰子），规格已写、代码未接，可与 I06 真机并行，**不挡**开隧道，不得用模型分类代替。
+**A1–A3 未完不准公网试玩**（Key 安全）。A4 已落地。A5 可与 I06 真机并行，**不挡**开隧道，不得用模型分类代替。
 
 朋友若用**手机浏览器**：阶段 A 完成后可选 **I11**（[mobile.md](./mobile.md)），不进上表强制序。
 
 ### 阶段 B — 让修行像修行
 
-| 序 | ID | 做什么 | 文档 | 人天 | 依赖 |
-|----|-----|--------|------|------|------|
-| B1 | S20 | 功法槽、招式、残卷；替换公式 1.0 | [combat_build.md](./combat_build.md) | 8–15 | — |
-| B2 | S30 | 丹毒、越阶吞丹、炼气期口粮 | [alchemy_toxin.md](./alchemy_toxin.md) | 4–8 | 百艺已有；最好在 S20 后 |
-| B3 | S26 | 心魔与走火（与雷劫分轨） | [heart_demon.md](./heart_demon.md) | 5–10 | 道心/业力；建议 S20 后 |
+| 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
+|----|-----|--------|------|--------|------|
+| B1 | S20 | 功法槽、招式、残卷；替换公式 1.0 | [combat_build.md](./combat_build.md) | **未完成**（未习术法薄拦截已有；招式库 0%） | — |
+| B2 | S30 | 丹毒、越阶吞丹、炼气期口粮 | [alchemy_toxin.md](./alchemy_toxin.md) | **未完成** | 百艺已有；最好在 S20 后 |
+| B3 | S26 | 心魔与走火（与雷劫分轨） | [heart_demon.md](./heart_demon.md) | **未完成** | 道心/业力；建议 S20 后 |
 
 ### 阶段 C — 让世界像还活着
 
-| 序 | ID | 做什么 | 文档 | 人天 | 依赖 |
-|----|-----|--------|------|------|------|
-| C1 | S22 | 大事记 + 30 回合备忘录 | [chronicle.md](./chronicle.md) | 5–10 | 拦截器已有事实 |
-| C2 | S29 | 凡人亲眷、归乡 | [mortal_kin.md](./mortal_kin.md) | 4–8 | 时间系统；大事记可后补写入 |
-| C3 | S28 | 师徒与衣钵 | [mentorship.md](./mentorship.md) | 6–12 | S20 残卷来源；S22 记叛师 |
-| C4 | S24 | 季节骰、传闻 | [world_sim.md](./world_sim.md) | 8–16 | 世界时钟已有 |
-| C5 | S31 | 邻接地图、赶路月数、关隘 | [geography.md](./geography.md) | 6–12 | 探索地区表；S24 可改秘境档期 |
-| C6 | S35 | 灵脉/洞府争夺与搬迁 | [spirit_veins.md](./spirit_veins.md) | 5–10 | 洞府已有；S24、S31 |
+| 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
+|----|-----|--------|------|--------|------|
+| C1 | S22 | 大事记 + 30 回合备忘录 | [chronicle.md](./chronicle.md) | **未完成** | 拦截器已有事实 |
+| C2 | S29 | 凡人亲眷、归乡 | [mortal_kin.md](./mortal_kin.md) | **未完成** | 时间系统；大事记可后补写入 |
+| C3 | S28 | 师徒与衣钵 | [mentorship.md](./mentorship.md) | **未完成** | S20 残卷来源；S22 记叛师 |
+| C4 | S24 | 季节骰、传闻 | [world_sim.md](./world_sim.md) | **未完成**（NPC 寿元已有；大势推演无） | 世界时钟已有 |
+| C5 | S31 | 邻接地图、赶路月数、关隘 | [geography.md](./geography.md) | **未完成** | 探索地区表；S24 可改秘境档期 |
+| C6 | S35 | 灵脉/洞府争夺与搬迁 | [spirit_veins.md](./spirit_veins.md) | **未完成**（洞府开辟已有） | 洞府已有；S24、S31 |
 
 ### 阶段 D — 让一生有句号、人账与天账分开
 
-| 序 | ID | 做什么 | 文档 | 人天 | 依赖 |
-|----|-----|--------|------|------|------|
-| D1 | S25 | 结局标签与演出、天道点 | [endings.md](./endings.md) | 5–10 | 死亡锁已有 |
-| D2 | S27 | 毒誓、禁术；夺舍不做 | [oaths.md](./oaths.md) | 5–10 | 天罚/雷劫；S25 可记破誓结局 |
-| D3 | S32 | 江湖名声、城中杀人追缉 | [reputation.md](./reputation.md) | 5–10 | 功德已有，必须分账；S24 悬赏 |
+| 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
+|----|-----|--------|------|--------|------|
+| D1 | S25 | 结局标签与演出、天道点 | [endings.md](./endings.md) | **未完成**（死亡锁已有） | 死亡锁已有 |
+| D2 | S27 | 毒誓、禁术；夺舍不做 | [oaths.md](./oaths.md) | **未完成** | 天罚/雷劫；S25 可记破誓结局 |
+| D3 | S32 | 江湖名声、城中杀人追缉 | [reputation.md](./reputation.md) | **未完成** | 功德已有，必须分账；S24 悬赏 |
 
 ### 阶段 E — 风味（不挡「像一个世界」）
 
-| 序 | ID | 做什么 | 文档 | 人天 |
-|----|-----|--------|------|------|
-| E1 | S19 | CC0 BGM + 少量 SFX | [audio_system.md](./audio_system.md) | 2–5 |
-| E2 | S23 | 灵兽傀儡 | [beasts.md](./beasts.md) | 8–14 |
-| E3 | S33 | 买情报、真假骰 | [intelligence.md](./intelligence.md) | 3–6 |
-| E4 | S34 | 伪装境界、神识识破 | [disguise.md](./disguise.md) | 4–8 |
-| E5 | S18 | 人声 / 日后 RVC | [audio_system.md](./audio_system.md) | 见声音规格 |
+| 序 | ID | 做什么 | 文档 | 完成度 |
+|----|-----|--------|------|--------|
+| E1 | S19 | CC0 BGM + 少量 SFX | [audio_system.md](./audio_system.md) | **未完成** |
+| E2 | S23 | 灵兽傀儡 | [beasts.md](./beasts.md) | **未完成** |
+| E3 | S33 | 买情报、真假骰 | [intelligence.md](./intelligence.md) | **未完成** |
+| E4 | S34 | 伪装境界、神识识破 | [disguise.md](./disguise.md) | **未完成** |
+| E5 | S18 | 人声 / 日后 RVC | [audio_system.md](./audio_system.md) | **未完成**（规格已有） |
 
 可把 E1 插在 A 与 B 之间做气氛，**不得**因此推迟 A1–A3。
 
 ### 贯穿全程
 
-- **I07 内容**：每做完一个玩法系统，立刻往 [content_catalog.md](./content_catalog.md) 加一薄层（3～8 条地名/配方/人名），禁止「系统做完表是空的」。
-- 前端设置页、移动端：**不挡**阶段 A→E 玩法；手机浏览器适配见 **I11** [ui.md](./ui.md) · [mobile.md](./mobile.md)，可在 L1 朋友试玩之后做，**禁止**为此推迟 S20。
+- **I07 内容**（**未完成**，约 30%）：每做完一个玩法系统，立刻往 [content_catalog.md](./content_catalog.md) 加一薄层（3～8 条地名/配方/人名），禁止「系统做完表是空的」。
+- 前端设置页、移动端：**不挡**阶段 A→E 玩法；手机浏览器适配见 **I11** [ui.md](./ui.md) · [mobile.md](./mobile.md)（**未完成**），可在 L1 朋友试玩之后做，**禁止**为此推迟 S20。
+- **I12 地图美术**（**未完成**）：精细手绘/分层九州图替换现有 `RegionMap` 线稿。规格仍认 [command_ui.md](./command_ui.md)（点图不赶路）。**不挡 S20**；可与 I11 穿插，不要为了好看地图停下功法。
+- **已有薄实现、规格未成册（不挡 S20）**：先补独立规格再加深系统。
+
+| ID | 主题 | 现在 | 待办 | 完成度 |
+|----|------|------|------|--------|
+| I13 | 地图设计与系统 | `RegionMap` + 探索掷骰；赶路邻接见规划 [geography.md](./geography.md)（S31） | 写清「当前图」与 S31 分工；再做邻接/关隘。美术走 I12 | **未完成** |
+| I14 | 宗门设计与系统 | `sect.service.ts` 声望职位叛宗 | 补 `sect.md`（拜山、任务、执法堂），再加深内容 | **未完成**（代码薄） |
+| I15 | 技艺设计与系统 | `crafting.service.ts` + 弹层「未习」；丹毒见 [alchemy_toxin.md](./alchemy_toxin.md)（S30） | 补 `crafts.md`（拜师、等级、未习不能冒充出师） | **未完成**（炼制代码有） |
+| I16 | 情缘设计与系统 | `relationship.service.ts` / `npc.service.ts` 好感、双修、仙逝 | 补 `bonds.md`（拜访已故、结缘、仇敌）；凡人父母见 S29 | **未完成**（代码薄） |
+| I17 | 洞府设计与系统 | `cave.service.ts` 开辟/赐府/借地闭关；争夺见 [spirit_veins.md](./spirit_veins.md)（S35） | 补 `cave.md` 与 S35 分界（租赁、搬迁） | **未完成**（开辟已有） |
+| I18 | 物品设计与系统 | `inventory.service.ts` 字典+自定义+熔断 | 补 `items.md`（品类、使用、堆叠、鉴定）；物价可并内容表 | **未完成**（熔断已有） |
+| I19 | UI 设计 | 现局内是指令栏 + 日志 + 弹层；色板/断点见 [ui.md](./ui.md) | 整体信息架构与视觉（背包/地图/洞府等不是纯文字列表凑合）；**不挡 S20**。窄屏底栏仍走 I11 | **未完成** |
 
 ---
 
