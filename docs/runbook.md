@@ -67,9 +67,11 @@ npm test
 
 ## 6. 给朋友玩（L1，你的电脑当服）
 
+规格与拓扑见 [hosting.md](./hosting.md)、[hosting_architecture.md](./hosting_architecture.md)。未实现前不要做端口映射。
+
 1. 本机先能完成本手册 2–4 步。
 2. **配置口令后再做端口映射**：`.env` 写 `PLAY_ACCESS_TOKEN`（值向服主索取，勿写入公开 README）；创角页填写同一令牌。未配口令不要做端口映射。
-3. 用内网穿透（带访问密码）或 VPS 反代到 `5173` 与 `3000`；不要只映射 3000 且无口令。
+3. 用内网穿透（带访问密码）或 VPS 反代；须让朋友的浏览器打到**你的** API，而不是他们自己的 `localhost:3000`（前端现仍写死本机，I06 实现时改基址）。不要只映射 3000 且无口令。
 4. 朋友只需浏览器打开你给的前端 URL。
 5. 你关机 = 他们玩不了。云主机可避免这一点（见 [project_status.md](./project_status.md) L1）。
 

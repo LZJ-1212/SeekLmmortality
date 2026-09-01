@@ -39,8 +39,8 @@
 | 序 | ID | 做什么 | 文档 | 人天 |
 |----|-----|--------|------|------|
 | A1 | S21 最小集 | 长度、黑名单、不调 AI 的拒绝 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | 1–3 |
-| A2 | I04 | 口令 + 每存档日限 | 同上 | 1–2 |
-| A3 | I06 | 穿透/小主机 + 进程保活 | [runbook.md](./runbook.md) | 1–3 |
+| A2 | I04 | 口令 + 每存档日限 | [intent_gateway.md](./intent_gateway.md) · [intent_gateway_architecture.md](./intent_gateway_architecture.md) | 1–2 |
+| A3 | I06 | 穿透/小主机 + 进程保活 | [hosting.md](./hosting.md) · [hosting_architecture.md](./hosting_architecture.md) | 1–3 |
 | A4 | I05 薄做 | **存档列表 UI**（免手抄 UUID） | 前端；无独立玩法规格 | 2–4 |
 
 A 合计约 5–12 人天。不做完 A 不准公网试玩。

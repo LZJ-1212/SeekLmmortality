@@ -112,7 +112,7 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
     setPlayToken(playTokenInput);
 
     try {
-      const response = await apiFetch('http://localhost:3000/api/create-player', {
+      const response = await apiFetch('/api/create-player', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

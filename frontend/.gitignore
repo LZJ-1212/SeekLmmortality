@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Vite 环境变量：真实值不入库，只留 .env.example 模板
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

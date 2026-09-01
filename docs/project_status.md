@@ -83,8 +83,8 @@
 | I02 | Git / GitHub | 90% | 公开库 + MIT；`.env` 已忽略；Key 未上传 |
 | I03 | 密钥安全 | 85% | 从未把 API Key 推上 GitHub；L1 仍须防公网刷接口 |
 | I04 | 接口鉴权 / 限流 | 90% | 口令 `PLAY_ACCESS_TOKEN` + `X-Play-Token`；每日行动上限（playerId + 北京日）。给朋友玩必须**配置口令**；未配则本机放行 |
-| I05 | 账号与多端存档 | 0% | L1 可用「发一个 playerId 链接」凑合 |
-| I06 | 托管 | 0% | 小主机或内网穿透；不要裸映射 3000 |
+| I05 | 存档列表 | 60% | 薄做已落地：`GET /api/saves` + 前端存档列表页，免手抄 UUID。快照回滚 UI、账号仍缺 |
+| I06 | 托管 | 规格 90% / 代码 50% | 前端 API 基址已抽 `apiBase.ts`（`VITE_API_BASE`）+ `.env.example`；隧道与 NSSM 保活待真机。规格 [hosting.md](./hosting.md) · 架构 [hosting_architecture.md](./hosting_architecture.md)。不要裸映射 3000 |
 | I07 | 内容填充 | 30% | 机制有、世界薄；L1 可先薄 |
 | I08 | 法律：BGM/隐私 | 10% | 朋友试玩用 CC0 曲即可 |
 | I09 | 商业：支付与回本 | 0% | **不必为 L1 做** |
@@ -261,6 +261,8 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 | [architecture.md](./architecture.md) | 已实现代码怎么分层 |
 | [api.md](./api.md) | HTTP 契约 |
 | [runbook.md](./runbook.md) | XAMPP / 前后端启动 |
+| [hosting.md](./hosting.md) | I06 L1 托管功能规格 |
+| [hosting_architecture.md](./hosting_architecture.md) | I06 隧道拓扑、基址、保活 |
 | [roadmap.md](./roadmap.md) | 完善顺序 A→E（权威） |
 | [content_catalog.md](./content_catalog.md) | 地区、配方、命格、天赋 |
 | [audio_system.md](./audio_system.md) | 声音实体、决议、RVC/代理答疑 |
@@ -274,7 +276,7 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 
 ## 10. 当前下一动作
 
-**下一刀：** [roadmap.md](./roadmap.md) 阶段 A 剩余项：**I06 部署/穿透**（A3），然后 **I05 存档列表 UI**（A4）。S21 最小集与 I04 口令日限已落地。  
+**下一刀：** [roadmap.md](./roadmap.md) 阶段 A 仅剩 **I06 部署/穿透** 的真机落地（代码侧 API 基址已抽，隧道 + NSSM 保活待你在真机做）。S21 最小集、I04 口令日限、I05 存档列表均已落地。  
 完整顺序：A 试玩安全 → B 功法/丹毒/心魔 → C 记忆/亲缘/师徒/大势/地理/灵脉 → D 结局/毒誓/名声 → E 声音/灵兽/情报/伪装。
 
 ---

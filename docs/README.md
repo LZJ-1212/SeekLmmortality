@@ -10,6 +10,8 @@
 | [project_status.md](./project_status.md) | 完成度、测试、成本、L1、上线判断 |
 | [roadmap.md](./roadmap.md) | **工作顺序（A→E）**、五柱、不要做的 |
 | [runbook.md](./runbook.md) | 本机启动（XAMPP、前后端、常见故障） |
+| [hosting.md](./hosting.md) | I06 功能规格（L1 穿透、暴露面、朋友须知） |
+| [hosting_architecture.md](./hosting_architecture.md) | I06 架构（双 Origin 隧道、API 基址、NSSM 保活） |
 | [architecture.md](./architecture.md) | 仓库分层与行动数据流 |
 | [api.md](./api.md) | 已实现 HTTP 接口 |
 | [content_catalog.md](./content_catalog.md) | 已实现的地区、配方、天赋等表 |

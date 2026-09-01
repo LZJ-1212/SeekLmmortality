@@ -100,9 +100,13 @@ Body：`{ playerId, talentId }`。`talentId` 必须是上一回合 `talentChoice
 
 ---
 
-## 快照读档
+## 存档列表与读档
 
-无前端列表时仍可用接口。
+### `GET /api/saves`
+
+列出全部存档摘要（按更新时间倒序），供存档列表页免手抄 `playerId`。须口令，不占日限。
+
+返回 `data`：`{ saveId, saveName, playerId, playerName, realmMajor, realmMinor, isGameOver, updatedAt }[]`。`playerId` 为 `null` 表示该存档玩家行缺失（脏数据，前端应禁用进入）。
 
 ### `GET /api/saves/:saveId/snapshots`
 

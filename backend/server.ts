@@ -72,6 +72,7 @@ import { buildOpeningNarrative } from './src/services/opening.service';
 import { isEligibleForSamsara, resolveLegacyBlessing } from './src/services/reincarnation.service';
 import { ReincarnationDbService } from './src/services/reincarnationDb.service';
 import { SnapshotService } from './src/services/snapshot.service';
+import { SaveService } from './src/services/save.service';
 // S21 安全网关：口令 / 净化 / 注入黑名单 / 创角校验 / 每日行动配额
 import {
   requirePlayToken,
@@ -112,6 +113,8 @@ const quotaService = new QuotaService(new QuotaRepository(prisma));
 const reincarnationService = new ReincarnationDbService(prisma);
 // 存档快照业务逻辑：时间戳快照拍摄 + 读档回滚
 const snapshotService = new SnapshotService(prisma);
+// 存档列表业务逻辑：列出全部存档供前端选择（免手抄 UUID）
+const saveService = new SaveService(prisma);
 
 // 中间件配置：允许跨域请求和解析 JSON
 // S21：配置了 PLAY_CORS_ORIGIN 则只放行该 Origin，否则维持本机任意来源（开发态）
@@ -985,6 +988,17 @@ app.post('/api/talents/choose', requirePlayToken, async (req: Request, res: Resp
   } catch (error) {
     console.error('天赋选择接口报错:', error);
     res.status(500).json({ status: 'error', message: '天机紊乱，天赋选择失败。' });
+  }
+});
+
+// 存档列表：列出全部存档（免手抄 UUID）；薄做只读列表，不做快照回滚 UI
+app.get('/api/saves', requirePlayToken, async (req: Request, res: Response) => {
+  try {
+    const saves = await saveService.listSaves();
+    res.json({ status: 'success', data: saves });
+  } catch (error) {
+    console.error('查询存档列表失败:', error);
+    res.status(500).json({ status: 'error', message: '天机紊乱，无法读取存档列表。' });
   }
 });
 
