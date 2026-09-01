@@ -4,7 +4,7 @@
 
 - 基址：本机 `http://localhost:3000`（`PORT` 可改，前端默认仍打 3000）。
 - 通用成功：`{ status: "success", ... }`；失败：`{ status: "error", message: string }`。
-- **无鉴权、无限流**。L1 规格见 [intent_gateway.md](./intent_gateway.md)。勿把本机 3000 裸映射公网。
+- **鉴权与限流（S21 最小集已实现）**：配置 `PLAY_ACCESS_TOKEN` 后，除 `GET /api/ping` 外的接口须带 `X-Play-Token` 头，否则 401；`POST /api/action` 另有每日 60 次配额（`ACTION_DAILY_LIMIT` 可改），超限 429。未配置口令时本机放行。规格见 [intent_gateway.md](./intent_gateway.md) 与 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。勿把本机 3000 裸映射公网。
 - 前端默认：Vite `http://localhost:5173`，创角与行动 `fetch` 写死 3000。
 
 ---
@@ -40,7 +40,7 @@ Body（JSON）：
 
 成功 `data`：`playerId`、`saveId`、`opening`（`paragraphs` + `options`）、`legacyBlessing`（无遗泽则为 `null`）。
 
-数值由后端按命格折算；AI 只写开场叙事。
+数值由后端按命格折算；AI 只写开场叙事。字段超长（如尊名超过 16 字、缺灵根）→ **400**，不写库、不调开场模型。已配置口令时须带头。不占日限。
 
 ### `GET /api/player/:id`
 
@@ -54,10 +54,16 @@ Body（JSON）：
 
 Body：`{ playerId, action }`。`action` 为自然语言或快捷指令文本。
 
-前置：
+前置（S21 网关，先于拦截器）：
 
-- 存档已 `is_game_over` 或气血/寿元判定死亡 → **403**，不再调 AI。
-- 拦截器链（突破、时间、战斗、功德、百艺、坊市、宗门、人际、探索、闭关公式等）先硬算，再把 `forcedOutcome` 交给 DeepSeek。
+- 已配置 `PLAY_ACCESS_TOKEN` 且头不匹配 → **401**「天机有封，须持令牌。」
+- `action` 空 / 超 200 码位 / 非法控制符 → **400**
+- 命中注入黑名单 → **400**「此言大逆天道，天机不予推演。」
+- 修士不存在 → **404**（不占日限）
+- 存档已 `is_game_over` 或气血/寿元判定死亡 → **403**，不再调 AI（不占日限）
+- 当日行动次数超限 → **429**「今日推演次数已尽，明日再来。」
+
+其后：拦截器链（突破、时间、战斗、功德、百艺、坊市、宗门、人际、探索、闭关公式等）先硬算，再把 `forcedOutcome` 交给 DeepSeek。
 
 成功 `data` 主要字段：
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch, setPlayToken } from '../playToken';
 
 // 1. 严格定义接收的 Props
 interface OpeningOption {
@@ -28,6 +29,7 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
   const [constitution, setConstitution] = useState('凡体');
   const [roots, setRoots] = useState<string[]>(['木', '火']);
   const [selectedTalents, setSelectedTalents] = useState<string[]>([]);
+  const [playTokenInput, setPlayTokenInput] = useState('');
 
   const origins = ['农家子', '猎户之后', '商贾之家', '官宦子弟', '将门之后', '没落世家', '市井孤儿', '书香门第', '方外遗孤', '妖族后裔'];
   const pursuits = ['问道飞升', '逍遥长生', '快意恩仇', '守护所爱', '问鼎天下', '随心所欲'];
@@ -106,8 +108,11 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
     if (!name.trim()) return alert("请赐下尊名！");
     if (remainingPoints > 0) return alert(`还有 ${remainingPoints} 点造化未分配！`);
 
+    // 先存令牌（可选，本机空口令照常请求），再发起创角请求
+    setPlayToken(playTokenInput);
+
     try {
-      const response = await fetch('http://localhost:3000/api/create-player', {
+      const response = await apiFetch('http://localhost:3000/api/create-player', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,6 +246,17 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
         </div>
 
         <div className="my-3 border-b border-gold opacity-80" />
+
+        <div className="flex items-center space-x-2 text-sm mb-3">
+          <span className="text-textSub whitespace-nowrap">令牌</span>
+          <input
+            type="password"
+            value={playTokenInput}
+            onChange={(e) => setPlayTokenInput(e.target.value)}
+            placeholder="服主发放（本机可留空）"
+            className="flex-1 bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-1 rounded outline-none focus:border-jade"
+          />
+        </div>
 
         <button onClick={handleSubmit} className="w-full py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow">
           踏入仙途

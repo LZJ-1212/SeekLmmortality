@@ -1,0 +1,117 @@
+---
+description: 问道长生项目编码规范与仓库潜规则（写代码前必读）
+alwaysApply: true
+---
+
+# 项目编码规范与潜规则
+
+与 [project.mdc](./project.mdc) 分工：那份管架构隔离、密钥、数值/AI 铁律、Prisma 5、主题色。**本份管怎么写代码、测什么、仓库里不要干什么。** 玩法规格与开工顺序：`docs/README.md`、`docs/roadmap.md`。
+
+对玩家说明用中文。标识符用英文（`getOrCreateCave`，不要 `getDongfu`）。
+
+---
+
+## 1. 动手前
+
+- 先读再改，禁止凭记忆改路径。已落地系统以 **代码为准**；规划中系统以 **对应 `docs/*.md` 为准**，禁止只改一边造成双源。
+- 新玩法先对规格，再写纯函数 Service，再挂 `/api/action` 拦截器，最后才改 UI。禁止先让 DeepSeek「演」出数值。
+- 开工顺序跟 `docs/roadmap.md` 阶段 A→E。不要为了「更修仙」先做灵兽/人声而空着 S21/S20。
+- 改配方、地区、命格、功法名：同步 `docs/content_catalog.md`（或实现时立刻补表）。
+
+---
+
+## 2. 后端分层
+
+```
+路由（薄）→ Service（规则 + 掷骰）→ Repository（Prisma）
+```
+
+- **新逻辑写进** `backend/src/services/*.ts`。`server.ts` 只编排：取玩家、调 Service、拼 `forcedOutcome`、调 AI、落库。禁止把新公式直接堆进 `server.ts`。
+- 不碰 Express 的结算做成 **纯函数**；随机数必须可注入 `rollFn`（默认 `Math.random`），单测里传入 `() => 0` / `() => 0.99`。
+- 数据库访问放 `backend/src/repositories/`。禁止在 React 组件或路由里手写一长串 `prisma.xxx`。
+- Prisma 客户端只用 `backend/src/db/prisma.ts` 的单例，禁止到处 `new PrismaClient()`。
+- 锁定 **Prisma 5**。连接串在 `schema.prisma` 的 `url = env("DATABASE_URL")`。不要加回 `prisma.config.ts`（那是 Prisma 7）。不要运行会灌 `backend/.agents/.claude/.windsurf` 的 Prisma skill 安装。
+
+**AI 交互（与铁律重复一遍以免漏）：**
+
+- 先算 `forcedOutcome`，再调 `ai.ts`。模型用 `json_object`。
+- 禁止采信模型返回的气血/修为/寿元/胜负去覆盖拦截器结果。
+- 物品：不在字典且无自定义条目，不得「用了某某神器」。
+
+---
+
+## 3. TypeScript
+
+- 为请求体、AI JSON、Props 写 interface。禁止新增 `player: any`（`StatusCard` 历史债，改状态卡时一并收掉）。
+- 未知命格/地名/物品名：**忽略或走默认值**，不要 throw 把整次回合打 500。
+- 六维与境界字段名与库表一致：`divine_sense`、`dao_heart`、`realm_major` 等，不要自创一套再映射。
+
+```typescript
+// ❌ 拦截器里直接 Math.random() 且无法测
+if (Math.random() < chance) { ... }
+
+// ✅
+export function rollX(chance: number, rollFn: () => number = Math.random) {
+  return rollFn() < chance;
+}
+```
+
+---
+
+## 4. 测试（后端必带，前端暂无单测）
+
+与 Service **同目录** `*.service.test.ts`，Vitest。`backend` 下 `npm test`（`vitest run`）。
+
+每个新纯函数至少：
+
+1. 正常路径  
+2. 边界（空串、未收录地名、MP 不足、已死亡）  
+3. 失败/拒绝（不该识别成炼丹的句子、注入句等）
+
+描述用中文，点明测什么。骰子场景禁止依赖真实随机。
+
+前端改 UI 后至少 `frontend` 下 `npm run build` 过。不要为 Vite 模板再加 `App.css` / 官方 SVG。
+
+---
+
+## 5. 前端
+
+- 函数组件 + Hooks，禁止 Class Component。
+- 样式只用 `tailwind.config.js` 主题类（`bg-paper`、`border-jade`、`text-blood`、`bg-gold` 等）。禁止新内联一套马卡龙色。
+- **剧情、系统日志、选项、AI 叙事禁止 emoji。** 音量按钮可用克制 SVG。
+- 接口默认 `http://localhost:3000`；改端口必须前后端一起改。
+- 创角选项文案必须能在 `characterBuild.service` / 内容表里对上，禁止前端有、后端当未知丢掉。
+
+---
+
+## 6. Git 与机密（潜规则）
+
+| 不要提交 | 原因 |
+|----------|------|
+| `.env`、`DEEPSEEK_API_KEY` | 烧钱 + 泄露 |
+| `.cursor/mcp.json` | 含本机绝对路径；用 `mcp.example.json` |
+| `node_modules/`、`frontend/dist/` | 已 ignore |
+| Prisma skill 目录、`skills-lock.json` | 已 ignore；装 CLI 若再生出来删掉 |
+
+- 不改 `git config`，不 `--no-verify`，不 force push `main`，不主动 commit（除非用户明确要求）。
+- 不把 3000 端口当「上线方案」写进代码注释当正确示范。
+
+---
+
+## 7. 文案与产品潜规则
+
+- 对玩家短讯用文言/白话修仙口吻，不要程序员报错堆栈上屏；日志可以 `console.error`。
+- 死亡锁：`is_game_over` 或气血/寿元判定死后，action 直接拒绝，不再调模型。
+- 时间：对话买卖 0.1～0.2 月；历练 1 月；闭关年→月。不要让 AI 说「瞬息十年」却不扣 `monthsPassed`。
+- 境界压制：差 1 大境输出 40%；差 2 境秒杀。功法、灵兽、伪装、心魔都 **不能** 取消这条。
+- 功德 vs 名声（S32）：天账与人账分开，未实现前不要用业力冒充「城里不能买东西」。
+
+---
+
+## 8. 环境潜规则（Windows）
+
+- MySQL：XAMPP 3306，库名 `wendaocs`。Prisma `generate` 若 EPERM：先停 `tsx watch`。
+- PowerShell 旧版不要用 bash 的 `&&` 当语句分隔。
+- 后端：`cd backend && npm run dev`（`tsx watch server.ts`）。不要再找不存在的 `index.js`。
+
+改完拦截器或公式：补测试，并想一句「玩家输入什么会走到这条」，写进测试用例名里。

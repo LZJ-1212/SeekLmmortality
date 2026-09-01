@@ -143,3 +143,12 @@ model world_state {
   triggered_clues String? @db.LongText
   saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")
 }
+
+// 安全网关（S21 最小集）：按 playerId + 北京自然日 统计每日推演次数，进程重启不丢。
+model action_daily_quotas {
+  player_id String @db.VarChar(36)
+  day       String @db.VarChar(10) // 北京日期 YYYY-MM-DD
+  count     Int    @default(0)
+
+  @@id([player_id, day])
+}

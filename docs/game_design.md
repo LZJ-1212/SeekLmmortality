@@ -46,7 +46,7 @@
 11. 逆天改命体系[cite: 1]
 12. 轮回与读档机制[cite: 1]
 
-规划中（规格已写，代码未写）：[功法与神通](./combat_build.md)、[意图与安检](./intent_gateway.md)、[大事记](./chronicle.md)、[灵兽傀儡](./beasts.md)、[天下大势](./world_sim.md)、[多结局图鉴](./endings.md)。进度见 [project_status.md](./project_status.md)。文档总目：[README.md](./README.md)。
+规划中（规格已写，代码未写）：功法、大事记、灵兽、大势、结局，以及心魔、毒誓、师徒、凡人亲缘、丹毒、地理、名声、情报、伪装、灵脉。S21 安全网关最小集已实现。目录见 [README.md](./README.md)；**开工顺序**见 [roadmap.md](./roadmap.md)。进度见 [project_status.md](./project_status.md)。
 
 ## 六、 声音系统（规格先行）
 - 声音系统是独立子系统：只负责通道混音、配乐切换、旁白/天道/NPC 语音播放，不负责撰写剧情或计算数值。
@@ -56,4 +56,5 @@
 
 ## 七、 项目工作记录与其它文档
 - 完成度、测试、工时、上线：见 [project_status.md](./project_status.md)。
+- **工作顺序：** [roadmap.md](./roadmap.md)。
 - 启动： [runbook.md](./runbook.md)。接口：[api.md](./api.md)。内容表：[content_catalog.md](./content_catalog.md)。架构：[architecture.md](./architecture.md)。

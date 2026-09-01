@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StatusCard } from './StatusCard';
+import { apiFetch } from '../playToken';
 
 // 定义每条日志的格式
 interface LogEntry {
@@ -76,7 +77,7 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
 
   // 初次加载数据
   useEffect(() => {
-    fetch(`http://localhost:3000/api/player/${playerId}`)
+    apiFetch(`http://localhost:3000/api/player/${playerId}`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
@@ -107,7 +108,7 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
     setIsProcessing(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/action', {
+      const response = await apiFetch('http://localhost:3000/api/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, action: actionDesc })
@@ -162,7 +163,7 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
         }
 
         // ===== 方案 B：重新获取完整玩家数据（包含背包） =====
-        const refreshResponse = await fetch(`http://localhost:3000/api/player/${playerId}`);
+        const refreshResponse = await apiFetch(`http://localhost:3000/api/player/${playerId}`);
         const refreshData = await refreshResponse.json();
 
         if (refreshData.status === 'success') {
@@ -201,7 +202,7 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
     if (isChoosingTalent) return;
     setIsChoosingTalent(true);
     try {
-      const response = await fetch('http://localhost:3000/api/talents/choose', {
+      const response = await apiFetch('http://localhost:3000/api/talents/choose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, talentId })
@@ -215,7 +216,7 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
         }]);
         setTalentChoices([]);
 
-        const refreshResponse = await fetch(`http://localhost:3000/api/player/${playerId}`);
+        const refreshResponse = await apiFetch(`http://localhost:3000/api/player/${playerId}`);
         const refreshData = await refreshResponse.json();
         if (refreshData.status === 'success') {
           setPlayerData({

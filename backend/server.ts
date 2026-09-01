@@ -72,6 +72,15 @@ import { buildOpeningNarrative } from './src/services/opening.service';
 import { isEligibleForSamsara, resolveLegacyBlessing } from './src/services/reincarnation.service';
 import { ReincarnationDbService } from './src/services/reincarnationDb.service';
 import { SnapshotService } from './src/services/snapshot.service';
+// S21 安全网关：口令 / 净化 / 注入黑名单 / 创角校验 / 每日行动配额
+import {
+  requirePlayToken,
+  sanitizeAction,
+  hitsInjectionBlocklist,
+  assertCreatePlayerBody,
+  QuotaRepository,
+  QuotaService,
+} from './src/gateway';
 
 /** players.spiritual_roots 里的 quality 字段解析（如 "地灵根"），解析失败时安全退化为中性品质 */
 function parseRootQuality(spiritualRoots: unknown): string {
@@ -97,17 +106,25 @@ const caveService = new CaveService(prisma);
 const sectService = new SectService(prisma);
 // 人际关系业务逻辑：NPC 寿元推算 + 双修增益
 const relationshipService = new RelationshipService(prisma);
+// S21 安全网关：每日行动配额（playerId + 北京自然日）
+const quotaService = new QuotaService(new QuotaRepository(prisma));
 // 轮回业务逻辑：轮回池检索 + 前世遗泽掷骰
 const reincarnationService = new ReincarnationDbService(prisma);
 // 存档快照业务逻辑：时间戳快照拍摄 + 读档回滚
 const snapshotService = new SnapshotService(prisma);
 
 // 中间件配置：允许跨域请求和解析 JSON
-app.use(cors());
+// S21：配置了 PLAY_CORS_ORIGIN 则只放行该 Origin，否则维持本机任意来源（开发态）
+const playCorsOrigin = process.env.PLAY_CORS_ORIGIN;
+if (playCorsOrigin) {
+  app.use(cors({ origin: playCorsOrigin }));
+} else {
+  app.use(cors());
+}
 app.use(express.json());
 
 // 背包 CRUD 独立路由（增/删/改/查）
-app.use('/api/inventory', inventoryRoutes);
+app.use('/api/inventory', requirePlayToken, inventoryRoutes);
 
 // 测试路由：探查天地灵气（数据库连接测试）
 app.get('/api/ping', async (req: Request, res: Response) => {
@@ -127,7 +144,7 @@ app.get('/api/ping', async (req: Request, res: Response) => {
 });
 
 // AI 灵魂测试路由
-app.get('/api/ai-ping', async (req: Request, res: Response) => {
+app.get('/api/ai-ping', requirePlayToken, async (req: Request, res: Response) => {
   try {
     const heavenlyVoice = await wakeUpHeaven();
     res.json({
@@ -143,8 +160,14 @@ app.get('/api/ai-ping', async (req: Request, res: Response) => {
 });
 
 // 创角系统：完全体降临
-app.post('/api/create-player', async (req: Request, res: Response) => {
+app.post('/api/create-player', requirePlayToken, async (req: Request, res: Response) => {
   try {
+    // S21：创角字段长度校验（超长/非法直接 400，不写库、不调开场 LLM）
+    const createPlayerCheck = assertCreatePlayerBody(req.body);
+    if (!createPlayerCheck.ok) {
+      return res.status(400).json({ status: 'error', message: createPlayerCheck.message });
+    }
+
     // 接收完整的创角数据
     const { 
       name, gender, attributes, 
@@ -307,7 +330,7 @@ app.post('/api/create-player', async (req: Request, res: Response) => {
 });
 
 // 天道探查：获取修士真实状态
-app.get('/api/player/:id', async (req: Request, res: Response) => {
+app.get('/api/player/:id', requirePlayToken, async (req: Request, res: Response) => {
   try {
     const player = await prisma.players.findUnique({
       where: { id: req.params.id }
@@ -341,9 +364,27 @@ app.get('/api/player/:id', async (req: Request, res: Response) => {
 });
 
 // 天道推演：处理玩家行动
-app.post('/api/action', async (req: Request, res: Response) => {
+app.post('/api/action', requirePlayToken, async (req: Request, res: Response) => {
   try {
-    const { playerId, action } = req.body;
+    const { playerId } = req.body;
+
+    // S21 层 C：行动文本净化（空串/非法不可见字符/超长一律 400，不静默截断）
+    const sanitized = sanitizeAction(req.body.action);
+    if (!sanitized.ok) {
+      const message = sanitized.code === 'empty'
+        ? '请先述说所行之事。'
+        : sanitized.code === 'too_long'
+          ? '所言过繁，请精简至二百字内。'
+          : '所言含天机不容之字符。';
+      return res.status(400).json({ status: 'error', message });
+    }
+    const action = sanitized.text;
+
+    // S21 层 D：注入黑名单（命令模型改数值/泄密），命中即拒绝，不调 DeepSeek
+    if (hitsInjectionBlocklist(action)) {
+      return res.status(400).json({ status: 'error', message: '此言大逆天道，天机不予推演。' });
+    }
+
     const player = await prisma.players.findUnique({
       where: { id: playerId },
       include: { saves: true },
@@ -355,6 +396,12 @@ app.post('/api/action', async (req: Request, res: Response) => {
       || getDeathReason(player.hp ?? 100, player.age ?? 16, player.max_lifespan ?? 100) !== null;
     if (alreadyDead) {
       return res.status(403).json({ status: 'error', message: '大限已至，道消身陨，万事皆休。' });
+    }
+
+    // S21 层 B：每日行动配额（仅在口令/净化/黑名单/玩家存在/未死亡全部通过后计数）
+    const quotaResult = await quotaService.tryConsumeDailyAction(playerId);
+    if (!quotaResult.ok) {
+      return res.status(429).json({ status: 'error', message: '今日推演次数已尽，明日再来。' });
     }
 
     // 洞府：灵气浓度直接决定闭关修炼的收益倍率（懒加载兜底，兼容洞府系统上线前创建的旧存档）
@@ -913,7 +960,7 @@ app.post('/api/action', async (req: Request, res: Response) => {
 });
 
 // 逆天改命：确认玩家从三选一里选中的天赋，写入 talents JSON
-app.post('/api/talents/choose', async (req: Request, res: Response) => {
+app.post('/api/talents/choose', requirePlayToken, async (req: Request, res: Response) => {
   try {
     const { playerId, talentId } = req.body;
     if (!talentId) {
@@ -942,7 +989,7 @@ app.post('/api/talents/choose', async (req: Request, res: Response) => {
 });
 
 // 常规读档：列出某存档全部可回滚的时间戳快照
-app.get('/api/saves/:saveId/snapshots', async (req: Request, res: Response) => {
+app.get('/api/saves/:saveId/snapshots', requirePlayToken, async (req: Request, res: Response) => {
   try {
     const snapshots = await snapshotService.listSnapshots(req.params.saveId);
     res.json({
@@ -956,7 +1003,7 @@ app.get('/api/saves/:saveId/snapshots', async (req: Request, res: Response) => {
 });
 
 // 常规读档：把存档回滚到某个时间戳快照
-app.post('/api/saves/:saveId/rollback', async (req: Request, res: Response) => {
+app.post('/api/saves/:saveId/rollback', requirePlayToken, async (req: Request, res: Response) => {
   try {
     const { snapshotId } = req.body;
     if (!snapshotId) {

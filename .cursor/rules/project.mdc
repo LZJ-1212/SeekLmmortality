@@ -20,7 +20,9 @@
 
 ## 2.5 规格文档
 - 总目：`docs/README.md`。改玩法或接口前先读对应 `docs/*.md`，避免只改代码导致文档双源。
-- 数值铁律与 UI：`docs/game_design.md`。L1 安检：`docs/intent_gateway.md`。
+- L1 安检功能：`docs/intent_gateway.md`。架构：`docs/intent_gateway_architecture.md`。
+- 开工顺序：`docs/roadmap.md`（阶段 A→E）。
+- **编码规范与仓库潜规则：** `.cursor/rules/项目编码规范与潜规则.mdc`（分层、测试、Git、UI、环境）。
 
 ## 3. 技术与代码规范
 - **后端执行**：统一使用 `tsx watch server.ts` 运行服务。

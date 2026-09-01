@@ -8,7 +8,7 @@
 
 | 路径 | 职责 |
 |------|------|
-| `frontend/` | React + Vite + Tailwind v3；宣纸 UI；`fetch` 后端 |
+| `frontend/` | React + Vite + Tailwind v3；宣纸 UI；`apiFetch` 附口令头 |
 | `backend/` | Express + TypeScript；Prisma 5；拦截器 + Service |
 | `backend/prisma/` | 数据模型；MySQL 库名 `wendaocs` |
 | `docs/` | 规格与运行说明 |
@@ -21,7 +21,7 @@
 ## 2. 运行时数据流
 
 1. 玩家在浏览器提交行动文本。
-2. `POST /api/action` 读库锁死亡。
+2. `POST /api/action` 先过 S21 网关（口令、净化、黑名单、死亡锁、日限），再读库。
 3. 多个 **纯函数 Service** 根据关键词与状态硬算，拼 `forcedOutcome`。
 4. `ai.ts` 以 json_object 调 DeepSeek，只生成 `narrative` 与选项。
 5. 后端再写库（气血、时间、背包等），把结果与 `player` 行返回前端。
@@ -34,10 +34,10 @@ AI 返回的数值增量若与拦截器冲突，以拦截器为准（现有代�
 ## 3. 后端分层
 
 - **路由**：`server.ts` 主循环偏胖，是历史形态；背包已拆 `inventory.routes.ts`。新系统优先 Service + 薄路由。
+- **S21 网关（最小集已实现）：** `backend/src/gateway/`；口令中间件、行动净化、注入黑名单、创角字段上限、`action_daily_quotas` 日限。规格见 [intent_gateway.md](./intent_gateway.md)，目录与顺序见 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。层 E/F 意图分类未做。
 - **Service**：无 Express 对象；可注入 `rollFn` 做单测。
 - **Prisma**：MySQL；JSON 列存灵根、命格、天赋列表等。
 
-规划中的网关应挂在 `action` 最前，见 [intent_gateway.md](./intent_gateway.md)。
 
 ---
 
