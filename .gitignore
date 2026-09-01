@@ -141,3 +141,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Cursor 本地 MCP 配置（含本机绝对路径，不入库；模板见 .cursor/mcp.example.json）
+.cursor/mcp.json

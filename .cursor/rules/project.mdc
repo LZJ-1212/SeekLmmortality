@@ -1,0 +1,25 @@
+# 问道长生 (SeekLmmortality) - Cursor Development Rules
+
+## 1. 核心工作流规范
+- **先读后写**：在修改任何代码前，必须先使用工具查看目标文件及关联文件的最新代码，禁止凭记忆推断文件结构。
+- **架构隔离**：严格遵守 Monorepo 划分：
+  - 前端位于 `frontend/` (React + Vite + Tailwind v3)
+  - 后端位于 `backend/` (Node.js + Express + TypeScript + Prisma 5)
+  - 数据库位于 `backend/prisma/schema.prisma` 与本地 MySQL (XAMPP: 3306/wendaocs)
+- **安全红线**：禁止向 Git 提交 `.env` 文件。所有敏感密钥（`DATABASE_URL`, `DEEPSEEK_API_KEY`）必须通过 `process.env` 读取。
+
+## 2. 游戏数值与 AI 交互铁律
+- **数值与剧情分离**：
+  - 气血(hp)、灵力(mp)、修为(cultivation)、年龄(age)、寿命(max_lifespan)、境界(realm)等核心数据由 Node.js 后端强校验。
+  - AI (`backend/ai.ts`) 仅充当叙事引擎与动态选项生成器，必须使用 `response_format: { type: "json_object" }` 确保结构化输出。
+  - 涉及突破、跨境界战斗、死亡判定时，后端必须在调用 AI 前计算出 `forcedOutcome`，强行注入 prompt 锁定结局，防止玩家利用提示词开挂。
+- **时间流逝法则**：
+  - 微小交互（对话、买卖）消耗 `0.1 ~ 0.2` 个月，不增加年龄。
+  - 普通历练消耗 `1` 个月。
+  - 闭关修炼必须精确将年换算为月数（如闭关 10 年 = 120 个月），并在落库时按 `monthsPassed / 12` 扣减寿元/增加年龄。
+
+## 3. 技术与代码规范
+- **后端执行**：统一使用 `tsx watch server.ts` 运行服务。
+- **Prisma 规则**：锁定 Prisma 5，数据库模型修改后必须在 `backend` 目录下依次执行 `npx prisma db pull`（或迁移）与 `npx prisma generate`。
+- **TypeScript 强类型**：必须为 Express 的 Request/Response、AI 返回的 JSON 载荷、前端 Props 明确定义 interface，禁止滥用 `any` 导致运行时 `undefined` 错误。
+- **UI 配色**：前端样式必须严格调用 `tailwind.config.js` 中扩展的修仙主题色类名（`bg-paper`, `border-jade`, `text-blood`, `bg-gold` 等），保持宣纸古典风格。
