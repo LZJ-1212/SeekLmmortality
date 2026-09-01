@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StatusCard } from './StatusCard';
 import { apiFetch } from '../playToken';
+import { CommandMenu, type Command } from './CommandMenu';
+import { InfoModal, type InfoPanelType } from './InfoModal';
+import { LoadModal } from './LoadModal';
 
 // 定义每条日志的格式
 interface LogEntry {
@@ -22,20 +24,31 @@ const FONT_SIZE_KEY = 'sl_font_size';
 const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 24;
 
-// 常驻快捷指令：面板底部始终可用的高频行动，点击即触发对应标准行动文本
-const QUICK_COMMANDS: OpeningOption[] = [
-  { tag: '平和', text: '闭关修炼' },
-  { tag: '风险', text: '尝试突破境界' },
-  { tag: '平和', text: '查看洞府' },
-  { tag: '机缘', text: '前往坊市' },
-  { tag: '风险', text: '出门历练' },
-  { tag: '机缘', text: '四处打听' },
-];
+// 指令 → 标准行动文本（行动类指令点击即发对应文本，触发后端确定性拦截器）
+const COMMAND_ACTION_TEXT: Partial<Record<Command, string>> = {
+  修炼: '闭关修炼',
+  突破: '尝试突破境界',
+  悟道: '参悟道法',
+  地图: '查看九州地图',
+  坊市: '前往坊市',
+  技艺: '研习修仙百艺',
+  对话: '寻人交谈',
+};
 
-export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ playerId, opening }) => {
+// 信息类指令（打开详情弹窗）
+const INFO_COMMANDS: ReadonlySet<Command> = new Set(['面板', '背包', '洞府', '宗门', '情缘']);
+
+interface Props {
+  playerId: string;
+  opening: Opening;
+  onExitToList: () => void;
+}
+
+export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) => {
   const [inputText, setInputText] = useState('');
   const [playerData, setPlayerData] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeCommand, setActiveCommand] = useState<Command | null>(null);
 
   // 字体大小：读取本地持久化的偏好，越界则回退到默认 15px
   const [fontSize, setFontSize] = useState<number>(() => {
@@ -235,6 +248,42 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
     }
   };
 
+  // 左侧指令菜单分发
+  const handleCommand = (cmd: Command) => {
+    if (INFO_COMMANDS.has(cmd)) {
+      setActiveCommand(cmd);
+      return;
+    }
+    switch (cmd) {
+      case '读档':
+        setActiveCommand('读档');
+        break;
+      case '存档':
+        onExitToList();
+        break;
+      default: {
+        const text = COMMAND_ACTION_TEXT[cmd];
+        if (text) handleAction(text);
+      }
+    }
+  };
+
+  // 读档回滚成功后：刷新玩家数据 + 重置日志与天赋选择
+  const handleRolledBack = async () => {
+    const refreshResponse = await apiFetch(`/api/player/${playerId}`);
+    const refreshData = await refreshResponse.json();
+    if (refreshData.status === 'success') {
+      setPlayerData({
+        ...refreshData.data,
+        spiritual_roots: JSON.parse(refreshData.data.spiritual_roots),
+        talents: JSON.parse(refreshData.data.talents)
+      });
+    }
+    setTalentChoices([]);
+    setLogs([{ id: Date.now(), type: 'system', content: '—— 时光倒流，回到存档的那一刻 ——' }]);
+    setActiveCommand(null);
+  };
+
   // 映射 Tag 对应的 Tailwind 颜色
   const getTagColor = (tag: string) => {
     switch (tag) {
@@ -250,7 +299,14 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
   if (!playerData) return <div className="p-10 text-center font-serif">天道演算中...</div>;
 
   return (
-    <div className="flex h-screen bg-[#EFECE6] p-4 gap-4">
+    <div className="flex h-screen bg-[#EFECE6] p-4 gap-3">
+      {/* 左侧竖排指令菜单（传统 MUD 风） */}
+      <CommandMenu
+        activeCommand={activeCommand}
+        onCommand={handleCommand}
+        disabledAction={isProcessing || isDead}
+      />
+
       {/* 逆天改命：天赋三选一弹层，出现时遮罩全屏，强制玩家先做出抉择 */}
       {talentChoices.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
@@ -267,7 +323,7 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
                   disabled={isChoosingTalent}
                   className="w-full text-left bg-[#F5EFF9] border border-mystic rounded p-3 hover:bg-mystic hover:text-white transition-colors disabled:opacity-50"
                 >
-                  <div className="font-bold text-mystic group-hover:text-white">{talent.name}</div>
+                  <div className="font-bold text-mystic">{talent.name}</div>
                   <div className="text-xs text-textSub mt-1">{talent.description}</div>
                 </button>
               ))}
@@ -276,7 +332,23 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
         </div>
       )}
 
-      <StatusCard player={playerData} />
+      {/* 信息详情弹窗（面板/背包/洞府/宗门/情缘） */}
+      {activeCommand && INFO_COMMANDS.has(activeCommand) && (
+        <InfoModal
+          type={activeCommand as InfoPanelType}
+          player={playerData}
+          onClose={() => setActiveCommand(null)}
+        />
+      )}
+
+      {/* 读档弹窗 */}
+      {activeCommand === '读档' && playerData.save_id && (
+        <LoadModal
+          saveId={playerData.save_id}
+          onClose={() => setActiveCommand(null)}
+          onRolledBack={handleRolledBack}
+        />
+      )}
 
       <div className="flex-1 flex flex-col bg-paper border-2 border-jade rounded-md shadow-lg font-serif overflow-hidden">
 
@@ -304,6 +376,17 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
             </div>
             <span className="text-sm font-normal opacity-80">{isDead ? '寂灭' : '天玄历'}</span>
           </div>
+        </div>
+
+        {/* 精简状态条：核心数值常驻可见，详情点左侧「面板」查看 */}
+        <div className="bg-[#F4EFE6] border-b border-gold border-opacity-50 px-4 py-1.5 text-xs text-textSub flex flex-wrap gap-x-4 gap-y-1">
+          <span><strong className="text-textDark">{playerData.name}</strong> {playerData.gender} · {playerData.age} 岁</span>
+          <span>{playerData.realm_major}·{playerData.realm_minor}</span>
+          <span>气血 {playerData.hp}/{playerData.max_hp}</span>
+          <span>灵力 {playerData.mp}/{playerData.max_mp}</span>
+          <span>寿元 {playerData.age}/{playerData.max_lifespan}</span>
+          <span>灵石 {playerData.spirit_stones}</span>
+          {isDead && <span className="text-blood font-bold">〔已陨落〕</span>}
         </div>
 
         <div
@@ -354,21 +437,6 @@ export const MainGame: React.FC<{ playerId: string; opening: Opening }> = ({ pla
             >
               行 动
             </button>
-          </div>
-
-          {/* 常驻快捷指令行：高频行动一键触发，无论动态选项如何变化都始终可用 */}
-          <div className="flex gap-1.5 mt-3 pt-3 border-t border-[#E5E0D5] flex-wrap items-center">
-            <span className="text-[11px] text-textSub mr-1 select-none">快捷</span>
-            {QUICK_COMMANDS.map((cmd) => (
-              <button
-                key={cmd.text}
-                onClick={() => handleAction(cmd.text)}
-                disabled={isProcessing || isDead}
-                className={`px-2.5 py-1 text-white text-xs rounded shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${getTagColor(cmd.tag)}`}
-              >
-                {cmd.text}
-              </button>
-            ))}
           </div>
         </div>
 

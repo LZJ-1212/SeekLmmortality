@@ -32,11 +32,20 @@ function App() {
     setGameState('playing');
   };
 
+  // 从局内「存档」指令返回存档列表页
+  const handleExitToList = () => {
+    setCurrentPlayerId(null);
+    setOpening({ paragraphs: [], options: [] });
+    setGameState('listing');
+  };
+
   return (
     <div>
       {gameState === 'listing' && <SaveList onEnter={handleEnterSave} onCreate={() => setGameState('creating')} />}
       {gameState === 'creating' && <CreateCharacter onCreated={handlePlayerCreated} />}
-      {gameState === 'playing' && currentPlayerId && <MainGame playerId={currentPlayerId} opening={opening} />}
+      {gameState === 'playing' && currentPlayerId && (
+        <MainGame playerId={currentPlayerId} opening={opening} onExitToList={handleExitToList} />
+      )}
     </div>
   );
 }

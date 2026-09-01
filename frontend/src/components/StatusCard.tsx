@@ -1,8 +1,43 @@
 import React from 'react';
 
-// 定义接收的数据结构
+/** 人物面板数据（收掉 any 债）：字段与后端 players 表 + 关系/洞府/宗门/背包一致 */
+export interface PlayerCardData {
+  name: string;
+  gender?: string;
+  age: number;
+  max_lifespan: number;
+  realm_major: string;
+  realm_minor: string;
+  aptitude: number;
+  comprehension: number;
+  divine_sense: number;
+  speed: number;
+  dao_heart: number;
+  fortune: number;
+  hp: number;
+  max_hp: number;
+  mp: number;
+  max_mp: number;
+  spirit_stones: number;
+  merit: number;
+  karma: number;
+  current_location?: string | null;
+  spiritual_roots: { quality?: string; elements?: string[] };
+  lifespanStatus?: { remainingYears: number; isNearingLifespanLimit: boolean };
+  sect?: { sect_name?: string | null; rank?: string | null; is_traitor?: boolean | null; reputation?: number | null };
+  cave?: { location_name?: string | null; level?: number | null; spiritual_density?: number | null };
+  relationships?: Array<{
+    id: string;
+    npc_name: string;
+    relation_type?: string | null;
+    affinity?: number | null;
+    is_deceased?: boolean | null;
+  }>;
+  inventory?: Array<{ id?: string; name: string; quantity: number; type?: string }>;
+}
+
 interface Props {
-  player: any;
+  player: PlayerCardData;
 }
 
 export const StatusCard: React.FC<Props> = ({ player }) => {
