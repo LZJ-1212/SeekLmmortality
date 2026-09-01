@@ -3,3 +3,9 @@ node_modules
 .env
 
 /generated/prisma
+
+# Prisma CLI 会给多种 IDE 各灌一套说明书，不入库
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
