@@ -52,7 +52,7 @@
 
 **CORS 与口令**
 
-- 前端 Origin 与 API Origin 不同源时：后端 `PLAY_CORS_ORIGIN` 必须等于前端 Origin（精确匹配，不要 `*`）。
+- 前端 Origin 与 API Origin 不同源时：后端 `PLAY_CORS_ORIGIN` 必须等于前端 Origin（精确匹配，不要 `*`）。可逗号分隔多个。**本机 `http://localhost:5173` / `http://127.0.0.1:5173` 始终放行**，以免配了公网 CORS 后本机创角失败。
 - 同源反代时：CORS 可收紧为该公网 Origin；接口走相对路径 `/api`。
 - 朋友请求必须带 `X-Play-Token`（创角页令牌栏；见 S21）。
 

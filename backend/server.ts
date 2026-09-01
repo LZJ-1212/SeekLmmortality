@@ -81,6 +81,7 @@ import {
   assertCreatePlayerBody,
   QuotaRepository,
   QuotaService,
+  isAllowedCorsOrigin,
 } from './src/gateway';
 
 /** players.spiritual_roots 里的 quality 字段解析（如 "地灵根"），解析失败时安全退化为中性品质 */
@@ -117,10 +118,20 @@ const snapshotService = new SnapshotService(prisma);
 const saveService = new SaveService(prisma);
 
 // 中间件配置：允许跨域请求和解析 JSON
-// S21：配置了 PLAY_CORS_ORIGIN 则只放行该 Origin，否则维持本机任意来源（开发态）
+// S21 / I06：配了 PLAY_CORS_ORIGIN 则只放行该（逗号分隔）列表 + 本机 5173，避免隧道配置把 localhost 创角卡死
 const playCorsOrigin = process.env.PLAY_CORS_ORIGIN;
 if (playCorsOrigin) {
-  app.use(cors({ origin: playCorsOrigin }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || isAllowedCorsOrigin(origin, playCorsOrigin)) {
+          callback(null, true);
+          return;
+        }
+        callback(null, false);
+      },
+    }),
+  );
 } else {
   app.use(cors());
 }

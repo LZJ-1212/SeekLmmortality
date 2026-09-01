@@ -11,12 +11,13 @@
 | 项 | 决议 |
 |----|------|
 | 口令头 | `X-Play-Token`；忽略 query，防口令进日志 URL |
-| 未配置 `PLAY_ACCESS_TOKEN` | 不校验口令（本机开发）；**配了则所有受保护路由必带** |
+| 未配置 `PLAY_ACCESS_TOKEN` | 不校验口令 |
+| 已配置 | **穿透流量**必带令牌；浏览器直连本机 3000 不验（无 `Cf-Ray` / `X-Forwarded-For`） |
 | 日限键 | **`playerId` + 北京时间自然日**（`YYYY-MM-DD`，UTC+8） |
 | 日限存储 | MySQL 表，进程重启不丢；禁止只放内存 |
 | 日限何时 +1 | 仅 `POST /api/action`：口令、长度、黑名单、玩家存在、未死亡 **全部通过之后**、层 G 之前。400/401/404/403 死亡锁 **不计数** |
 | `create-player` | 要口令 + 字段长度；**不走日限**（尚无 playerId） |
-| CORS | `PLAY_CORS_ORIGIN` 有值则只放该 Origin；未配则维持现况（本机任意） |
+| CORS | `PLAY_CORS_ORIGIN` 有值则放行该列表（逗号分隔）以及本机 `localhost:5173` / `127.0.0.1:5173`；未配则维持现况（本机任意） |
 | 层 E/F | 本目录不建分类器文件 |
 
 ---
@@ -153,7 +154,8 @@ model action_daily_quotas {
 
 - 新增 `frontend/src/playToken.ts`：键名 `wendaocs.playToken`，只放 sessionStorage。  
 - 新增或内联 `apiFetch(url, init)`：合并 `headers['X-Play-Token']`。  
-- 创角页可提供一处口令输入（短、非剧情）；本机空口令照常请求。  
+- 创角页不再输入口令；只在存档页填写。本机直连可不填。
+- 未持令牌时存档页「新开仙途」禁用（仅穿透 401 时），避免空进创角页再失败。  
 - 401/400/429：写入系统日志短讯，不 `alert` 锁死。
 
 禁止：`VITE_PLAY_ACCESS_TOKEN` 打进仓库或示例 env 的真实值（示例文件只写空或注释「向服主索取」）。

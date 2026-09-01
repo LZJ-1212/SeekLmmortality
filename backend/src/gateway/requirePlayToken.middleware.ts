@@ -1,12 +1,13 @@
 import type { NextFunction, Request, Response } from 'express';
 import { PLAY_TOKEN_HEADER } from './constants';
-import { doesPlayTokenMatch, isPlayTokenConfigured } from './playToken';
+import { doesPlayTokenMatch, mustEnforcePlayToken } from './playToken';
 
 /**
- * 游玩口令中间件：未配置口令时放行（本机开发）；配置后所有受保护路由必须携带匹配令牌，否则 401。
+ * 游玩口令中间件：未配置、或本机直连 3000 → 放行；
+ * 已配置且请求经隧道/反代进来 → 必须带匹配令牌，否则 401。
  */
 export function requirePlayToken(req: Request, res: Response, next: NextFunction): void {
-  if (!isPlayTokenConfigured()) {
+  if (!mustEnforcePlayToken((name) => req.header(name))) {
     next();
     return;
   }

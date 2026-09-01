@@ -89,6 +89,7 @@
 | I08 | 法律：BGM/隐私 | 10% | 朋友试玩用 CC0 曲即可 |
 | I09 | 商业：支付与回本 | 0% | **不必为 L1 做** |
 | I10 | 启动说明 | 90% | [runbook.md](./runbook.md)；L1 口令须另给朋友，勿写入公开 README |
+| I11 | 手机浏览器适配 | 规格 90% / 代码 0% | 竖屏能创角、行动、点指令；不改后端。规格 [mobile.md](./mobile.md) · 架构 [mobile_architecture.md](./mobile_architecture.md) |
 
 ### 2.3 规划中的玩法（规格已写）
 

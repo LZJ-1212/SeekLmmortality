@@ -12,6 +12,8 @@
 | [runbook.md](./runbook.md) | 本机启动（XAMPP、前后端、常见故障） |
 | [hosting.md](./hosting.md) | I06 功能规格（L1 穿透、暴露面、朋友须知） |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 架构（双 Origin 隧道、API 基址、NSSM 保活） |
+| [mobile.md](./mobile.md) | I11 功能规格（窄屏布局、指令底栏、键盘；未实现） |
+| [mobile_architecture.md](./mobile_architecture.md) | I11 架构（768 断点、改哪些组件、dvh） |
 | [architecture.md](./architecture.md) | 仓库分层与行动数据流 |
 | [api.md](./api.md) | 已实现 HTTP 接口 |
 | [content_catalog.md](./content_catalog.md) | 已实现的地区、配方、天赋等表 |

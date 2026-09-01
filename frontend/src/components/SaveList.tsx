@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '../playToken';
+import { apiFetch, getPlayToken, setPlayToken } from '../playToken';
 
 interface SaveSummary {
   saveId: string;
@@ -18,29 +18,37 @@ interface Props {
 }
 
 /**
- * 存档列表（I05 薄做）：列出全部存档，点击进入；不用再手抄 playerId UUID。
- * 每个存档带删除按钮；底部提供「清空全部」。不在此页做快照回滚（读档），那是后续功能。
+ * 存档列表：列出存档、删除、新开仙途。令牌只在本页填写一次（「新开仙途」下方），写入 sessionStorage 后创角/局内不再要第二次。
+ * 未持令牌时的 401 是网关正常拒绝，不当成「天道反噬」。
  */
 export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
   const [saves, setSaves] = useState<SaveSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [needToken, setNeedToken] = useState(false);
+  const [notice, setNotice] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState(false);
+  const [playTokenInput, setPlayTokenInput] = useState(() => getPlayToken());
 
   const load = useCallback(() => {
     setLoading(true);
-    setError('');
+    setNotice('');
+    setNeedToken(false);
     apiFetch('/api/saves')
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json();
+        if (res.status === 401 || data.message === '天机有封，须持令牌。') {
+          setSaves([]);
+          setNeedToken(true);
+          return;
+        }
         if (data.status === 'success' && Array.isArray(data.data)) {
           setSaves(data.data);
         } else {
-          setError(data.message || '天机紊乱，无法读取存档。');
+          setNotice(data.message || '无法读取存档。');
         }
       })
-      .catch(() => setError('无法沟通天道引擎。'))
+      .catch(() => setNotice('无法沟通天道引擎。后端未启动或地址不对。'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -48,17 +56,33 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
     load();
   }, [load]);
 
+  const commitTokenAndLoad = () => {
+    setPlayToken(playTokenInput.trim());
+    load();
+  };
+
+  const handleEnter = (playerId: string) => {
+    setPlayToken(playTokenInput.trim());
+    onEnter(playerId);
+  };
+
+  const handleCreate = () => {
+    setPlayToken(playTokenInput.trim());
+    onCreate();
+  };
+
   const handleDelete = async (s: SaveSummary) => {
     if (!window.confirm(`确定要散去「${s.playerName}」这一世吗？此劫不可逆。`)) return;
+    setPlayToken(playTokenInput.trim());
     setBusyId(s.saveId);
     try {
       const res = await apiFetch(`/api/saves/${s.saveId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.status !== 'success') {
-        setError(data.message || '删除存档失败。');
+        setNotice(data.message || '删除存档失败。');
       }
     } catch {
-      setError('无法沟通天道引擎。');
+      setNotice('无法沟通天道引擎。');
     } finally {
       setBusyId(null);
       load();
@@ -67,15 +91,16 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
 
   const handleDeleteAll = async () => {
     if (!window.confirm('确定要散去全部存档吗？所有因果将一并烟消云散。')) return;
+    setPlayToken(playTokenInput.trim());
     setBusyAll(true);
     try {
       const res = await apiFetch('/api/saves', { method: 'DELETE' });
       const data = await res.json();
       if (data.status !== 'success') {
-        setError(data.message || '清空存档失败。');
+        setNotice(data.message || '清空存档失败。');
       }
     } catch {
-      setError('无法沟通天道引擎。');
+      setNotice('无法沟通天道引擎。');
     } finally {
       setBusyAll(false);
       load();
@@ -98,22 +123,23 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
 
         {loading && <div className="py-10 text-center text-textSub">推演诸般因果中...</div>}
 
-        {!loading && error && (
-          <div className="py-4 text-center">
-            <div className="text-blood mb-3">【天道反噬】 {error}</div>
-            <button onClick={load} className="px-4 py-2 bg-textDark text-white rounded hover:bg-black transition-colors">
-              再试一次
-            </button>
+        {!loading && needToken && (
+          <div className="py-8 text-center text-textSub text-sm">
+            须持令牌方可探查存档。请在下方填写后点记下。
           </div>
         )}
 
-        {!loading && !error && saves.length === 0 && (
+        {!loading && notice && (
+          <div className="py-4 text-center text-sm text-textSub">{notice}</div>
+        )}
+
+        {!loading && !needToken && !notice && saves.length === 0 && (
           <div className="py-10 text-center text-textSub">
             尚无存档，可踏入仙途，凝聚命格。
           </div>
         )}
 
-        {!loading && !error && saves.length > 0 && (
+        {!loading && !needToken && saves.length > 0 && (
           <div className="space-y-2 mb-4">
             {saves.map((s) => (
               <div
@@ -121,7 +147,7 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
                 className="flex items-stretch gap-2 bg-[#F4EFE6] border border-[#E5E0D5] rounded overflow-hidden"
               >
                 <button
-                  onClick={() => s.playerId && onEnter(s.playerId)}
+                  onClick={() => s.playerId && handleEnter(s.playerId)}
                   disabled={!s.playerId}
                   className="flex-1 text-left p-3 hover:border-jade transition-colors disabled:opacity-50"
                 >
@@ -149,7 +175,7 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
           </div>
         )}
 
-        {!loading && !error && saves.length > 0 && (
+        {!loading && !needToken && saves.length > 0 && (
           <button
             onClick={handleDeleteAll}
             disabled={busyAll || busyId !== null}
@@ -162,11 +188,31 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
         <div className="my-3 border-b border-gold opacity-80" />
 
         <button
-          onClick={onCreate}
-          className="w-full py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow"
+          onClick={handleCreate}
+          disabled={needToken}
+          className="w-full py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow disabled:opacity-40 disabled:cursor-not-allowed"
         >
           新开仙途
         </button>
+
+        <div className="flex items-center gap-2 text-sm mt-3">
+          <span className="text-textSub whitespace-nowrap">令牌</span>
+          <input
+            type="password"
+            value={playTokenInput}
+            onChange={(e) => setPlayTokenInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && commitTokenAndLoad()}
+            placeholder="仅朋友从公网进来时必填；本机直连可留空"
+            className="flex-1 bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-1 rounded outline-none focus:border-jade"
+          />
+          <button
+            type="button"
+            onClick={commitTokenAndLoad}
+            className="px-3 py-1 bg-textDark text-white text-xs rounded hover:bg-black transition-colors whitespace-nowrap"
+          >
+            记下
+          </button>
+        </div>
       </div>
     </div>
   );

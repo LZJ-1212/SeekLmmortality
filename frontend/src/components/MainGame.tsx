@@ -47,6 +47,7 @@ interface Props {
 export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) => {
   const [inputText, setInputText] = useState('');
   const [playerData, setPlayerData] = useState<any>(null);
+  const [loadError, setLoadError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeCommand, setActiveCommand] = useState<Command | null>(null);
 
@@ -90,6 +91,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
 
   // 初次加载数据
   useEffect(() => {
+    setLoadError('');
     apiFetch(`/api/player/${playerId}`)
       .then(res => res.json())
       .then(data => {
@@ -100,8 +102,11 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
             talents: JSON.parse(data.data.talents)
           };
           setPlayerData(parsedData);
+        } else {
+          setLoadError(data.message || '无法读取修士档案。');
         }
-      });
+      })
+      .catch(() => setLoadError('无法沟通天道引擎。'));
   }, [playerId]);
 
   useEffect(() => {
@@ -295,6 +300,15 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
       default: return 'bg-gray-500 hover:bg-gray-600';
     }
   };
+
+  if (loadError) {
+    return (
+      <div className="p-10 text-center font-serif">
+        <div className="text-blood mb-3">【天道反噬】 {loadError}</div>
+        <p className="text-textSub text-sm">若提示须持令牌，请回到存档页下方填写一次即可。</p>
+      </div>
+    );
+  }
 
   if (!playerData) return <div className="p-10 text-center font-serif">天道演算中...</div>;
 
