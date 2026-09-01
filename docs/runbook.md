@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-Vite 默认 **http://localhost:5173**。创角请求打到 `http://localhost:3000`（写死在组件里）。若改后端端口，须同步改前端 `fetch` 地址。
+Vite 默认 **http://localhost:5173**。创角/行动请求打到 `http://localhost:3000`（基址由 `frontend/src/apiBase.ts` 读取 `VITE_API_BASE`，未设则缺省本机 3000）。若改后端端口，须设 `VITE_API_BASE` 或改 `apiBase.ts` 缺省值。
 
 ## 5. 测试
 
@@ -67,13 +67,24 @@ npm test
 
 ## 6. 给朋友玩（L1，你的电脑当服）
 
-规格与拓扑见 [hosting.md](./hosting.md)、[hosting_architecture.md](./hosting_architecture.md)。未实现前不要做端口映射。
+规格与拓扑见 [hosting.md](./hosting.md)、[hosting_architecture.md](./hosting_architecture.md)。L1 默认**拓扑 B（双隧道）**。
 
-1. 本机先能完成本手册 2–4 步。
-2. **配置口令后再做端口映射**：`.env` 写 `PLAY_ACCESS_TOKEN`（值向服主索取，勿写入公开 README）；创角页填写同一令牌。未配口令不要做端口映射。
-3. 用内网穿透（带访问密码）或 VPS 反代；须让朋友的浏览器打到**你的** API，而不是他们自己的 `localhost:3000`（前端现仍写死本机，I06 实现时改基址）。不要只映射 3000 且无口令。
-4. 朋友只需浏览器打开你给的前端 URL。
-5. 你关机 = 他们玩不了。云主机可避免这一点（见 [project_status.md](./project_status.md) L1）。
+1. 本机先能完成本手册 2–4 步（自己通一遍创角 + 一步行动）。
+2. **配口令**：`backend/.env` 写 `PLAY_ACCESS_TOKEN=你的秘密口令`。未配口令**禁止**做端口映射。
+3. 前端监听所有网卡：`cd frontend; npm run dev -- --host`（必须带 `--host`，否则隧道打不到 5173）。
+4. 开两条内网穿透隧道（ngrok / cpolar / cloudflared 任一，免费档即可）：
+   - `ngrok http 5173` → 前端公网 Origin，例如 `https://front.example.tld`
+   - `ngrok http 3000` → API 公网 Origin，例如 `https://api.example.tld`
+5. **后端配 CORS**：`backend/.env` 加 `PLAY_CORS_ORIGIN=https://front.example.tld`（与地址栏完全一致，含 https、无路径）。
+6. **前端配 API 基址**：新建 `frontend/.env.local`（已 gitignore，勿提交），写 `VITE_API_BASE=https://api.example.tld`（无尾斜杠）。
+7. 改完 `.env` 后**重启前后端**（Vite 环境变量只在启动时注入）。
+8. 私发朋友：前端 URL、口令、「链接勿外传、我关机就停」。
+
+验证：朋友浏览器 F12 网络面板里 `/api/action` 的 Host 应是 `api.example.tld`，而不是他自己的 `localhost`。
+
+**拓扑 A（备选，单 Origin 反代）**：若已有 Nginx/Caddy 把 `/` 转 5173、`/api` 转 3000，则 `VITE_API_BASE` 设为空字符串（走相对路径 `/api`），`PLAY_CORS_ORIGIN` 设为该公网 Origin 即可。
+
+**保活（可选）**：L1 不强制；要「关机后还能被拉起」用 NSSM 包一层后端/前端，MySQL 用 XAMPP 的 Windows 服务。做不到就在朋友须知里写明「需服主手动 `npm run dev`」。
 
 ## 7. 常见故障
 

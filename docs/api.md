@@ -108,6 +108,14 @@ Body：`{ playerId, talentId }`。`talentId` 必须是上一回合 `talentChoice
 
 返回 `data`：`{ saveId, saveName, playerId, playerName, realmMajor, realmMinor, isGameOver, updatedAt }[]`。`playerId` 为 `null` 表示该存档玩家行缺失（脏数据，前端应禁用进入）。
 
+### `DELETE /api/saves`
+
+清空全部存档。级联删除 `players` / `world_state` / `player_cave` / `player_sect` / `player_inventory` / `player_relationships` / `save_snapshot`，并清理对应 `action_daily_quotas`。返回 `data.deleted`（删除数量）。**不可逆。**
+
+### `DELETE /api/saves/:saveId`
+
+删除单个存档，级联同上。404：存档不存在。**不可逆。**
+
 ### `GET /api/saves/:saveId/snapshots`
 
 返回 `{ id, createdAt, label }[]`。

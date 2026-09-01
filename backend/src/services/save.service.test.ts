@@ -3,7 +3,11 @@ import { SaveService } from './save.service';
 import type { SaveRepository } from '../repositories/save.repository';
 
 function createMockRepo(): SaveRepository {
-  return { listAll: vi.fn() } as unknown as SaveRepository;
+  return {
+    listAll: vi.fn(),
+    deleteById: vi.fn(),
+    deleteAll: vi.fn(),
+  } as unknown as SaveRepository;
 }
 
 describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () => {
@@ -66,5 +70,36 @@ describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () =>
       realmMinor: '',
       isGameOver: true,
     });
+  });
+});
+
+describe('SaveService.deleteSave / deleteAllSaves（删除存档）', () => {
+  let repo: SaveRepository;
+  let service: SaveService;
+
+  beforeEach(() => {
+    repo = createMockRepo();
+    service = new SaveService({} as any, repo);
+  });
+
+  it('正常路径：删除存在的存档，deleted 为 true', async () => {
+    (repo.deleteById as any).mockResolvedValue(true);
+    expect(await service.deleteSave('save-1')).toEqual({ deleted: true });
+    expect(repo.deleteById).toHaveBeenCalledWith('save-1');
+  });
+
+  it('边界：删除不存在的存档，deleted 为 false 而不抛异常', async () => {
+    (repo.deleteById as any).mockResolvedValue(false);
+    expect(await service.deleteSave('ghost')).toEqual({ deleted: false });
+  });
+
+  it('正常路径：删除全部，返回删除数量', async () => {
+    (repo.deleteAll as any).mockResolvedValue(3);
+    expect(await service.deleteAllSaves()).toEqual({ deleted: 3 });
+  });
+
+  it('边界：无存档可删时删除数量为 0', async () => {
+    (repo.deleteAll as any).mockResolvedValue(0);
+    expect(await service.deleteAllSaves()).toEqual({ deleted: 0 });
   });
 });

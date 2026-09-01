@@ -1002,6 +1002,32 @@ app.get('/api/saves', requirePlayToken, async (req: Request, res: Response) => {
   }
 });
 
+// 删除全部存档（级联清理关联表与每日配额）
+app.delete('/api/saves', requirePlayToken, async (req: Request, res: Response) => {
+  try {
+    const { deleted } = await saveService.deleteAllSaves();
+    res.json({ status: 'success', data: { deleted } });
+  } catch (error) {
+    console.error('清空存档失败:', error);
+    res.status(500).json({ status: 'error', message: '天机紊乱，清空存档失败。' });
+  }
+});
+
+// 删除单个存档
+app.delete('/api/saves/:saveId', requirePlayToken, async (req: Request, res: Response) => {
+  try {
+    const { deleted } = await saveService.deleteSave(req.params.saveId);
+    if (!deleted) {
+      res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+      return;
+    }
+    res.json({ status: 'success', data: { deleted: true } });
+  } catch (error) {
+    console.error('删除存档失败:', error);
+    res.status(500).json({ status: 'error', message: '天机紊乱，删除存档失败。' });
+  }
+});
+
 // 常规读档：列出某存档全部可回滚的时间戳快照
 app.get('/api/saves/:saveId/snapshots', requirePlayToken, async (req: Request, res: Response) => {
   try {

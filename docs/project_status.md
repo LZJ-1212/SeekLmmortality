@@ -83,7 +83,7 @@
 | I02 | Git / GitHub | 90% | 公开库 + MIT；`.env` 已忽略；Key 未上传 |
 | I03 | 密钥安全 | 85% | 从未把 API Key 推上 GitHub；L1 仍须防公网刷接口 |
 | I04 | 接口鉴权 / 限流 | 90% | 口令 `PLAY_ACCESS_TOKEN` + `X-Play-Token`；每日行动上限（playerId + 北京日）。给朋友玩必须**配置口令**；未配则本机放行 |
-| I05 | 存档列表 | 60% | 薄做已落地：`GET /api/saves` + 前端存档列表页，免手抄 UUID。快照回滚 UI、账号仍缺 |
+| I05 | 存档列表 | 70% | 薄做已落地：`GET /api/saves` + 前端存档列表页，免手抄 UUID；含单删/清空按钮与 `DELETE /api/saves`(/:id)。快照回滚 UI、账号仍缺 |
 | I06 | 托管 | 规格 90% / 代码 50% | 前端 API 基址已抽 `apiBase.ts`（`VITE_API_BASE`）+ `.env.example`；隧道与 NSSM 保活待真机。规格 [hosting.md](./hosting.md) · 架构 [hosting_architecture.md](./hosting_architecture.md)。不要裸映射 3000 |
 | I07 | 内容填充 | 30% | 机制有、世界薄；L1 可先薄 |
 | I08 | 法律：BGM/隐私 | 10% | 朋友试玩用 CC0 曲即可 |

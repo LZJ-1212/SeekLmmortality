@@ -38,4 +38,16 @@ export class SaveService {
       updatedAt: s.updated_at,
     }));
   }
+
+  /** 删除单个存档；返回该存档是否存在过（存在并删除 true，不存在 false） */
+  async deleteSave(saveId: string): Promise<{ deleted: boolean }> {
+    const deleted = await this.repo.deleteById(saveId);
+    return { deleted };
+  }
+
+  /** 删除全部存档；返回实际删除的存档数量 */
+  async deleteAllSaves(): Promise<{ deleted: number }> {
+    const deleted = await this.repo.deleteAll();
+    return { deleted };
+  }
 }
