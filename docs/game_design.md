@@ -7,7 +7,7 @@
 
 ## 二、 前端 UI 与排版铁律 (React + Tailwind 宣纸古典风)
 - **大面板结构**：所有游戏界面使用 Tailwind 主题色类渲染宣纸白底（`bg-paper`）与彩色边框（`border-jade` 等）的大面板。
-- **禁用限制**：严禁在界面与剧情中使用任何 emoji，一律使用纯文字与主题色、语义标签表达。
+- **禁用限制**：剧情、系统日志、AI 叙事严禁 emoji。界面音量控件允许克制图形（优先 SVG；若用 emoji 仅限声/乐按钮）。详见 [audio_system.md](./audio_system.md) 决议第 20 条。
 - **主题色板**：必须严格遵循 `tailwind.config.js` 中定制的修仙主题色板：
   - 底色：宣纸白 `#FBF8F1`（主底色）、浅珊瑚 `#FBEDE9`（警告/战斗）、浅紫 `#F5EFF9`（机缘）、浅灰 `#E8E4DC`（进度条底）[cite: 3]。
   - 边框与标题：青玉 `#6FA698`（主界面）、玄紫 `#8B6FA8`（雷劫/魔道）、朱砂 `#C05F55`（战斗/气血）、鎏金 `#C9A45C`（分隔线/财富）[cite: 3]。
@@ -24,7 +24,7 @@
 - **修炼速度公式**：月修为增长 = 10 × 资质系数 × 灵根系数 × 功法系数 × 灵气系数 × 心境系数 × 天赋系数[cite: 3]。
   - 资质系数 = 资质 ÷ 10（基准 10 → 1.0）。
   - 灵根系数：伪灵根 0.6 / 杂灵根 0.8 / 真灵根 1.0 / 地灵根 1.2 / 天灵根 1.5。
-  - 功法系数：暂无功法系统，固定为 1.0（占位）。
+  - 功法系数：暂无功法系统，固定为 1.0（占位）。规格见 [combat_build.md](./combat_build.md)。
   - 灵气系数 = 洞府灵气浓度 ÷ 10（基准 10 → 1.0）。
   - 心境系数 = 0.5 + 道心 × 0.05。
   - 天赋系数 = 逆天改命天赋乘数 × 命格乘数（先天体质 / 先天天赋 / 出身 / 道途），基准 1.0。
@@ -45,3 +45,15 @@
 10. 探索与随机奇遇[cite: 1]
 11. 逆天改命体系[cite: 1]
 12. 轮回与读档机制[cite: 1]
+
+规划中（规格已写，代码未写）：[功法与神通](./combat_build.md)、[意图与安检](./intent_gateway.md)、[大事记](./chronicle.md)、[灵兽傀儡](./beasts.md)、[天下大势](./world_sim.md)、[多结局图鉴](./endings.md)。进度见 [project_status.md](./project_status.md)。文档总目：[README.md](./README.md)。
+
+## 六、 声音系统（规格先行）
+- 声音系统是独立子系统：只负责通道混音、配乐切换、旁白/天道/NPC 语音播放，不负责撰写剧情或计算数值。
+- 已确认决议、RVC 可行性、后端代理与回本说明见 [audio_system.md](./audio_system.md)；代码架构见 [audio_architecture.md](./audio_architecture.md)。
+- 第一期人声可延后；允许先做创角/局内 BGM 与少量 SFX，混音器架构仍适用。人声、RVC 见后续期。
+- 剧情正文仍禁止 emoji；音量控件可用克制图形（优先 SVG）。
+
+## 七、 项目工作记录与其它文档
+- 完成度、测试、工时、上线：见 [project_status.md](./project_status.md)。
+- 启动： [runbook.md](./runbook.md)。接口：[api.md](./api.md)。内容表：[content_catalog.md](./content_catalog.md)。架构：[architecture.md](./architecture.md)。

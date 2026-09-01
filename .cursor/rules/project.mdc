@@ -18,6 +18,10 @@
   - 普通历练消耗 `1` 个月。
   - 闭关修炼必须精确将年换算为月数（如闭关 10 年 = 120 个月），并在落库时按 `monthsPassed / 12` 扣减寿元/增加年龄。
 
+## 2.5 规格文档
+- 总目：`docs/README.md`。改玩法或接口前先读对应 `docs/*.md`，避免只改代码导致文档双源。
+- 数值铁律与 UI：`docs/game_design.md`。L1 安检：`docs/intent_gateway.md`。
+
 ## 3. 技术与代码规范
 - **后端执行**：统一使用 `tsx watch server.ts` 运行服务。
 - **Prisma 规则**：锁定 Prisma 5，数据库模型修改后必须在 `backend` 目录下依次执行 `npx prisma db pull`（或迁移）与 `npx prisma generate`。
