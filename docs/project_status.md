@@ -7,7 +7,7 @@
 - 总设计：[docs/game_design.md](./game_design.md)
 - 文档总目：[docs/README.md](./README.md)
 - 声音规格：[docs/audio_system.md](./audio_system.md) · 声音架构：[docs/audio_architecture.md](./audio_architecture.md)
-- 本记录最后更新：2026-09-02（文档对齐代码：口令在存档页、apiBase、断点、日限在情境锁之后；S36 / ui.md）
+- 本记录最后更新：2026-09-02（文档对齐代码：薄 `server.ts` + `src/routes` + `ActionService`；Vite 固定 5174；前端 `player` 已类型化）
 
 完成度含义：0 未开工；1–39 规格或骨架；40–69 能跑但不完整；70–89 主路径可用、有缺口；90–99 测试较全、仅打磨；100 含上线验收（本项目尚无 100）。
 
@@ -39,7 +39,7 @@
 
 | ID | 系统 | 要做什么 | 技术文档 | 主要代码 | 完成度 | 测试 | 缺口 / 下一动作 |
 |----|------|----------|----------|----------|--------|------|-----------------|
-| S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [game_design.md](./game_design.md) 一、四 | `playerState.service.ts`，`server.ts` `/api/action` | 90% | 有单测；行动接口手测过 | 前端 `player` 仍有 `any` |
+| S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [game_design.md](./game_design.md) 一、四 | `playerState.service.ts`，`action.service.ts` `/api/action` | 90% | 有单测；行动接口手测过 | — |
 | S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | 同上 | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | 全境界手玩未铺满 |
 | S03 | 时间与岁月 | 闭关月数、pending_months、大限预警 | 同上 | `detectSeclusionMonths`、`advanceAge` | 90% | 有单测 | — |
 | S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节；自由度 [player_agency.md](./player_agency.md) | `combat.service.ts` | 85% | 有单测 | AI 报的敌人境界仍靠 prompt；战中「捡神器反杀」仍可能被模型圆（**A5**） |
@@ -52,14 +52,14 @@
 | S11 | 逆天改命 | 大境三选一天赋乘数 | 代码即规格 | `talent.service.ts` | 85% | 有单测 | 天赋池偏少 |
 | S12 | 轮回与读档 | 轮回池遗泽、快照回滚 | 代码即规格 | `reincarnation*.ts` `snapshot.service.ts` `LoadModal.tsx` | 85% | 有单测；手测过池与回滚 | 局内「读档」弹窗已有；账号级云存档仍缺 |
 | S13 | 背包物品 | 字典+自定义物品、防幻觉使用 | 无独立 md | `inventory.service.ts` 路由 | 85% | 有单测 | 独立规格待 **I18** |
-| S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 代码 + 创角页说明 | `characterBuild.service.ts` | 85% | 有单测 | — |
+| S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 代码 + 创角页说明 | `characterBuild.service.ts`；HTTP 编排 `characterCreation.service.ts` | 85% | 有单测 | — |
 | S15 | 开场剧情 | 命格生成开场并起步 | 代码 | `opening.service.ts` | 85% | 有单测 | — |
-| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) · [command_ui_architecture.md](./command_ui_architecture.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` | 80% | 无单测；构建通过 | 设置页、**I11 窄屏**未做；死亡后读档按钮仍被灰掉（规格要求可开） |
-| S17 | AI 叙事约束 | json_object + forcedOutcome | [game_design.md](./game_design.md) 一 | `ai.ts` | 75% | 无隔离单测 | 偶发不守铁律，靠拦截器兜底 |
+| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) · [command_ui_architecture.md](./command_ui_architecture.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` `rootElements.ts` | 80% | 无单测；构建通过 | 设置页、**I11 窄屏**未做；死亡后读档按钮仍被灰掉（规格要求可开） |
+| S17 | AI 叙事约束 | json_object + forcedOutcome | [game_design.md](./game_design.md) 一 | `ai.ts`（`PlayerStateForAi` / `DeducedAction`） | 75% | 无隔离单测 | 偶发不守铁律，靠拦截器兜底 |
 | S18 | 声音（人声） | 旁白/天道/NPC 朗读 | [audio_system.md](./audio_system.md) | 无 | 规格 95% / 代码 0% | 无 | **可延后** |
 | S19 | BGM 与 SFX | 配乐循环、情境切换、打击/雷/点击 | [audio_system.md](./audio_system.md) 一、八；架构混音器仍适用 | 无 | 0% | 无 | **可先于人声做**（创角+局内 BGM + 少量特效） |
 | S20 | 功法与神通构筑 | 主修+辅修槽、招式、参悟残卷 | [combat_build.md](./combat_build.md) | 公式占位 1.0；未习术法薄拦截 `technique.service.ts` | 规格 90% / 招式库 0% / 未习熔断已做 | 熔断有测 | 实现槽位与招式名表 |
-| S21 | 意图识别与安全网关 | 口令、日限、防注入、超长拒绝；意图分类后做 | [intent_gateway.md](./intent_gateway.md) · [架构](./intent_gateway_architecture.md) | `backend/src/gateway/` + `server.ts` 挂载 | 最小集代码已落地；层 E/F 0% | 网关单测已有 | **L1 最小集已做**；分类器可后做 |
+| S21 | 意图识别与安全网关 | 口令、日限、防注入、超长拒绝；意图分类后做 | [intent_gateway.md](./intent_gateway.md) · [架构](./intent_gateway_architecture.md) | `backend/src/gateway/`；净化/黑名单在 `action.routes.ts`；日限在 `ActionService` | 最小集代码已落地；层 E/F 0% | 网关单测已有 | **L1 最小集已做**；分类器可后做 |
 | S22 | 长效记忆与大事记 | chronicles 表、30 回合压缩备忘录 | [chronicle.md](./chronicle.md) | 无 | 规格 90% / 代码 0% | 无 | 长局必需，短试玩可后做 |
 | S23 | 灵兽与傀儡 | 神识占用、战斗协同 | [beasts.md](./beasts.md) | 无 | 规格 85% / 代码 0% | 无 | 规划中 |
 | S24 | 天下大势与传闻 | NPC 后台演化、坊市风闻 | [world_sim.md](./world_sim.md) | NPC 寿元已有，无世界推演 | 规格 85% / 代码 15% | NPC 寿元有测 | 规划中 |

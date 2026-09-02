@@ -3,7 +3,7 @@ import { apiFetch } from '../playToken';
 import { CommandMenu, type Command } from './CommandMenu';
 import { InfoModal, type InfoPanelType } from './InfoModal';
 import { LoadModal } from './LoadModal';
-import { StatusCard } from './StatusCard';
+import { StatusCard, type PlayerCardData } from './StatusCard';
 import { formatHeavenCalendar } from '../catalogDisplay';
 
 // 定义每条日志的格式
@@ -34,6 +34,57 @@ const DEFAULT_ACTION_OPTIONS: OpeningOption[] = [
   { tag: '机缘', text: '四处打听' },
   { tag: '风险', text: '出城历练' },
 ];
+
+/** MainGame 持有的玩家数据：在状态卡类型基础上补齐存档 ID 与解析后的天赋 */
+interface PlayerPayload extends PlayerCardData {
+  /** 存档 ID（读档弹窗使用） */
+  save_id: string;
+  /** 天赋（含创角命格与逆天改命天赋），已从 JSON 字符串解析为对象 */
+  talents?: unknown;
+}
+
+/** 安全解析后端存为 JSON 字符串的字段；非字符串原样返回，解析失败退化为空对象 */
+function parseJsonField(raw: unknown): unknown {
+  if (typeof raw !== 'string') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 把后端玩家载荷解析成前端可用结构：
+ * 后端存库时 spiritual_roots / talents 是 JSON 字符串，这里统一解析为对象，
+ * 避免在各处重复 JSON.parse 样板（并防御异常数据导致整组件崩溃）。
+ */
+function parsePlayerPayload(raw: unknown): PlayerPayload {
+  const data = (raw ?? {}) as Record<string, unknown>;
+  return {
+    ...(data as unknown as PlayerPayload),
+    spiritual_roots: (parseJsonField(data.spiritual_roots) || {}) as PlayerPayload['spiritual_roots'],
+    talents: parseJsonField(data.talents),
+  };
+}
+
+/** 拉取玩家最新状态的统一结果：成功携带解析后的载荷，失败携带提示语 */
+type FetchPlayerResult =
+  | { ok: true; payload: PlayerPayload }
+  | { ok: false; message: string };
+
+/** 拉取并解析某玩家的最新状态；网络/接口异常统一收敛为失败结果，由调用方决定降级或报错 */
+async function fetchPlayerPayload(playerId: string): Promise<FetchPlayerResult> {
+  try {
+    const response = await apiFetch(`/api/player/${playerId}`);
+    const json = await response.json();
+    if (json.status === 'success') {
+      return { ok: true, payload: parsePlayerPayload(json.data) };
+    }
+    return { ok: false, message: json.message || '无法读取修士档案。' };
+  } catch {
+    return { ok: false, message: '无法沟通天道引擎。' };
+  }
+}
 
 function logsStorageKey(playerId: string) {
   return `${LOGS_STORAGE_PREFIX}${playerId}`;
@@ -125,7 +176,7 @@ interface Props {
 
 export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) => {
   const [inputText, setInputText] = useState('');
-  const [playerData, setPlayerData] = useState<any>(null);
+  const [playerData, setPlayerData] = useState<PlayerPayload | null>(null);
   const [loadError, setLoadError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeCommand, setActiveCommand] = useState<Command | null>(null);
@@ -187,21 +238,13 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
   // 初次加载数据
   useEffect(() => {
     setLoadError('');
-    apiFetch(`/api/player/${playerId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') {
-          const parsedData = {
-            ...data.data,  // 保留所有字段（包括 inventory）
-            spiritual_roots: JSON.parse(data.data.spiritual_roots),
-            talents: JSON.parse(data.data.talents)
-          };
-          setPlayerData(parsedData);
-        } else {
-          setLoadError(data.message || '无法读取修士档案。');
-        }
-      })
-      .catch(() => setLoadError('无法沟通天道引擎。'));
+    fetchPlayerPayload(playerId).then((result) => {
+      if (result.ok) {
+        setPlayerData(result.payload);
+      } else {
+        setLoadError(result.message);
+      }
+    });
   }, [playerId]);
 
   useEffect(() => {
@@ -275,31 +318,22 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           setActionOptions(result.data.options);
         }
 
-        // ===== 方案 B：重新获取完整玩家数据（包含背包） =====
-        const refreshResponse = await apiFetch(`/api/player/${playerId}`);
-        const refreshData = await refreshResponse.json();
+        // ===== 重新获取完整玩家数据（包含背包） =====
+        const refreshResult = await fetchPlayerPayload(playerId);
 
-        if (refreshData.status === 'success') {
-          const refreshedData = {
-            ...refreshData.data,
-            spiritual_roots: JSON.parse(refreshData.data.spiritual_roots),
-            talents: JSON.parse(refreshData.data.talents)
-          };
-          setPlayerData(refreshedData);
+        if (refreshResult.ok) {
+          setPlayerData(refreshResult.payload);
         } else {
           // 如果刷新失败，降级使用 action 返回的数据（但会丢失 inventory）
           console.warn('刷新玩家数据失败，使用降级数据');
-          setPlayerData({
+          setPlayerData(parsePlayerPayload({
             ...result.data.player,
-            spiritual_roots: JSON.parse(result.data.player.spiritual_roots),
-            talents: JSON.parse(result.data.player.talents),
             lifespanStatus: result.data.lifespanStatus,
             cave: result.data.cave,
             sect: result.data.sect,
-            relationships: result.data.relationships
-          });
+            relationships: result.data.relationships,
+          }));
         }
-        // ======================================================
 
       } else {
         setLogs(prev => [...prev, { id: Date.now() + 1, type: 'system', content: result.message ? `【天机】 ${result.message}` : '【天机】 推演未成。' }]);
@@ -329,14 +363,9 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         }]);
         setTalentChoices([]);
 
-        const refreshResponse = await apiFetch(`/api/player/${playerId}`);
-        const refreshData = await refreshResponse.json();
-        if (refreshData.status === 'success') {
-          setPlayerData({
-            ...refreshData.data,
-            spiritual_roots: JSON.parse(refreshData.data.spiritual_roots),
-            talents: JSON.parse(refreshData.data.talents)
-          });
+        const refreshResult = await fetchPlayerPayload(playerId);
+        if (refreshResult.ok) {
+          setPlayerData(refreshResult.payload);
         }
       } else {
         setLogs(prev => [...prev, { id: Date.now(), type: 'system', content: `【天道反噬】 ${result.message}` }]);
@@ -371,14 +400,9 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
 
   // 读档回滚成功后：刷新人物；日志只追加一句，不抹掉历史行动
   const handleRolledBack = async () => {
-    const refreshResponse = await apiFetch(`/api/player/${playerId}`);
-    const refreshData = await refreshResponse.json();
-    if (refreshData.status === 'success') {
-      setPlayerData({
-        ...refreshData.data,
-        spiritual_roots: JSON.parse(refreshData.data.spiritual_roots),
-        talents: JSON.parse(refreshData.data.talents)
-      });
+    const refreshResult = await fetchPlayerPayload(playerId);
+    if (refreshResult.ok) {
+      setPlayerData(refreshResult.payload);
     }
     setTalentChoices([]);
     setLogs((prev) => [...prev, { id: Date.now(), type: 'system', content: '—— 时光倒流，回到该快照时刻（上文仍为当时见闻） ——' }]);

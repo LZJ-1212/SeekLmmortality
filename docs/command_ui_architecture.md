@@ -9,9 +9,10 @@
 | 路径 | 职责 |
 |------|------|
 | `CommandMenu.tsx` | `COMMANDS` 12 键；`ALWAYS_ENABLED`（含地图/技艺/读档/存档） |
-| `MainGame.tsx` | 分发、`COMMAND_ACTION_TEXT`（仅修炼/突破/悟道）、日志与选项 `localStorage` |
+| `MainGame.tsx` | 分发、`COMMAND_ACTION_TEXT`（仅修炼/突破/悟道）、日志与选项 `localStorage`；拉玩家走 `fetchPlayerPayload` |
 | `InfoModal.tsx` | 只读层，含地图、技艺 |
 | `catalogDisplay.ts` | 地名坐标、百艺开局未习、天玄历文案 |
+| `rootElements.ts` | 灵根元素名与状态卡色块（创角页与状态卡共用） |
 | `RegionMap.tsx` | 地图 SVG 示意图 |
 | `LoadModal.tsx` | 快照 HTTP |
 | `App.tsx` | 「存档」→ 列表（卸载 MainGame；日志已先写入本机） |

@@ -54,13 +54,13 @@ npm install
 npm run dev
 ```
 
-给朋友试玩时必须加 `--host`（让隧道打到 5173），见第 6 节：
+给朋友试玩时必须加 `--host`（让隧道打到 5174），见第 6 节：
 
 ```
 npm run dev -- --host
 ```
 
-Vite 默认 **http://localhost:5173**。创角/行动请求打到 `http://localhost:3000`（基址由 `frontend/src/apiBase.ts` 读取 `VITE_API_BASE`，未设则缺省本机 3000）。若改后端端口，须设 `VITE_API_BASE` 或改 `apiBase.ts` 缺省值。
+Vite 固定 **http://localhost:5174**（`strictPort`，被占用则启动失败而不是换端口）。创角/行动请求打到 `http://localhost:3000`（基址由 `frontend/src/apiBase.ts` 读取 `VITE_API_BASE`，未设则缺省本机 3000）。若改后端端口，须设 `VITE_API_BASE` 或改 `apiBase.ts` 缺省值。
 
 ## 5. 测试
 
@@ -81,14 +81,14 @@ npm test
 |------|------|------|
 | MySQL（XAMPP） | 存档 | 3306，**只留本机，禁止映射公网** |
 | 后端 `npm run dev` | 规则 + AI | 3000 |
-| 前端 `npm run dev -- --host` | 网页 | 5173 |
-| 两条隧道 | 把 5173 / 3000 接到公网 | 无 |
+| 前端 `npm run dev -- --host` | 网页 | 5174 |
+| 两条隧道 | 把 5174 / 3000 接到公网 | 无 |
 
 你关机、关终端、隧道进程退出 → 朋友立刻玩不了。未配 `PLAY_ACCESS_TOKEN` **禁止**开隧道。
 
 ### 6.1 本机先自己能玩
 
-完成本手册第 2–4 节，本机 `http://localhost:5173` 能创角并走出一步行动。
+完成本手册第 2–4 节，本机 `http://localhost:5174` 能创角并走出一步行动。
 
 ### 6.2 配游玩口令
 
@@ -109,14 +109,14 @@ cd frontend
 npm run dev -- --host
 ```
 
-不加 `--host` 时 Vite 只听 localhost，隧道打 5173 会失败。看到 `Local: http://localhost:5173/` 即可。
+不加 `--host` 时 Vite 只听 localhost，隧道打 5174 会失败。看到 `Local: http://localhost:5174/` 即可。
 
 ### 6.4 开两条 Cloudflare quick tunnel
 
 本机已装 `cloudflared`（scoop：`scoop install cloudflared`）。再开两个终端：
 
 ```
-cloudflared tunnel --url http://localhost:5173 --no-autoupdate
+cloudflared tunnel --url http://localhost:5174 --no-autoupdate
 ```
 
 ```
@@ -125,12 +125,12 @@ cloudflared tunnel --url http://localhost:3000 --no-autoupdate
 
 各会打印一行 `https://….trycloudflare.com`：
 
-- 5173 那条 = **前端 Origin**（朋友地址栏打开的网址）
+- 5174 那条 = **前端 Origin**（朋友地址栏打开的网址）
 - 3000 那条 = **API Origin**（朋友看不到，但浏览器请求必须打到这里）
 
 每次重启 `cloudflared`，这两条 URL **都会变**，必须重做 6.5–6.6。
 
-（也可用 ngrok / cpolar，契约相同：两条公网 URL，分别转到 5173 与 3000。）
+（也可用 ngrok / cpolar，契约相同：两条公网 URL，分别转到 5174 与 3000。）
 
 ### 6.5 把两条 URL 写进配置
 
@@ -190,13 +190,13 @@ VITE_API_BASE=https://api.example.tld
 
 - 创角成功、行动有叙事 → 通了
 - 401 / 「未授令牌」→ 口令与 `PLAY_ACCESS_TOKEN` 不一致，或后端没重启
-- 页面打不开 / 前端隧道 403 → `--host`、隧道是否指向 5173、`allowedHosts`
+- 页面打不开 / 前端隧道 403 → `--host`、隧道是否指向 5174、`allowedHosts`
 - CORS 报错、请求打到朋友自己的 localhost → `PLAY_CORS_ORIGIN` 与地址栏不一致，或 `VITE_API_BASE` 没设 / 前端没重启
 - F12 网络里 `/api/action` 的 Host 应是 **API 隧道域名**，不是朋友电脑的 `localhost`
 
 ### 6.10 拓扑 A 与保活（可选）
 
-**拓扑 A（单 Origin 反代）**：Nginx/Caddy 把 `/` 转 5173、`/api` 转 3000。此时 `VITE_API_BASE` 设为空字符串（相对路径 `/api`），`PLAY_CORS_ORIGIN` 仍等于该公网 Origin。
+**拓扑 A（单 Origin 反代）**：Nginx/Caddy 把 `/` 转 5174、`/api` 转 3000。此时 `VITE_API_BASE` 设为空字符串（相对路径 `/api`），`PLAY_CORS_ORIGIN` 仍等于该公网 Origin。
 
 **保活**：L1 不强制。要开机自启用 NSSM 包后端/前端，MySQL 用 XAMPP 的 Windows 服务；隧道客户端用厂商自带开机项。做不到就在朋友须知写「需服主手动开」。固定域名（named tunnel）需自有域名托管到 Cloudflare，与 quick tunnel 不是同一套配置。
 

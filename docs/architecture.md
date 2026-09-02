@@ -33,18 +33,27 @@ AI 返回的数值增量若与拦截器冲突，以拦截器为准（现有代�
 
 ## 3. 后端分层
 
-- **路由**：`server.ts` 主循环偏胖，是历史形态；背包已拆 `inventory.routes.ts`。新系统优先 Service + 薄路由。
-- **S21 网关（最小集已实现）：** `backend/src/gateway/`；口令中间件、行动净化、注入黑名单、创角字段上限、`action_daily_quotas` 日限。规格见 [intent_gateway.md](./intent_gateway.md)，目录与顺序见 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。层 E/F 意图分类未做。
+```
+server.ts（组合根：CORS、json、挂路由、listen）
+  → src/routes/*（薄 HTTP：校验入参、调 Service、写 JSON）
+  → src/services/*（规则 + 掷骰；行动编排在 action.service.ts）
+  → src/repositories/* → prisma
+```
+
+- **入口：** `server.ts` 只组装，不含拦截器公式。路由：`health` / `player` / `action` / `talents` / `saves` / `inventory`。
+- **创角编排：** `characterCreation.service.ts`（命格折算、轮回遗泽、开场剧情、三表落库）。
+- **行动编排：** `action.service.ts`（死亡锁、情境锁、日限、拦截器链、调 `ai.ts`、结算落库、快照）。
+- **S21 网关：** `backend/src/gateway/`；口令中间件、行动净化、注入黑名单、创角字段上限、`action_daily_quotas` 日限。净化/黑名单在 `action.routes.ts`；日限在 `ActionService` 内、情境锁通过之后。规格见 [intent_gateway.md](./intent_gateway.md)，目录与顺序见 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。层 E/F 意图分类未做。
 - **情境锁：** `situation.service.ts`，规格 [situation.md](./situation.md)。
 - **Service**：无 Express 对象；可注入 `rollFn` 做单测。宣称奇迹见 [plausibility.md](./plausibility.md)（A5 未接）。
-- **Prisma**：MySQL；JSON 列存灵根、命格、天赋列表等。
+- **Prisma**：MySQL；JSON 列存灵根、命格、天赋列表等。安全解析：`parseElementsFromSpiritualRoots`、`parseCustomData`（禁止业务层 `custom_data as any`）。
 
 
 ---
 
 ## 4. 前端要点
 
-- 主界面：`MainGame.tsx`、`StatusCard.tsx`、`CommandMenu.tsx`。视觉与断点见 [ui.md](./ui.md)。指令分发见 [command_ui_architecture.md](./command_ui_architecture.md)。
+- 主界面：`MainGame.tsx`、`StatusCard.tsx`、`CommandMenu.tsx`。拉玩家统一走 `fetchPlayerPayload` / `parsePlayerPayload`。灵根色块：`rootElements.ts`。视觉与断点见 [ui.md](./ui.md)。指令分发见 [command_ui_architecture.md](./command_ui_architecture.md)。
 - 创角：命格选项须与 [content_catalog.md](./content_catalog.md) 一致。
 - 无全局状态库；存档 id 在列表页选择。声音：规格有，代码无。
 - 玩家自由度：叙事自由、数值由拦截器锁死，见 [player_agency.md](./player_agency.md)。

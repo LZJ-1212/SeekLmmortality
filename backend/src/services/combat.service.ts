@@ -75,8 +75,12 @@ export function getBestElementMultiplier(attackerElements: string[], defenderEle
  */
 export function parseElementsFromSpiritualRoots(spiritualRoots: unknown): string[] {
   try {
-    const data = typeof spiritualRoots === 'string' ? JSON.parse(spiritualRoots) : spiritualRoots;
-    return Array.isArray((data as any)?.elements) ? (data as any).elements : [];
+    const data: unknown = typeof spiritualRoots === 'string' ? JSON.parse(spiritualRoots) : spiritualRoots;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return [];
+    const elements = (data as { elements?: unknown }).elements;
+    if (!Array.isArray(elements)) return [];
+    // 只保留字符串元素，过滤掉意外混入的非字符串（如数字/对象），避免下游类型失真
+    return elements.filter((el): el is string => typeof el === 'string');
   } catch {
     return [];
   }

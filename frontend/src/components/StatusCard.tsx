@@ -1,4 +1,5 @@
 import React from 'react';
+import { ELEMENT_COLORS } from '../rootElements';
 
 /** 人物面板数据（收掉 any 债）：字段与后端 players 表 + 关系/洞府/宗门/背包一致 */
 export interface PlayerCardData {
@@ -45,7 +46,6 @@ interface Props {
 export const StatusCard: React.FC<Props> = ({ player }) => {
   // 提取灵根数组用于渲染色块
   const roots = player.spiritual_roots.elements || [];
-  const elementColors: Record<string, string> = { '金': 'bg-gold', '木': 'bg-wood', '水': 'bg-water', '火': 'bg-blood', '土': 'bg-[#B08A4E]', '雷': 'bg-thunder', '风': 'bg-[#7F9C9C]', '冰': 'bg-sect' };
 
   // 大限压迫感：剩余寿元与预警状态（优先使用后端算好的 lifespanStatus，缺失时前端兜底计算）
   const remainingYears = player.lifespanStatus?.remainingYears ?? Math.max(0, player.max_lifespan - player.age);
@@ -112,7 +112,7 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
           <span>灵根品质: <span className="font-semibold text-textDark">{player.spiritual_roots.quality}</span></span>
           <div className="flex items-center space-x-1">
             {roots.map((r: string) => (
-              <span key={r} className={`px-1.5 py-0.5 text-white text-xs rounded font-bold ${elementColors[r] || 'bg-gray-500'}`}>{r}</span>
+              <span key={r} className={`px-1.5 py-0.5 text-white text-xs rounded font-bold ${ELEMENT_COLORS[r] || 'bg-gray-500'}`}>{r}</span>
             ))}
           </div>
         </div>

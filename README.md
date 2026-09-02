@@ -34,7 +34,7 @@ DEEPSEEK_API_KEY="sk-你的密钥"
 PORT=3000
 # PLAY_ACCESS_TOKEN=   给朋友玩时填写（向服主索取）；本机可留空
 # ACTION_DAILY_LIMIT=60
-# PLAY_CORS_ORIGIN=http://localhost:5173
+# PLAY_CORS_ORIGIN=http://localhost:5174
 ```
 
 3. 初始化并启动后端：
@@ -48,11 +48,11 @@ npm run dev
 ```
 
 4. 另开终端启动前端：`cd frontend && npm install && npm run dev`  
-   浏览器打开 **http://localhost:5173**（接口默认打 `http://localhost:3000`）。
+   浏览器打开 **http://localhost:5174**（接口默认打 `http://localhost:3000`）。Vite 固定 5174，勿用被占用后跳出来的别的端口。
 
 5. 后端测试：`cd backend && npm test`
 
-**不要**把 3000 端口裸映射到公网。给朋友试玩须在 `.env` 配置 `PLAY_ACCESS_TOKEN`（创角页「令牌」栏填写同一值），并用带密码的穿透或反代。未配口令时本机开发仍可直接玩。
+**不要**把 3000 端口裸映射到公网。给朋友试玩须在 `.env` 配置 `PLAY_ACCESS_TOKEN`（在**存档列表**页填写同一值），并用带密码的穿透或反代。未配口令时本机开发仍可直接玩。
 
 ## 仓库结构
 

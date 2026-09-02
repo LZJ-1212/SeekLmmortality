@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiFetch } from '../playToken';
+import { ROOT_ELEMENTS, ELEMENT_COLORS } from '../rootElements';
 
 // 1. 严格定义接收的 Props
 interface OpeningOption {
@@ -33,7 +34,6 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
   const origins = ['农家子', '猎户之后', '商贾之家', '官宦子弟', '将门之后', '没落世家', '市井孤儿', '书香门第', '方外遗孤', '妖族后裔'];
   const pursuits = ['问道飞升', '逍遥长生', '快意恩仇', '守护所爱', '问鼎天下', '随心所欲'];
   const constitutions = ['凡体', '先天道体', '剑灵体', '九阳圣体', '冰魄灵体', '玄阴体', '纯阳体', '混沌体'];
-  const rootElements = ['金', '木', '水', '火', '土', '雷', '风', '冰'];
   const talentList = ['天资聪颖', '过目不忘', '身轻如燕', '天生道心', '气运加身', '百脉俱通'];
 
   // 命格影响说明：与后端 characterBuild.service.ts 的效果一一对应，让玩家一眼看懂每个选择会带来什么
@@ -75,7 +75,6 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
     '气运加身': '仙缘+3',
     '百脉俱通': '修炼速度+10%',
   };
-  const elementColors: Record<string, string> = { '金':'bg-gold', '木':'bg-wood', '水':'bg-water', '火':'bg-blood', '土':'bg-[#B08A4E]', '雷':'bg-thunder', '风':'bg-[#7F9C9C]', '冰':'bg-sect' };
 
   const handleAttrChange = (key: keyof typeof attributes, delta: number) => {
     const newVal = attributes[key] + delta;
@@ -206,8 +205,8 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
              <span className={`text-xs font-bold ${getRootQuality().color}`}>{getRootQuality().name}</span>
            </div>
            <div className="flex flex-wrap gap-2 mb-3">
-             {rootElements.map(el => (
-               <button key={el} onClick={() => toggleRoot(el)} className={`px-2 py-1 text-xs rounded font-bold border transition-all ${roots.includes(el) ? `${elementColors[el]} text-white border-transparent` : 'bg-[#EFECE6] text-textSub border-[#E5E0D5] hover:border-jade'}`}>
+             {ROOT_ELEMENTS.map(el => (
+               <button key={el} onClick={() => toggleRoot(el)} className={`px-2 py-1 text-xs rounded font-bold border transition-all ${roots.includes(el) ? `${ELEMENT_COLORS[el]} text-white border-transparent` : 'bg-[#EFECE6] text-textSub border-[#E5E0D5] hover:border-jade'}`}>
                  {el}
                </button>
              ))}

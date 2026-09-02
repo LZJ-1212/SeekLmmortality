@@ -19,6 +19,15 @@ export interface CustomItemEffects {
   karma_delta?: number;
 }
 
+/** 自定义物品的 custom_data JSON 结构（写入时由 addItem 落库，读取时安全解析） */
+export interface CustomItemData {
+  name?: string;
+  category?: string;
+  rarity?: number;
+  description?: string;
+  effects?: CustomItemEffects;
+}
+
 /** AI 推演或坊市交易产生的一条物品变更请求 */
 export interface ItemChangeInput {
   name: string;
@@ -67,6 +76,41 @@ export function sanitizeCustomEffects(effects: CustomItemEffects = {}): CustomIt
   return bounded;
 }
 
+/** 自定义物品效果数值的字段名集合（与 CustomItemEffects 一一对应） */
+const CUSTOM_EFFECT_KEYS = ['cultivation_delta', 'hp_delta', 'mp_delta', 'merit_delta', 'karma_delta'] as const;
+
+/** 安全解析 custom_data.effects：只保留有限数值字段，其余类型一律丢弃，绝不抛异常 */
+function parseCustomEffects(raw: unknown): CustomItemEffects | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const data = raw as Record<string, unknown>;
+  const effects: CustomItemEffects = {};
+  for (const key of CUSTOM_EFFECT_KEYS) {
+    const value = data[key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      effects[key] = value;
+    }
+  }
+  return Object.keys(effects).length > 0 ? effects : undefined;
+}
+
+/**
+ * 安全解析 custom_data JSON 字段（Prisma Json 类型在运行时是 unknown）。
+ * 任何非对象、字段类型不符都退化为空对象或省略该字段，绝不抛异常——
+ * 这样历史脏数据 / AI 越界写入都不会让背包格式化流程崩溃。
+ */
+function parseCustomData(raw: unknown): CustomItemData {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const data = raw as Record<string, unknown>;
+  const effects = parseCustomEffects(data.effects);
+  return {
+    ...(typeof data.name === 'string' ? { name: data.name } : {}),
+    ...(typeof data.category === 'string' ? { category: data.category } : {}),
+    ...(typeof data.rarity === 'number' && Number.isFinite(data.rarity) ? { rarity: data.rarity } : {}),
+    ...(typeof data.description === 'string' ? { description: data.description } : {}),
+    ...(effects ? { effects } : {}),
+  };
+}
+
 function formatEntry(entry: player_inventory & { items_template?: items_template | null }): InventoryEntryDTO {
   if (entry.items_template) {
     return {
@@ -80,7 +124,7 @@ function formatEntry(entry: player_inventory & { items_template?: items_template
       category: entry.items_template.category,
     };
   }
-  const custom = (entry.custom_data as any) ?? {};
+  const custom = parseCustomData(entry.custom_data);
   return {
     inventoryId: entry.id,
     name: entry.custom_name ?? '未知物品',
@@ -89,8 +133,8 @@ function formatEntry(entry: player_inventory & { items_template?: items_template
     type: 'custom',
     rarity: custom.rarity ?? 1,
     description: custom.description ?? '',
-    category: custom.category,
-    effects: custom.effects,
+    ...(custom.category !== undefined ? { category: custom.category } : {}),
+    ...(custom.effects !== undefined ? { effects: custom.effects } : {}),
   };
 }
 
@@ -121,7 +165,7 @@ export class InventoryService {
         if (entry.items_template) {
           return `${entry.items_template.name} x${entry.quantity}`;
         }
-        const custom = (entry.custom_data as any) ?? {};
+        const custom = parseCustomData(entry.custom_data);
         const rarityTag = custom.rarity ? `(${custom.rarity}阶)` : '';
         return `${entry.custom_name || '未知物品'}${rarityTag} x${entry.quantity}`;
       })
@@ -207,14 +251,15 @@ export class InventoryService {
 
     // 数据库里没有的物品，视为 AI/剧情自定义物品，需要熔断数值防作弊
     const rarity = Math.min(input.rarity ?? 1, CUSTOM_ITEM_LIMITS.MAX_RARITY);
-    const customData = {
+    const customData: CustomItemData = {
       name: input.name,
       category: input.category || 'misc',
       rarity,
       description: input.description || '一件来历不明的物品。',
       effects: sanitizeCustomEffects(input.effects),
     };
-    return this.repo.createCustomEntry(saveId, input.name, customData as Prisma.InputJsonValue, quantity);
+    // 强类型接口（CustomItemData）→ Prisma Json 字段的跨边界转换，需经 unknown 中转
+    return this.repo.createCustomEntry(saveId, input.name, customData as unknown as Prisma.InputJsonValue, quantity);
   }
 
   /**

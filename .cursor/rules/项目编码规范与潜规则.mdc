@@ -26,7 +26,7 @@ alwaysApply: true
 路由（薄）→ Service（规则 + 掷骰）→ Repository（Prisma）
 ```
 
-- **新逻辑写进** `backend/src/services/*.ts`。`server.ts` 只编排：取玩家、调 Service、拼 `forcedOutcome`、调 AI、落库。禁止把新公式直接堆进 `server.ts`。
+- **新逻辑写进** `backend/src/services/*.ts`。`server.ts` 只组装中间件与挂载 `src/routes/*`，禁止把公式堆进入口。行动编排在 `action.service.ts`（拼 `forcedOutcome`、调 `ai.ts`、落库）；创角编排在 `characterCreation.service.ts`。新玩法先纯函数 Service，再由 `ActionService` 接入拦截器链，最后才改 UI。
 - 不碰 Express 的结算做成 **纯函数**；随机数必须可注入 `rollFn`（默认 `Math.random`），单测里传入 `() => 0` / `() => 0.99`。
 - 数据库访问放 `backend/src/repositories/`。禁止在 React 组件或路由里手写一长串 `prisma.xxx`。
 - Prisma 客户端只用 `backend/src/db/prisma.ts` 的单例，禁止到处 `new PrismaClient()`。
@@ -42,7 +42,7 @@ alwaysApply: true
 
 ## 3. TypeScript
 
-- 为请求体、AI JSON、Props 写 interface。禁止新增 `player: any`（`StatusCard` 历史债，改状态卡时一并收掉）。
+- 为请求体、AI JSON、Props 写 interface。禁止新增 `player: any`（`StatusCard` 用 `PlayerCardData`，`MainGame` 用 `PlayerPayload`）。AI 契约在 `backend/ai.ts`（`PlayerStateForAi`、`DeducedAction`），不要在路由里另写一套。
 - 未知命格/地名/物品名：**忽略或走默认值**，不要 throw 把整次回合打 500。
 - 六维与境界字段名与库表一致：`divine_sense`、`dao_heart`、`realm_major` 等，不要自创一套再映射。
 

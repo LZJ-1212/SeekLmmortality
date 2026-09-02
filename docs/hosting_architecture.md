@@ -16,7 +16,7 @@
 | 环境变量（前端） | `VITE_API_BASE`：空或未设 → `http://localhost:3000`；L1 设为 API 的公网 Origin（无尾斜杠）。**不要**把口令放进 `VITE_*`。 |
 | 环境变量（后端） | L1 必配 `PLAY_ACCESS_TOKEN`；`PLAY_CORS_ORIGIN` = 前端公网 Origin；`PORT=3000`；`DATABASE_URL` 仍指本机 MySQL。 |
 | MySQL | 只绑 `127.0.0.1:3306`。隧道映射列表**不准出现 3306**。 |
-| 公网映射 | 只映射前端端口（默认 5173）与后端端口（默认 3000）。 |
+| 公网映射 | 只映射前端端口（默认 5174）与后端端口（默认 3000）。 |
 | 隧道产品 | **不锁厂商**（Cloudflare Tunnel / cpolar / ngrok 等）。契约只有：两条公网 URL、HTTPS 更好、能关隧道。 |
 | 进程保活 L1 | Windows：**NSSM**（或等价服务包装）各包一层后端与前端；MySQL 用 XAMPP 的 Windows 服务。禁止把「Cursor 里开着的终端」当保活。 |
 | L1 前端形态 | 允许继续 `vite` 开发服务器（少一次 build）。不把 Docker 当 L1 门槛。 |
@@ -30,12 +30,12 @@
 
 ```
 朋友浏览器
-  ├─ 页面：  https://front.example.tld  → 隧道 → 127.0.0.1:5173
+  ├─ 页面：  https://front.example.tld  → 隧道 → 127.0.0.1:5174
   └─ API：   https://api.example.tld    → 隧道 → 127.0.0.1:3000
 服主机
   ├─ mysqld          127.0.0.1:3306
   ├─ Express         0.0.0.0:3000   （仅本机或仅隧道入口可到）
-  └─ Vite            0.0.0.0:5173
+  └─ Vite            0.0.0.0:5174
 ```
 
 后端：`PLAY_CORS_ORIGIN=https://front.example.tld`（与地址栏完全一致，含 https、无路径）。  
@@ -46,7 +46,7 @@
 
 ```
 朋友浏览器  https://play.example.tld
-                ├─ /        → 127.0.0.1:5173
+                ├─ /        → 127.0.0.1:5174
                 └─ /api     → 127.0.0.1:3000
 ```
 
@@ -93,7 +93,7 @@ L1 **可以零改 Express 路由**，只配环境变量。若 CORS 精确匹配�
 |------|---------|
 | MySQL（XAMPP） | 安装为 Windows 服务，开机启动 |
 | `backend`：`npm run dev` 或 `npx tsx watch server.ts` | NSSM 服务，失败重启；工作目录为 `backend/`，环境变量从系统或 NSSM 面板注入（含 `DATABASE_URL`、`DEEPSEEK_API_KEY`、`PLAY_ACCESS_TOKEN`、`PLAY_CORS_ORIGIN`） |
-| `frontend`：`npm run dev -- --host` | 须 `--host` 否则隧道打到 5173 可能只听 localhost。NSSM 同上，工作目录 `frontend/`，注入 `VITE_API_BASE` |
+| `frontend`：`npm run dev -- --host` | 须 `--host` 否则隧道打到 5174 可能只听 localhost。NSSM 同上，工作目录 `frontend/`，注入 `VITE_API_BASE` |
 | 隧道客户端 | 厂商自带开机启动即可 |
 
 NSSM 的可执行文件路径、本机目录 **不写进 Git**。架构只规定「用服务包装，不用 Cursor 终端」。

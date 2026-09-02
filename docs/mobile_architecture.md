@@ -82,7 +82,7 @@ frontend/src/components/
 4. 真机或 DevTools 390 宽走完 [mobile.md](./mobile.md) 第 7 节；再 `md` 回归桌面。
 5. `frontend` `npm run build`。
 
-禁止先做 PWA manifest、禁止为 I11 改 `server.ts`。
+禁止先做 PWA manifest。禁止为 I11 改后端（布局只动 `frontend/`；`server.ts` 已是薄组合根，不要把 UI 塞进 Express）。
 
 ---
 

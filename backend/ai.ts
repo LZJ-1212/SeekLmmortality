@@ -1,7 +1,9 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import type { players } from '@prisma/client';
 import { parseElementsFromSpiritualRoots } from './src/services/combat.service';
 import { parseTalentsData } from './src/services/talent.service';
+import type { CustomItemEffects } from './src/services/inventory.service';
 
 dotenv.config();
 
@@ -11,6 +13,118 @@ export const deepseek = new OpenAI({
   baseURL: 'https://api.deepseek.com',
   apiKey: process.env.DEEPSEEK_API_KEY, 
 });
+
+// ==================== 类型定义（AI 契约单一来源） ====================
+
+/**
+ * deduceAction 只读取玩家的这些字段；用 Pick 从 Prisma players 类型收窄，
+ * 避免 any 漂移，也向调用方明确「本函数消费哪些数据」。
+ */
+export type PlayerStateForAi = Pick<
+  players,
+  | 'name'
+  | 'dao_name'
+  | 'gender'
+  | 'realm_major'
+  | 'realm_minor'
+  | 'spiritual_roots'
+  | 'talents'
+  | 'hp'
+  | 'max_hp'
+  | 'mp'
+  | 'max_mp'
+  | 'cultivation'
+  | 'merit'
+  | 'karma'
+  | 'aptitude'
+  | 'comprehension'
+  | 'divine_sense'
+  | 'speed'
+  | 'dao_heart'
+  | 'fortune'
+>;
+
+/** 洞府信息（用于拼进系统提示词的「洞府」段落） */
+export interface CaveInfoForAi {
+  level: number;
+  spiritualDensity: number;
+  locationName: string;
+}
+
+/** 宗门信息（用于拼进系统提示词的「宗门」段落） */
+export interface SectInfoForAi {
+  sectName: string | null;
+  rank: string;
+  reputation: number;
+  isTraitor: boolean;
+}
+
+/** 人际关系（用于拼进系统提示词的「人际关系」段落） */
+export interface RelationshipForAi {
+  npc_name: string;
+  relation_type: string | null;
+  affinity: number | null;
+  is_deceased?: boolean | null;
+}
+
+/** AI 返回 JSON 里的战斗字段 */
+export interface DeducedActionCombat {
+  in_combat?: boolean;
+  enemy_name?: string;
+  enemy_realm_major?: string;
+  enemy_element?: string | null;
+  base_damage_to_player?: number;
+  base_damage_to_enemy?: number;
+}
+
+/** AI 返回 JSON 里的宗门事件字段 */
+export interface DeducedActionSectEvent {
+  joined_sect_name?: string;
+  reputation_delta?: number;
+}
+
+/** AI 返回 JSON 里的人际关系事件字段 */
+export interface DeducedActionRelationshipEvent {
+  npc_name?: string;
+  is_new?: boolean;
+  relation_type?: string;
+  affinity_delta?: number;
+  npc_realm_major?: string;
+  npc_age_years?: number;
+}
+
+/** AI 返回 JSON 里的物品变更字段（自定义物品效果数值受后端熔断约束） */
+export interface DeducedActionItemChange {
+  name?: string;
+  change?: number;
+  category?: string;
+  rarity?: number;
+  description?: string;
+  effects?: CustomItemEffects;
+}
+
+/** AI 返回 JSON 里的动态选项字段 */
+export interface DeducedActionOption {
+  tag: string;
+  text: string;
+}
+
+/** AI 推演返回 JSON 的结构化描述（宽松定义，AI 可能省略部分字段） */
+export interface DeducedAction {
+  narrative?: string;
+  hp_delta?: number;
+  mp_delta?: number;
+  cultivation_delta?: number;
+  karma_delta?: number;
+  merit_delta?: number;
+  spirit_stones_delta?: number;
+  sect_event?: DeducedActionSectEvent | null;
+  relationship_event?: DeducedActionRelationshipEvent | null;
+  item_changes?: DeducedActionItemChange[];
+  time_cost_months?: number;
+  combat?: DeducedActionCombat | null;
+  next_options?: DeducedActionOption[];
+}
 
 // 测试唤醒天道
 export async function wakeUpHeaven() {
@@ -25,7 +139,11 @@ export async function wakeUpHeaven() {
       ],
       temperature: 0.7,
     });
-    return response.choices[0].message.content;
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('天道未予回应');
+    }
+    return content;
   } catch (error) {
     console.error("召唤天道失败:", error);
     throw error;
@@ -33,15 +151,15 @@ export async function wakeUpHeaven() {
 }
 
 export async function deduceAction(
-  playerState: any,
+  playerState: PlayerStateForAi,
   action: string,
   forcedOutcome?: string,
   inventoryStr: string = "",
   hasLockedNumbers: boolean = false,
-  caveInfo?: { level: number; spiritualDensity: number; locationName: string },
-  sectInfo?: { sectName: string | null; rank: string; reputation: number; isTraitor: boolean },
-  relationships?: { npc_name: string; relation_type: string | null; affinity: number | null; is_deceased?: boolean | null }[],
-) {
+  caveInfo?: CaveInfoForAi,
+  sectInfo?: SectInfoForAi,
+  relationships?: RelationshipForAi[],
+): Promise<DeducedAction> {
   const lockedNumbersNote = hasLockedNumbers
     ? '其中涉及的气血/修为具体数值已由天道（后端）精确计算完毕并直接生效，你在 hp_delta/cultivation_delta 里只需填 0，无需也不能自己重复计算这部分数值，只管把这段指令转化为生动的剧情文字。'
     : '这只是天道给你的叙事提示/背景信息，不代表本次行动的数值已被锁定，你仍需按玩家实际行动正常计算 hp_delta/cultivation_delta 等数值。';
@@ -177,7 +295,8 @@ export async function deduceAction(
       response_format: { type: "json_object" },
       temperature: 0.7,
     });
-    return JSON.parse(response.choices[0].message.content || "{}");
+    const content = response.choices[0]?.message?.content ?? '{}';
+    return JSON.parse(content) as DeducedAction;
   } catch (error) {
     throw new Error("推演失败");
   }

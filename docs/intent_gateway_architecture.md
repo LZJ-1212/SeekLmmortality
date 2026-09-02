@@ -17,7 +17,7 @@
 | 日限存储 | MySQL 表，进程重启不丢；禁止只放内存 |
 | 日限何时 +1 | 仅 `POST /api/action`：口令、长度、黑名单、玩家存在、未死亡、**情境锁通过** 之后、其余层 G 之前。情境锁 400、其它 400/401/404/403 死亡锁 **不计数** |
 | `create-player` | 要口令 + 字段长度；**不走日限**（尚无 playerId） |
-| CORS | `PLAY_CORS_ORIGIN` 有值则放行该列表（逗号分隔）以及本机 `localhost:5173` / `127.0.0.1:5173`；未配则维持现况（本机任意） |
+| CORS | `PLAY_CORS_ORIGIN` 有值则放行该列表（逗号分隔）以及本机 Vite 端口 `5174`（当前固定）与历史 `5173`；未配则维持现况（本机任意） |
 | 层 E/F | 本目录不建分类器文件 |
 
 ---
@@ -26,25 +26,20 @@
 
 ```
 backend/
-├── prisma/schema.prisma          # 增 model action_daily_quotas
+├── prisma/schema.prisma          # model action_daily_quotas
 ├── src/
-│   └── gateway/
-│       ├── types.ts
-│       ├── constants.ts
-│       ├── playToken.ts              # 读 env、比较口令（时序安全比较）
-│       ├── actionSanitize.ts         # 空串、不可见字符、长度
-│       ├── injectionBlocklist.ts     # 第一期词表，纯函数
-│       ├── createPlayerLimits.ts     # 创角字段夹紧/拒绝
-│       ├── quota.repository.ts
-│       ├── quota.service.ts
-│       ├── requirePlayToken.middleware.ts
-│       └── index.ts
-└── server.ts                         # 挂中间件 + action 内调用 sanitize/blocklist/quota
+│   ├── gateway/                      # 口令、净化、黑名单、日限、CORS 白名单
+│   ├── routes/
+│   │   ├── action.routes.ts          # 净化 + 黑名单后调 ActionService
+│   │   └── player.routes.ts         # 创角字段上限后调 CharacterCreationService
+│   └── services/
+│       └── action.service.ts         # 死亡锁 → 情境锁 → 日限 → 层 G
+└── server.ts                         # 组合根：CORS、json、挂路由、listen
 frontend/src/
 └── playToken.ts                      # sessionStorage 读写；fetch 附头。禁止写进 Git 的默认口令
 ```
 
-不新建独立 Express Router 文件（最小集路由少，避免和胖 `server.ts` 抢两套挂载）。配额与词表必须可单测，故不把规则内联在 `server.ts`。
+网关规则仍在 `gateway/` 纯函数里单测，禁止把词表/配额公式堆进 `server.ts`。HTTP 挂载已拆到 `src/routes/`（与胖入口时代「不另建 Router」的旧决议相反，以代码为准）。
 
 ---
 
@@ -74,12 +69,13 @@ frontend/src/
 1. `express.json()`  
 2. `requirePlayToken` → 失败 **401** `{ status:'error', message:'天机有封，须持令牌。' }`  
 3. 读 `req.body.action`、`playerId`  
-4. `actionSanitize` → 失败 **400**（空、过长、非法字符）  
-5. `hitsInjectionBlocklist` → 失败 **400**（注入）  
-6. 现有：查玩家 → 无则 **404**  
-7. 现有：死亡锁 → **403**  
-8. `quota.service.tryConsumeDailyAction(playerId)` → 超限 **429** `{ ..., message:'今日推演次数已尽，明日再来。' }`  
-9. 层 G 拦截器 + `deduceAction`（DeepSeek）  
+4. `actionSanitize`（`action.routes.ts`）→ 失败 **400**（空、过长、非法字符）  
+5. `hitsInjectionBlocklist`（`action.routes.ts`）→ 失败 **400**（注入）  
+6. `ActionService.execute`：查玩家 → 无则 **404**  
+7. 死亡锁 → **403**  
+8. 情境锁 → 失败 **400**（不占日限）  
+9. `quota.service.tryConsumeDailyAction(playerId)` → 超限 **429** `{ ..., message:'今日推演次数已尽，明日再来。' }`  
+10. 层 G 拦截器 + `deduceAction`（DeepSeek）  
 
 `GET /api/ping`：不挂口令中间件（探活）。  
 `GET /api/ai-ping`：要口令（烧 Key）。
@@ -166,9 +162,11 @@ model action_daily_quotas {
 
 ```
 server.ts
-  → requirePlayToken.middleware
-  → createPlayerLimits | actionSanitize | injectionBlocklist | quota.service
-       → quota.repository → prisma
+  → routes/*（挂 requirePlayToken）
+       → action.routes：actionSanitize | injectionBlocklist
+            → ActionService：死亡锁 | 情境锁 | quota.service → 层 G
+       → player.routes：createPlayerLimits → CharacterCreationService
+quota.service → quota.repository → prisma
 playToken.ts（前）← SaveList（填令）/ CreateCharacter / MainGame（只带头发请求）
 ```
 
