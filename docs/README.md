@@ -1,5 +1,7 @@
 # 《问道长生》文档目录
 
+修订：2026-09-02 21:37 +08 lzj — 目录增加署名规范入口
+
 规格先行。实现代码以仓库为准；本目录说明「读哪份文档」。项目管理见 [project_status.md](./project_status.md)。
 
 ## 总览与运行
@@ -10,6 +12,7 @@
 | [project_status.md](./project_status.md) | 完成度、测试、成本、L1、上线判断 |
 | [roadmap.md](./roadmap.md) | **工作顺序（A→F）**：A 安全+行动环；**B 补现有雏形（当前主线）**；C～F 才开新系统 |
 | [dev_guide.md](./dev_guide.md) | **双人开发**：分支约定、认领排期、密钥、铁律摘要（启动命令仍见 runbook） |
+| [attribution.md](./attribution.md) | **修订署名**：改代码/文档必须写作者与北京时间 |
 | [runbook.md](./runbook.md) | 本机启动（XAMPP、前后端、常见故障） |
 | [hosting.md](./hosting.md) | I06 功能规格（L1 穿透、暴露面、朋友须知） |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 架构（双 Origin 隧道、API 基址、NSSM 保活） |

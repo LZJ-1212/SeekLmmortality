@@ -1,6 +1,8 @@
 # 双人开发指南
 
-给一起改《问道长生》的人看：怎么开环境、怎么分分支、先改什么、什么绝对不能做。本机点开游戏的逐步命令见 [runbook.md](./runbook.md)，本文件不重复抄。规格总目 [README.md](./README.md)。排期权威 [roadmap.md](./roadmap.md)。
+修订：2026-09-02 21:37 +08 lzj — 补文件内署名与北京时间底线
+
+给一起改《问道长生》的人看：怎么开环境、怎么分分支、先改什么、什么绝对不能做。本机点开游戏的逐步命令见 [runbook.md](./runbook.md)，本文件不重复抄。规格总目 [README.md](./README.md)。排期权威 [roadmap.md](./roadmap.md)。每改一处文件还要按 [attribution.md](./attribution.md) 署名。
 
 仓库：`https://github.com/LZJ-1212/SeekLmmortality`
 
@@ -18,7 +20,8 @@
 2. [roadmap.md](./roadmap.md)：阶段 **A→F**。当前主线是 **阶段 B（补已有雏形）**。B 没收束，不要开工法 / 心魔 / 灵兽。
 3. [architecture.md](./architecture.md)：路由 → Service → Repository。
 4. [player_agency.md](./player_agency.md)：叙事可以胡写；数值零主权。
-5. Cursor 规则：`.cursor/rules/project.mdc` 与 `.cursor/rules/项目编码规范与潜规则.mdc`（打开本仓库后会自动带上）。
+5. Cursor 规则：`.cursor/rules/project.mdc`、`.cursor/rules/项目编码规范与潜规则.mdc`、`.cursor/rules/attribution.mdc`（打开本仓库后会自动带上）。
+6. 署名底线：[attribution.md](./attribution.md) — 改代码、改文档、新建文件都要写作者和北京时间。
 
 Windows PowerShell 旧版不要用 bash 的 `&&`。后端入口是 `backend` 下 `npm run dev`（`tsx watch server.ts`），没有 `index.js`。
 
@@ -71,6 +74,16 @@ git merge origin/main
 两人**不要长期改同一批文件**。动手前在聊天里认领 [roadmap.md](./roadmap.md) 的一行（例如你做 I21 加深，朋友做成册 I22），认领了再写代码。
 
 合进 `main`：在 GitHub 开 Pull Request，base 选 `main`，head 选 `lzj` 或 `Loading_line`。标题说清为什么。
+
+---
+
+## 3.5 改文件必署名（底层行动）
+
+无论改代码、改文档还是新建文档，都在**该文件里**留下一行：谁、什么北京时间、做了什么。Git 提交记录不够。格式与上限见 [attribution.md](./attribution.md)。
+
+- 主人签 `lzj`，朋友签 `Loading_line`。
+- 时间：`YYYY-MM-DD HH:mm +08`。
+- 文档写在标题下；`.ts` / `.tsx` 写在文件顶注释。不要每个函数再签一次。
 
 ---
 

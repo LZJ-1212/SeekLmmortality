@@ -9,6 +9,10 @@ alwaysApply: true
 
 对玩家说明用中文。标识符用英文（`getCave`，不要 `getDongfu`）。
 
+**修订署名：** 改本文件或任何代码/文档时追加一行署名与北京时间，见 `docs/attribution.md`。Git 不能代替。
+
+修订：2026-09-02 21:37 +08 lzj — 动手前增加署名底线
+
 ---
 
 ## 1. 动手前
@@ -17,6 +21,7 @@ alwaysApply: true
 - 新玩法先对规格，再写纯函数 Service，再挂 `/api/action` 拦截器，最后才改 UI。禁止先让 DeepSeek「演」出数值。宣称奇迹、战中神器等先对 `docs/player_agency.md` / `docs/plausibility.md`，排期 **A5**。
 - 开工顺序跟 `docs/roadmap.md` 阶段 A→F。**A6（S22 短记忆）属补现有行动环**，见该文件阶段 A。当前主线是 **阶段 B（I20–I28、I13–I18 成册+加深）**；B 未收束禁止开 C～F（功法、心魔、灵兽等）。不要为了「更修仙」跳过已有雏形。
 - 改配方、地区、命格、功法名：同步 `docs/content_catalog.md`（或实现时立刻补表）。
+- 改代码、改文档、新建文档：在该文件追加修订行（署名 + 北京时间），见 `docs/attribution.md`。不要回填全仓库历史。
 
 ---
 

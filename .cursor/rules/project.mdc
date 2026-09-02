@@ -1,5 +1,7 @@
 # 问道长生 (SeekLmmortality) - Cursor Development Rules
 
+修订：2026-09-02 21:37 +08 lzj — 规格索引增加署名底线
+
 ## 1. 核心工作流规范
 - **先读后写**：在修改任何代码前，必须先使用工具查看目标文件及关联文件的最新代码，禁止凭记忆推断文件结构。
 - **架构隔离**：严格遵守 Monorepo 划分：
@@ -26,6 +28,7 @@
 - 宣称奇迹（封闭骰、不破秒杀）：`docs/plausibility.md`。代码 `miracle.service.ts`（排期 `docs/roadmap.md` **A5 / S36**，已接线），不让模型演神兵。
 - 开工顺序：`docs/roadmap.md`（阶段 A→F）。当前主线是 **阶段 B（补已有雏形）**；**I20 / I21 已成册**，I21 加深与 I22 战斗成册为下一刀；禁止为新系统跳过 B。
 - 双人协作：`docs/dev_guide.md`（分支 `lzj` / `Loading_line`，不要直推 `main`）。
+- 修订署名（底层行动）：`docs/attribution.md`；规则 `.cursor/rules/attribution.mdc`。改代码/文档/新建文件必须追加作者与北京时间。
 - 境界与雷劫（I21）：`docs/realms.md`。加深落点：`docs/realms_architecture.md`。未按架构改钟/终局键前不要先改 `REALM_LAWS` 数字。
 - **编码规范与仓库潜规则：** `.cursor/rules/项目编码规范与潜规则.mdc`（分层、测试、Git、UI、环境）。
 
