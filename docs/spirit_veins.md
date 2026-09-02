@@ -1,6 +1,6 @@
 # S35 灵脉与洞府争夺（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 C 末。洞府与灵气已有；本系统让「灵脉不是你的私产」。大势骰见 [world_sim.md](./world_sim.md)。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 D 末。洞府与灵气已有；本系统让「灵脉不是你的私产」。大势骰见 [world_sim.md](./world_sim.md)。
 
 ---
 

@@ -1,6 +1,6 @@
 # S26 心魔与走火（规格）
 
-规格先行，代码未写。与雷劫分轨：雷劫打气血/修为；心魔打选项与道心。铁律见 [game_design.md](./game_design.md)。排期见 [roadmap.md](./roadmap.md) 阶段 B。
+规格先行，代码未写。与雷劫分轨：雷劫打气血/修为；心魔打选项与道心。铁律见 [game_design.md](./game_design.md)。排期见 [roadmap.md](./roadmap.md) 阶段 C。
 
 依赖：道心、业力、闭关、大境界突破。建议在 [combat_build.md](./combat_build.md) 之后做（改功法是走火高发）。
 

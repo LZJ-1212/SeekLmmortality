@@ -1,6 +1,6 @@
 # 《问道长生》声音系统技术规格
 
-规格先行，本文件不包含实现代码。声音系统是独立子系统：负责通道混音、配乐切换、旁白 / 天道 / NPC 语音播放；不负责撰写剧情或计算数值。数值与剧情铁律见 [game_design.md](./game_design.md)。代码架构见 [audio_architecture.md](./audio_architecture.md)。
+规格先行，本文件不包含实现代码。排期见 [roadmap.md](./roadmap.md)：**BGM/SFX 为 F1**（可在阶段 B 末做气氛，不得推迟成册）；**人声为 F5**。声音系统是独立子系统：负责通道混音、配乐切换、旁白 / 天道 / NPC 语音播放；不负责撰写剧情或计算数值。数值与剧情铁律见 [game_design.md](./game_design.md)。代码架构见 [audio_architecture.md](./audio_architecture.md)。
 
 剧情入口为 `MainGame.tsx` 的 `LogEntry`（`system` / `player` / `narrative`）。NPC 姓名来自 `player_relationships`。天道文案来自后端 `forcedOutcome` 与系统日志。
 

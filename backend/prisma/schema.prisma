@@ -142,6 +142,8 @@ model world_state {
   global_events   String? @db.LongText
   triggered_clues String? @db.LongText
   scene_context   String? @default("none") @db.VarChar(20) // none | combat：情境锁，交手未歇禁止闭关等
+  last_narrative_digest String? @db.VarChar(120) // A6 短记忆：上一回成功叙事截断（最多 120 码位），只进 prompt 不入库整段剧情
+  pending_scene   String? @default("none") @db.VarChar(20) // A6 短记忆：none | wounded_expert | secret_realm：未收束奇遇类型
   saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")
 }
 

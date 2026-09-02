@@ -1,6 +1,6 @@
 # S20 功法与神通构筑（规格）
 
-规格先行，代码未写。数值仍由后端硬算；AI 只描写招式名与场面。铁律见 [game_design.md](./game_design.md)。依赖现有：闭关公式功法系数占位 1.0、`combat.service.ts` 境界压制、背包物品。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 C。数值仍由后端硬算；AI 只描写招式名与场面。铁律见 [game_design.md](./game_design.md)。依赖现有：闭关公式功法系数占位 1.0、`combat.service.ts` 境界压制、背包物品。
 
 ---
 

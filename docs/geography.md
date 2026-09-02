@@ -1,6 +1,6 @@
 # S31 地理、赶路与关隘（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 C。探索分级见 [content_catalog.md](./content_catalog.md)；传闻档期接 [world_sim.md](./world_sim.md)。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 D。探索分级见 [content_catalog.md](./content_catalog.md)；传闻档期接 [world_sim.md](./world_sim.md)。
 
 ---
 

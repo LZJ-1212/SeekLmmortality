@@ -75,7 +75,7 @@ docs/         设计规格与运行手册
 | HTTP 接口 | [docs/api.md](./docs/api.md) |
 | 地区 / 配方 / 命格表 | [docs/content_catalog.md](./docs/content_catalog.md) |
 
-规划中（有规格、无实现）：S20、S22–S35，见 [docs/README.md](./docs/README.md)。S21 最小集已实现。声音规格已确认。试玩叙事割裂：S22 薄做已提前为 **A6**。公网下一刀仍是 **A3 / I06 部署**；不要先做灵兽或人声。
+规划中（有规格、无实现）：S20、S22 全表、S23–S35，见 [docs/README.md](./docs/README.md)。S21 最小集已实现。声音规格已确认。**下一刀代码：A6 短记忆**，然后 **阶段 B 把现有十二系统成册并加深**；功法/心魔/灵兽排在 C～F，不要插队。公网部署仍是 **A3 / I06**（不挡 B）。
 
 ## 现状与边界
 

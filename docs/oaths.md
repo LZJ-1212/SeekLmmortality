@@ -1,6 +1,6 @@
 # S27 毒誓、因果锁与禁术（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 D。天罚与功德见现有 `karma.service.ts`；结局见 [endings.md](./endings.md)。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 E。天罚与功德见现有 `karma.service.ts`；结局见 [endings.md](./endings.md)。
 
 ---
 

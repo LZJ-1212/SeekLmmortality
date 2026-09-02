@@ -1,6 +1,6 @@
 # S28 师徒与衣钵（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 C。功法来源接 [combat_build.md](./combat_build.md)；叛师记 [chronicle.md](./chronicle.md)。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 D。功法来源接 [combat_build.md](./combat_build.md)；叛师记 [chronicle.md](./chronicle.md)。
 
 ---
 

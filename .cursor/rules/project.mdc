@@ -27,7 +27,7 @@
 - 玩家自由度（叙事自由、数值零主权）：`docs/player_agency.md`。
 - 情境锁（战中闭关等）：`docs/situation.md`。
 - 宣称奇迹（封闭骰、不破秒杀）：`docs/plausibility.md`。代码 `miracle.service.ts`（排期 `docs/roadmap.md` **A5 / S36**，已接线），不让模型演神兵。
-- 开工顺序：`docs/roadmap.md`（阶段 A→E）。
+- 开工顺序：`docs/roadmap.md`（阶段 A→F）。当前主线是 **A6 然后阶段 B（补已有雏形）**；禁止为新系统跳过 B。
 - **编码规范与仓库潜规则：** `.cursor/rules/项目编码规范与潜规则.mdc`（分层、测试、Git、UI、环境）。
 
 ## 3. 技术与代码规范

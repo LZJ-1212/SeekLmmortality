@@ -45,6 +45,12 @@ import { QuotaService, QuotaRepository } from '../gateway';
 import { deduceAction } from '../../ai';
 import { unlearnedSpellForcedOutcome } from './technique.service';
 import { detectMiracleClaim, rollMiracle } from './miracle.service';
+import {
+  buildSceneMemoryPrompt,
+  detectPendingLeave,
+  nextPendingScene,
+  truncateNarrativeDigest,
+} from './sceneMemory.service';
 import { calculateSeclusionCultivationGain } from './cultivationFormula.service';
 import { detectCraftingAttempt, resolveCrafting } from './crafting.service';
 import {
@@ -174,6 +180,7 @@ export class ActionService {
       // 世界状态：情境锁 + 年份/旧友检测复用
       const worldState = await this.worldStateRepo.findBySaveId(player.save_id);
       const { context: sceneContext, persistable: scenePersistable } = await this.worldStateRepo.readSceneContext(player.save_id);
+      const { digest: lastDigest, pending: pendingScene, persistable: sceneMemoryPersistable } = await this.worldStateRepo.readSceneMemory(player.save_id);
       const situation = evaluateSituation(sceneContext, action);
       if (!situation.ok) {
         return { ok: false, status: 400, message: situation.message };
@@ -390,7 +397,8 @@ export class ActionService {
       }
 
       // 【核心拦截器 10】：探索与随机奇遇——1d100 掷骰机制，仙缘决定触发概率
-      const explorationEncounter = isExplorationAttempt(action)
+      // A6：上一场未收束（pending 非 none）时本回合跳过探索骰，避免「地上还有人」又强制第二场奇遇。
+      const explorationEncounter = isExplorationAttempt(action) && pendingScene === 'none'
         ? rollExplorationEncounter(player.fortune ?? 10)
         : null;
       if (explorationEncounter?.triggered) {
@@ -441,6 +449,9 @@ export class ActionService {
       // hp/修为是否已被后端锁定
       const hasLockedNumbers = !!breakthroughResult || !!karmaRetributionResult?.triggered || seclusionCultivationGain !== null || !!regionDangerCheck?.isDangerous;
 
+      // A6：拼近事注入块（与 A5 的 forcedOutcome 分段，不糊成一句），放在「玩家行动」之前
+      const sceneMemoryPrompt = buildSceneMemoryPrompt(lastDigest, pendingScene);
+
       // 丢给 DeepSeek 进行推演
       const deduction = await deduceAction(
         player,
@@ -460,7 +471,17 @@ export class ActionService {
           isTraitor: !!playerSect.is_traitor,
         } : undefined,
         relationships,
+        sceneMemoryPrompt,
       );
+
+      // A6：本回合成功后要写回的近事摘要与未收束场景（拒绝/403/429 已在前面提前返回，不会走到这里）
+      const nextDigest = truncateNarrativeDigest(deduction.narrative ?? '');
+      const nextPending = nextPendingScene({
+        pending: pendingScene,
+        encounterType: explorationEncounter?.triggered ? explorationEncounter.encounterType : 'none',
+        action,
+        leave: detectPendingLeave(action, pendingScene),
+      });
 
       // ==================== 战斗与境界压制 ====================
       const combat = deduction.combat ?? null;
@@ -628,6 +649,9 @@ export class ActionService {
           transactionOps.push(clockOp, this.worldStateRepo.sceneContextUpdate(player.save_id, nextScene));
         } else {
           transactionOps.push(clockOp);
+        }
+        if (sceneMemoryPersistable) {
+          transactionOps.push(this.worldStateRepo.sceneMemoryUpdate(player.save_id, { digest: nextDigest, pending: nextPending }));
         }
       }
 

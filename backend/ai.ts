@@ -159,6 +159,7 @@ export async function deduceAction(
   caveInfo?: CaveInfoForAi,
   sectInfo?: SectInfoForAi,
   relationships?: RelationshipForAi[],
+  sceneMemoryPrompt?: string,
 ): Promise<DeducedAction> {
   const lockedNumbersNote = hasLockedNumbers
     ? '其中涉及的气血/修为具体数值已由天道（后端）精确计算完毕并直接生效，你在 hp_delta/cultivation_delta 里只需填 0，无需也不能自己重复计算这部分数值，只管把这段指令转化为生动的剧情文字。'
@@ -231,7 +232,9 @@ export async function deduceAction(
 宗门：${sectInfo ? `${sectInfo.sectName ?? '未知'}（职位：${sectInfo.rank}，声望：${sectInfo.reputation}${sectInfo.isTraitor ? '，已叛宗！' : ''}）` : '散修，尚未加入任何宗门'}
 人际关系：${relationships && relationships.length > 0 ? relationships.map((r) => r.is_deceased ? `${r.npc_name}（已仙逝，不可再会）` : `${r.npc_name}(${r.relation_type ?? '相识'}，好感度${r.affinity ?? 0})`).join('，') : '孤身一人，尚无深交'}
 
-玩家行动："${action}"${outcomeInstruction}
+${sceneMemoryPrompt ? `${sceneMemoryPrompt}
+
+` : ''}玩家行动："${action}"${outcomeInstruction}
 
 请推演结果，必须返回 JSON 格式：
 {

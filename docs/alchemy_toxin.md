@@ -1,6 +1,6 @@
 # S30 丹毒、药力与灵食（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 B。炼丹成功已在 `crafting.service.ts`；本系统管「吃下去之后」。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 C。炼丹成功已在 `crafting.service.ts`；本系统管「吃下去之后」。
 
 ---
 

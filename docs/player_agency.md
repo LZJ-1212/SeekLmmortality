@@ -128,12 +128,12 @@ DeepSeek 只描写。禁止用模型给每句打「合不合理」分（贵、�
 2. 查玩家；死亡锁 **403**（不占日限）  
 3. 层 1 情境锁（可能 **400**，不占日限）  
 4. 日限  
-5. 既有拦截器（突破、闭关月数、物品熔断、探索骰等），拼 `forcedOutcome`  
-6. **A5：** `detectMiracleClaim` → 若非空则 `rollMiracle`，**再**拼一段 `forcedOutcome`（与闭关/突破等公式并列，只看「反杀/神器/秒杀」子串，互不误触；必须在 `deduceAction` **之前**，且只锁叙事、不改数值）  
-7. 调 AI  
-8. 战斗公式覆盖胜负与秒杀；过滤非法 `item_changes`；写回情境  
+5. **A6 读** `world_state.last_narrative_digest` / `pending_scene`。既有拦截器（突破、闭关、物品熔断、探索骰等）拼 `forcedOutcome`；**若 pending 非 none，跳过探索骰**（细则 [chronicle.md](./chronicle.md) 第 0 节）  
+6. **A5：** `detectMiracleClaim` → 若非空则 `rollMiracle`，再拼 `forcedOutcome`（只锁叙事、不改数值）  
+7. **A6 注入**【近事】/【未收束】→ 调 AI（与 A5 的 forcedOutcome 分段，不要糊成一句）  
+8. 战斗公式覆盖胜负与秒杀；过滤非法 `item_changes`；写回情境；**成功 200 时**更新 digest 与 pending（拒绝/403/429 不改）  
 
-A5 已接线：第 6 步生效，敌境未知时骰子上限按 [plausibility.md](./plausibility.md) 第 3.2 节 L1 处理（只锁叙事，秒杀交给战斗公式）。第 8 步仍有效。
+A5 已接线。A6 未接线：第 5 步暂不跳过探索骰、第 7 步暂无【近事】；第 8 步其余仍有效。
 
 ---
 

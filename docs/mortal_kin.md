@@ -1,6 +1,6 @@
 # S29 凡人亲缘（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 C。只做 1～3 个凡人，不做家族经营。时间法则见 [game_design.md](./game_design.md)。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 D。只做 1～3 个凡人，不做家族经营。时间法则见 [game_design.md](./game_design.md)。
 
 ---
 

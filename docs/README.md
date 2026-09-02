@@ -8,7 +8,7 @@
 |------|------|
 | [game_design.md](./game_design.md) | 天道法则、UI 短铁律、十二系统（视觉总则见 ui.md） |
 | [project_status.md](./project_status.md) | 完成度、测试、成本、L1、上线判断 |
-| [roadmap.md](./roadmap.md) | **工作顺序（A→E）**、五柱、不要做的 |
+| [roadmap.md](./roadmap.md) | **工作顺序（A→F）**：A 安全+行动环；**B 补现有雏形（当前主线）**；C～F 才开新系统 |
 | [runbook.md](./runbook.md) | 本机启动（XAMPP、前后端、常见故障） |
 | [hosting.md](./hosting.md) | I06 功能规格（L1 穿透、暴露面、朋友须知） |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 架构（双 Origin 隧道、API 基址、NSSM 保活） |
@@ -54,6 +54,6 @@
 | [spirit_veins.md](./spirit_veins.md) | S35 灵脉洞府争夺 |
 | [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | S36：自由度总则已写；情境锁、宣称奇迹骰均已落地 |
 
-已实现的十二系统：**铁律与公式摘要**见 [game_design.md](./game_design.md)；**成册规格待办**见 [roadmap.md](./roadmap.md) **I13–I18、I20–I28**（未成册前以代码为准，禁止只改一边）。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。
+已实现的十二系统：**铁律与公式摘要**见 [game_design.md](./game_design.md)；**成册与加深（阶段 B）**见 [roadmap.md](./roadmap.md) **B1–B16 / I13–I18、I20–I28**（未成册前以代码为准，禁止只改一边）。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。阶段 B 未收束前不要按本表去开工法/心魔/灵兽。
 
 **代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；状态机岁月/境界/战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I20–I28**。整体界面 **I19**。

@@ -1,6 +1,6 @@
 # S33 情报与天机（规格）
 
-规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 E。传闻种子来自 [world_sim.md](./world_sim.md)；假情报可把人骗进 [geography.md](./geography.md) 高危地。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 F。传闻种子来自 [world_sim.md](./world_sim.md)；假情报可把人骗进 [geography.md](./geography.md) 高危地。
 
 ---
 

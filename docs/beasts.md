@@ -1,6 +1,6 @@
 # S23 灵兽与傀儡（规格）
 
-规格先行，代码未写。战斗数值仍走 `combat.service.ts` 扩展，不交给 AI 报伤害。
+规格先行，代码未写。排期见 [roadmap.md](./roadmap.md) 阶段 F。战斗数值仍走 `combat.service.ts` 扩展，不交给 AI 报伤害。
 
 ---
 
