@@ -55,6 +55,14 @@ function clamp(value: number, max: number): number {
   return Math.max(-max, Math.min(max, value));
 }
 
+/**
+ * 喂给模型的背包串会把自定义物写成「月华草(2阶)」，消耗时模型常原样抄回。
+ * 落库名前先剥阶位后缀，禁止因此整回合 500。
+ */
+export function canonicalItemName(raw: string): string {
+  return (raw ?? '').trim().replace(/[（(]\d+阶[）)]\s*$/u, '').trim();
+}
+
 /** 对 AI 生成的自定义物品数值做防作弊熔断，绝不相信外部输入的原始数值 */
 export function sanitizeCustomEffects(effects: CustomItemEffects = {}): CustomItemEffects {
   const bounded: CustomItemEffects = {};
@@ -156,7 +164,7 @@ export class InventoryService {
     return entries.map(formatEntry);
   }
 
-  /** [查] 生成用于喂给 AI 的背包摘要字符串，如「聚气丹 x2，上古骨片(3阶) x1」 */
+  /** [查] 生成用于喂给 AI 的背包摘要字符串，如「聚气丹 x2，上古骨片 x1」 */
   async getInventoryPromptString(saveId: string): Promise<string> {
     const entries = await this.repo.findAllBySave(saveId);
     if (entries.length === 0) return '空无一物';
@@ -165,9 +173,7 @@ export class InventoryService {
         if (entry.items_template) {
           return `${entry.items_template.name} x${entry.quantity}`;
         }
-        const custom = parseCustomData(entry.custom_data);
-        const rarityTag = custom.rarity ? `(${custom.rarity}阶)` : '';
-        return `${entry.custom_name || '未知物品'}${rarityTag} x${entry.quantity}`;
+        return `${entry.custom_name || '未知物品'} x${entry.quantity}`;
       })
       .join('，');
   }
@@ -231,7 +237,8 @@ export class InventoryService {
    * @throws Error 当 quantity <= 0 时
    */
   async addItem(saveId: string, input: ItemChangeInput): Promise<player_inventory> {
-    if (!input.name || !input.name.trim()) {
+    const name = canonicalItemName(input.name);
+    if (!name) {
       throw new Error('物品名称不能为空');
     }
     const quantity = input.change;
@@ -239,7 +246,7 @@ export class InventoryService {
       throw new Error('获得物品的数量必须为正数');
     }
 
-    const template = await this.repo.findTemplateByName(input.name);
+    const template = await this.repo.findTemplateByName(name);
 
     if (template) {
       const existing = await this.repo.findRegularEntry(saveId, template.id);
@@ -252,29 +259,32 @@ export class InventoryService {
     // 数据库里没有的物品，视为 AI/剧情自定义物品，需要熔断数值防作弊
     const rarity = Math.min(input.rarity ?? 1, CUSTOM_ITEM_LIMITS.MAX_RARITY);
     const customData: CustomItemData = {
-      name: input.name,
+      name: name,
       category: input.category || 'misc',
       rarity,
       description: input.description || '一件来历不明的物品。',
       effects: sanitizeCustomEffects(input.effects),
     };
     // 强类型接口（CustomItemData）→ Prisma Json 字段的跨边界转换，需经 unknown 中转
-    return this.repo.createCustomEntry(saveId, input.name, customData as unknown as Prisma.InputJsonValue, quantity);
+    return this.repo.createCustomEntry(saveId, name, customData as unknown as Prisma.InputJsonValue, quantity);
   }
 
   /**
-   * [删] 消耗/移除一件字典物品（自定义物品目前只支持获得，不支持定向按名消耗）。
-   * @throws Error 当物品不存在或库存不足时
+   * [删] 按名消耗字典物品或已持有的自定义物品。
+   * @throws Error 当未持有或库存不足时
    */
-  async removeItemByName(saveId: string, name: string, quantity: number): Promise<void> {
+  async removeItemByName(saveId: string, rawName: string, quantity: number): Promise<void> {
     if (!quantity || quantity <= 0) {
       throw new Error('移除物品的数量必须为正数');
     }
-    const template = await this.repo.findTemplateByName(name);
-    if (!template) {
-      throw new Error(`物品 "${name}" 不存在于物品字典中，无法定向消耗`);
+    const name = canonicalItemName(rawName);
+    if (!name) {
+      throw new Error('物品名称不能为空');
     }
-    const existing = await this.repo.findRegularEntry(saveId, template.id);
+    const template = await this.repo.findTemplateByName(name);
+    const existing = template
+      ? await this.repo.findRegularEntry(saveId, template.id)
+      : await this.repo.findCustomEntryByName(saveId, name);
     if (!existing) {
       throw new Error(`背包中没有物品 "${name}"`);
     }
@@ -321,7 +331,7 @@ export class InventoryService {
 
   /**
    * [批量增删] 供 AI 推演结果（/api/action）使用：一次性处理多条 item_changes。
-   * 内部会自动区分字典物品与自定义物品，并对自定义物品做数值熔断。
+   * 获得走字典或自定义熔断；消耗未持有/数量不足则跳过该条，禁止把整回合打成 500。
    * 使用 $transaction 保证批量变更的原子性。
    */
   async applyItemChanges(saveId: string, changes: ItemChangeInput[]): Promise<void> {
@@ -336,7 +346,11 @@ export class InventoryService {
         if (change.change > 0) {
           await txService.addItem(saveId, change);
         } else {
-          await txService.removeItemByName(saveId, change.name, Math.abs(change.change));
+          try {
+            await txService.removeItemByName(saveId, change.name, Math.abs(change.change));
+          } catch (error) {
+            console.error('跳过非法物品消耗:', change.name, error);
+          }
         }
       }
     });

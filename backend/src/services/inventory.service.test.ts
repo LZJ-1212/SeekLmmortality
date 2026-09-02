@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { InventoryService, sanitizeCustomEffects, CUSTOM_ITEM_LIMITS } from './inventory.service';
+import { InventoryService, sanitizeCustomEffects, CUSTOM_ITEM_LIMITS, canonicalItemName } from './inventory.service';
 import type { InventoryRepository } from '../repositories/inventory.repository';
 
 /** 构造一个方法全部被 vi.fn() 替代的 Repository 假对象，供 Service 单元测试注入 */
@@ -8,6 +8,7 @@ function createMockRepo(): InventoryRepository {
     findAllBySave: vi.fn(),
     findById: vi.fn(),
     findRegularEntry: vi.fn(),
+    findCustomEntryByName: vi.fn(),
     findTemplateByName: vi.fn(),
     listAllTemplateNames: vi.fn(),
     createRegularEntry: vi.fn(),
@@ -18,6 +19,17 @@ function createMockRepo(): InventoryRepository {
     deleteById: vi.fn(),
   } as unknown as InventoryRepository;
 }
+
+describe('canonicalItemName（剥掉提示词里的阶位后缀，避免消耗对不上 custom_name）', () => {
+  it('正常路径：月华草(2阶) 应还原为月华草', () => {
+    expect(canonicalItemName('月华草(2阶)')).toBe('月华草');
+  });
+
+  it('边界情况：全角括号与无后缀名保持原名', () => {
+    expect(canonicalItemName('月华草（2阶）')).toBe('月华草');
+    expect(canonicalItemName('月华草')).toBe('月华草');
+  });
+});
 
 describe('sanitizeCustomEffects（自定义物品数值熔断）', () => {
   it('正常路径：范围内的数值原样保留', () => {
@@ -153,14 +165,35 @@ describe('InventoryService.removeItemByName（删/消耗）', () => {
     expect(repo.deleteById).not.toHaveBeenCalled();
   });
 
-  it('异常抛出：物品不在字典中时应抛出异常', async () => {
+  it('异常抛出：字典与自定义都没有该名时应抛出异常', async () => {
     (repo.findTemplateByName as any).mockResolvedValue(null);
+    (repo.findCustomEntryByName as any).mockResolvedValue(null);
     await expect(service.removeItemByName('save-1', '不存在的物品', 1)).rejects.toThrow(
-      '不存在于物品字典中',
+      '背包中没有物品',
     );
   });
 
-  it('异常抛出：背包里没有该物品时应抛出异常', async () => {
+  it('正常路径：玩家盘坐调息时模型要消耗背包里的月华草，应按 custom_name 扣减', async () => {
+    (repo.findTemplateByName as any).mockResolvedValue(null);
+    (repo.findCustomEntryByName as any).mockResolvedValue({ id: 'inv-herb', quantity: 1 });
+
+    await service.removeItemByName('save-1', '月华草', 1);
+
+    expect(repo.findCustomEntryByName).toHaveBeenCalledWith('save-1', '月华草');
+    expect(repo.deleteById).toHaveBeenCalledWith('inv-herb');
+  });
+
+  it('正常路径：模型把提示词里的月华草(2阶)抄进消耗名，仍应扣到月华草', async () => {
+    (repo.findTemplateByName as any).mockResolvedValue(null);
+    (repo.findCustomEntryByName as any).mockResolvedValue({ id: 'inv-herb', quantity: 1 });
+
+    await service.removeItemByName('save-1', '月华草(2阶)', 1);
+
+    expect(repo.findCustomEntryByName).toHaveBeenCalledWith('save-1', '月华草');
+    expect(repo.deleteById).toHaveBeenCalledWith('inv-herb');
+  });
+
+  it('异常抛出：背包里没有该字典物品时应抛出异常', async () => {
     (repo.findTemplateByName as any).mockResolvedValue({ id: 'tpl-1', name: '聚气丹' });
     (repo.findRegularEntry as any).mockResolvedValue(null);
     await expect(service.removeItemByName('save-1', '聚气丹', 1)).rejects.toThrow(
@@ -266,13 +299,13 @@ describe('InventoryService 其他增删改查方法', () => {
     expect(result).toBe('空无一物');
   });
 
-  it('getInventoryPromptString：应拼接为“名称 x数量”的字符串，自定义物品带阶位标签', async () => {
+  it('getInventoryPromptString：应拼接为“名称 x数量”，自定义物名不含阶位以免模型抄错', async () => {
     (repo.findAllBySave as any).mockResolvedValue([
       { items_template: { name: '聚气丹' }, quantity: 2 },
       { items_template: null, custom_name: '上古骨片', custom_data: { rarity: 3 }, quantity: 1 },
     ]);
     const result = await service.getInventoryPromptString('save-1');
-    expect(result).toBe('聚气丹 x2，上古骨片(3阶) x1');
+    expect(result).toBe('聚气丹 x2，上古骨片 x1');
   });
 
   it('deleteEntry：条目不存在时应抛出异常', async () => {
@@ -411,7 +444,7 @@ describe('InventoryService.applyItemChanges（批量事务处理，供 AI 推演
     expect(custom.custom_data.effects.hp_delta).toBe(CUSTOM_ITEM_LIMITS.MAX_HP_DELTA);
   });
 
-  it('异常抛出：消耗数量超过库存时，整个事务应失败', async () => {
+  it('失败/拒绝：消耗数量超过库存时，该条跳过且不把整回合打失败', async () => {
     const templates = [{ id: 'tpl-1', name: '聚气丹' }];
     const inventoryRows: any[] = [
       { id: 'inv-1', save_id: 'save-1', item_id: 'tpl-1', quantity: 1 },
@@ -434,9 +467,46 @@ describe('InventoryService.applyItemChanges（批量事务处理，供 AI 推演
 
     const service = new InventoryService(fakePrisma);
 
-    await expect(
-      service.applyItemChanges('save-1', [{ name: '聚气丹', change: -5 }]),
-    ).rejects.toThrow('数量不足');
+    await service.applyItemChanges('save-1', [{ name: '聚气丹', change: -5 }]);
+
+    expect(inventoryRows.find((r) => r.id === 'inv-1')?.quantity).toBe(1);
+  });
+
+  it('正常路径：盘坐调息时消耗已持有的月华草，自定义条目应被删掉', async () => {
+    const inventoryRows: any[] = [
+      {
+        id: 'inv-herb',
+        save_id: 'save-1',
+        item_id: null,
+        custom_name: '月华草',
+        quantity: 1,
+      },
+    ];
+    const fakePrisma: any = {
+      items_template: {
+        findFirst: vi.fn(() => Promise.resolve(null)),
+      },
+      player_inventory: {
+        findFirst: vi.fn(({ where }: any) =>
+          Promise.resolve(
+            inventoryRows.find(
+              (r) => r.save_id === where.save_id && r.custom_name === where.custom_name,
+            ) ?? null,
+          ),
+        ),
+        delete: vi.fn(({ where: { id } }: any) => {
+          const idx = inventoryRows.findIndex((r) => r.id === id);
+          const [removed] = inventoryRows.splice(idx, 1);
+          return Promise.resolve(removed);
+        }),
+      },
+      $transaction: vi.fn((callback: any) => callback(fakePrisma)),
+    };
+
+    const service = new InventoryService(fakePrisma);
+    await service.applyItemChanges('save-1', [{ name: '月华草(2阶)', change: -1 }]);
+
+    expect(inventoryRows.find((r) => r.custom_name === '月华草')).toBeUndefined();
   });
 
   it('边界情况：change 为 0 的条目应被忽略，且空数组直接跳过事务', async () => {

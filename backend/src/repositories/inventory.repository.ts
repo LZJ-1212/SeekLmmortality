@@ -32,6 +32,13 @@ export class InventoryRepository {
     });
   }
 
+  /** 查询某存档下，按 custom_name 命中的自定义条目（无字典模板） */
+  findCustomEntryByName(saveId: string, customName: string) {
+    return this.prisma.player_inventory.findFirst({
+      where: { save_id: saveId, item_id: null, custom_name: customName },
+    });
+  }
+
   /** 按名称查询单个物品字典模板 */
   findTemplateByName(name: string) {
     return this.prisma.items_template.findFirst({ where: { name } });

@@ -24,7 +24,9 @@
 - 玩家自由度（叙事自由、数值零主权）：`docs/player_agency.md`。
 - 情境锁（战中闭关等）：`docs/situation.md`。
 - 宣称奇迹（封闭骰、不破秒杀）：`docs/plausibility.md`。代码 `miracle.service.ts`（排期 `docs/roadmap.md` **A5 / S36**，已接线），不让模型演神兵。
-- 开工顺序：`docs/roadmap.md`（阶段 A→F）。当前主线是 **A6 然后阶段 B（补已有雏形）**；禁止为新系统跳过 B。
+- 开工顺序：`docs/roadmap.md`（阶段 A→F）。当前主线是 **阶段 B（补已有雏形）**；**I20 / I21 已成册**，I21 加深与 I22 战斗成册为下一刀；禁止为新系统跳过 B。
+- 双人协作：`docs/dev_guide.md`（分支 `lzj` / `Loading_line`，不要直推 `main`）。
+- 境界与雷劫（I21）：`docs/realms.md`。加深落点：`docs/realms_architecture.md`。未按架构改钟/终局键前不要先改 `REALM_LAWS` 数字。
 - **编码规范与仓库潜规则：** `.cursor/rules/项目编码规范与潜规则.mdc`（分层、测试、Git、UI、环境）。
 
 ## 3. 技术与代码规范

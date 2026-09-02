@@ -33,13 +33,13 @@
   - 灵气系数 = 洞府灵气浓度 ÷ 10（基准 10 → 1.0）。
   - 心境系数 = 0.5 + 道心 × 0.05。
   - 天赋系数 = 逆天改命天赋乘数 × 命格乘数（先天体质 / 先天天赋 / 出身 / 道途），基准 1.0。
-- **境界突破机制**：
-  - 小境界：修为达标直接突破[cite: 1, 3]。
-  - 大境界：分为人道、地道、天道[cite: 3]。必须经过 Node.js 掷骰子计算基础成功率与道心加成[cite: 1]。成功则寿元大涨、气血回满；失败则扣除雷劫伤害与修为[cite: 1, 3]。
+- **境界突破机制**（成册 [realms.md](./realms.md) **I21 / B2**）：
+  - 小境界：修为达标直接突破，无雷劫。
+  - 大境界：人道 / 地道 / 天道。后端掷骰：基础率 + 道心 + 功德（有上限）。成功则寿元按表覆盖、气血回满新上限、修为清零；失败则按上限百分比受伤、修为 -100，后期另掷陨落。全表与公式以成册为准，本白皮书不抄门槛。
 
 ## 五、 十二大核心系统规划
 1. 核心状态机（气血、灵力、寿元、时间）— 成册 [player_state.md](./player_state.md)（**I20 / B1**）
-2. 境界突破与雷劫（含强制拦截器）— **I21** `realms.md`
+2. 境界突破与雷劫（含强制拦截器）— 成册 [realms.md](./realms.md)（**I21 / B2**；加深未落地）
 3. 时间与岁月流逝 — 并入 [player_state.md](./player_state.md)
 4. 战斗与境界压制 — **I22** `combat.md`（招式库仍见 [combat_build.md](./combat_build.md) / S20）
 5. 功德业力法则 — **I23** `karma.md`
@@ -66,4 +66,5 @@
 ## 七、 项目工作记录与其它文档
 - 完成度、测试、工时、上线：见 [project_status.md](./project_status.md)。
 - **工作顺序：** [roadmap.md](./roadmap.md)。
+- **两人一起改：** [dev_guide.md](./dev_guide.md)。
 - 自由度：[player_agency.md](./player_agency.md)。UI：[ui.md](./ui.md)。启动： [runbook.md](./runbook.md)。接口：[api.md](./api.md)。内容表：[content_catalog.md](./content_catalog.md)。架构：[architecture.md](./architecture.md)。

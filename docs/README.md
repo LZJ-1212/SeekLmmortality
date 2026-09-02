@@ -9,6 +9,7 @@
 | [game_design.md](./game_design.md) | 天道法则、UI 短铁律、十二系统（视觉总则见 ui.md） |
 | [project_status.md](./project_status.md) | 完成度、测试、成本、L1、上线判断 |
 | [roadmap.md](./roadmap.md) | **工作顺序（A→F）**：A 安全+行动环；**B 补现有雏形（当前主线）**；C～F 才开新系统 |
+| [dev_guide.md](./dev_guide.md) | **双人开发**：分支约定、认领排期、密钥、铁律摘要（启动命令仍见 runbook） |
 | [runbook.md](./runbook.md) | 本机启动（XAMPP、前后端、常见故障） |
 | [hosting.md](./hosting.md) | I06 功能规格（L1 穿透、暴露面、朋友须知） |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 架构（双 Origin 隧道、API 基址、NSSM 保活） |
@@ -20,6 +21,8 @@
 | [player_agency.md](./player_agency.md) | **S36 自由度规范**：叙事自由、数值主权为零；三圈边界 |
 | [player_state.md](./player_state.md) | **I20 / B1 成册**：气血修为寿元、时间档、死亡锁；加深词表已封口 |
 | [player_state_architecture.md](./player_state_architecture.md) | I20 加深落点：四列、纯函数、不采信模型月数 |
+| [realms.md](./realms.md) | **I21 / B2 成册**：境界链、雷劫骰、功德/道心；加深（耗时/终局键）未落地 |
+| [realms_architecture.md](./realms_architecture.md) | I21 加深落点：`isTerminal`、`clockKind`、不搬压制公式 |
 | [situation.md](./situation.md) | 情境锁：交手中禁止闭关/坊市等（不调 AI） |
 | [plausibility.md](./plausibility.md) | S36 层 3：宣称奇迹何时掷仙缘骰；气运改不了秒杀（A5 已落地） |
 | [architecture.md](./architecture.md) | 仓库分层与行动数据流 |
@@ -58,4 +61,4 @@
 
 已实现的十二系统：**铁律与公式摘要**见 [game_design.md](./game_design.md)；**成册与加深（阶段 B）**见 [roadmap.md](./roadmap.md) **B1–B16 / I13–I18、I20–I28**（未成册前以代码为准，禁止只改一边）。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。阶段 B 未收束前不要按本表去开工法/心魔/灵兽。
 
-**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；境界/战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I21–I28**（**I20 状态机岁月已成册** [player_state.md](./player_state.md)）。整体界面 **I19**。
+**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I22–I28**（**I20** [player_state.md](./player_state.md)、**I21** [realms.md](./realms.md) 已成册；I21 加深见架构文）。整体界面 **I19**。

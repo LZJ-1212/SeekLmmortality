@@ -40,7 +40,7 @@
 | ID | 系统 | 要做什么 | 技术文档 | 主要代码 | 完成度 | 测试 | 缺口 / 下一动作 |
 |----|------|----------|----------|----------|--------|------|-----------------|
 | S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [player_state.md](./player_state.md)（I20）；铁律 [game_design.md](./game_design.md) 一、四 | `playerState.service.ts`，`action.service.ts` `/api/action` | 92% | 有单测；行动接口手测过 | **成册+加深已完成**（日段/时辰/按场）；死后读档按钮仍属 S16 |
-| S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | 同上文件内有突破函数；成册待 **I21** `realms.md` | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | 独立规格 **I21**；全境界手玩未铺满 |
+| S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | [realms.md](./realms.md)（I21 成册）；加深 [realms_architecture.md](./realms_architecture.md) | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | **成册已写**；耗时/终局键加深未落地；全境界手玩不挡成册 |
 | S03 | 时间与岁月 | 闭关月数、pending_months、大限预警、日段/时辰 | 并入 [player_state.md](./player_state.md) | `detectSeclusionMonths`、`advanceAge`、`resolveActionClock` | 92% | 有单测 | **成册+加深已完成**；微行按场扣时辰，不再默认 1 月 |
 | S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节；自由度 [player_agency.md](./player_agency.md)；成册待 **I22** `combat.md` | `combat.service.ts` | 85% | 有单测 | 独立规格 **I22**；AI 报的敌人境界仍靠 prompt；战中「捡神器反杀」已由 A5 封闭骰拦 |
 | S05 | 功德业力 | 夹紧增量、天罚掷骰 | 同上；成册待 **I23** `karma.md` | `karma.service.ts` | 85% | 有单测 | 独立规格 **I23** |
@@ -301,7 +301,7 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 
 **A6（S22 薄做）已落地：** `sceneMemory.service.ts` + `world_state` 两列已入库；近事注入 `deduceAction`；未收束跳过探索骰。「搜寻机缘」不算离开。规格 [chronicle.md](./chronicle.md) 第 0 节。`chronicles` 表仍属 **D1**。
 
-**阶段 B（当前主线）：** 下一刀成册 **B2 / I21** `realms.md`。**I20** 已成册 [player_state.md](./player_state.md)。**I13–I18、I22–I28** 仍待成册并加深；**I07** 随册薄补。**I19 / I12** 不挡成册。B 未收束不开 S20。
+**阶段 B（当前主线）：** 下一刀 **B2 加深**（渡劫入钟、终局键）或成册 **B3 / I22** `combat.md`。**I20** [player_state.md](./player_state.md)、**I21** [realms.md](./realms.md) 已成册。**I13–I18、I22–I28** 仍待成册并加深；**I07** 随册薄补。**I19 / I12** 不挡成册。B 未收束不开 S20。
 
 **真机下一刀（A3 / I06）：** 穿透/保活仍须在你电脑上做（API 基址已抽）。不挡阶段 B。
 
@@ -351,12 +351,12 @@ S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26�
 
 ## 13. 代码有、独立规格没有（对照 2026-09-02）
 
-「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 **I13–I18**、**I21–I28**；**I20 已成册**）。界面不停留在纯文字凑合，走 **I19**。`game_design.md` 只保留铁律与修炼公式摘要，不替代成册。
+「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 **I13–I18**、**I22–I28**；**I20 / I21 已成册**）。界面不停留在纯文字凑合，走 **I19**。`game_design.md` 只保留铁律与修炼公式摘要，不替代成册。
 
 | 已有代码 | 文档现状 | 缺口 |
 |----------|----------|------|
 | 气血/灵力/修为/寿元/死亡锁 + 闭关岁月 | 成册 [player_state.md](./player_state.md) | **I20 成册已完成**；加深见该册第 10 节 |
-| 小境/大境/雷劫 `REALM_LAWS` | 白皮书第四节短句 | **无** `realms.md` → **I21** |
+| 小境/大境/雷劫 `REALM_LAWS` | 成册 [realms.md](./realms.md) | **I21 成册已完成**；加深见该册第 10 节 |
 | 战斗压制 `combat.service.ts` | 白皮书第三节；招式库规划 [combat_build.md](./combat_build.md) | **无** `combat.md` → **I22** |
 | 功德业力 `karma.service.ts` | 白皮书第三节一句；人账规划 S32 | **无** `karma.md` → **I23** |
 | 洞府开辟/借地闭关 `cave.service.ts` | 白皮书 S06 一句；争夺规划 [spirit_veins.md](./spirit_veins.md) | **无** `cave.md` → **I17** |

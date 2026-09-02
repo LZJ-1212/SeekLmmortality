@@ -31,7 +31,7 @@
 | `death_tribulation` | 雷劫失败且命中死亡掷骰 |
 | `death_karma` | 天罚致命档 |
 | `death_region` | 越境致死 |
-| `ascend` | 大乘圆满雷劫成功且境界目标为飞升（须在 `REALM_LAWS` 接通后） |
+| `ascend` | 大乘圆满雷劫成功且境界已是 `渡劫期·飞升`（键见 [realms.md](./realms.md)；演出仍未做） |
 | `demon_lord` | 业力高于阈值 **且** 大境≥某档（阈值实现时写死并单测） |
 | `sage` | 功德高于阈值且飞升或善终 |
 | `lonely_immortal` | 飞升但人际关系全空 |

@@ -73,7 +73,7 @@ A6 曾从「大事记全表」抽到阶段 A，理由与范围见下表（禁止
 | 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
 |----|-----|--------|------|--------|------|
 | B1 | I20 | 成册并加深状态机与岁月；死亡锁/时间档与代码对齐；日段/时辰/按场扣时已落地 | [player_state.md](./player_state.md) · [player_state_architecture.md](./player_state_architecture.md) | **已完成** | 代码已有雏形 |
-| B2 | I21 | 成册境界与雷劫，并对照现有代码加深 | [realms.md](./realms.md) | **未完成** | 代码已有雏形 |
+| B2 | I21 | 成册境界与雷劫，并对照现有代码加深 | [realms.md](./realms.md) · [realms_architecture.md](./realms_architecture.md) | **成册已写**（耗时/终局键加深未落地） | 代码已有雏形 |
 | B3 | I22 | 成册战斗压制（本阶段**不**做 S20 招式库） | [combat.md](./combat.md) | **未完成** | 代码已有雏形 |
 | B4 | I23 | 成册功德业力（人账 S32 仍属 E） | [karma.md](./karma.md) | **未完成** | 代码已有雏形 |
 | B5 | I24 | 成册坊市 + 物价薄表 | [market.md](./market.md) | **未完成** | 代码已有雏形 |
