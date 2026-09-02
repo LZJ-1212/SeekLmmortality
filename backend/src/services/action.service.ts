@@ -75,6 +75,9 @@ import {
   detectSeclusionMonths,
   describeMonths,
   getLifespanStatus,
+  resolveActionClock,
+  describeDayPhase,
+  pointedDayPhase,
   type DeathReason,
   type LifespanStatus,
 } from './playerState.service';
@@ -97,6 +100,7 @@ export interface ActionSuccessData {
   isDead: boolean;
   deathReason: DeathReason;
   enteredSamsaraPool: boolean;
+  dayPhase: string;
   lifespanStatus: LifespanStatus | null;
   combat: {
     enemyName: string;
@@ -181,6 +185,7 @@ export class ActionService {
       const worldState = await this.worldStateRepo.findBySaveId(player.save_id);
       const { context: sceneContext, persistable: scenePersistable } = await this.worldStateRepo.readSceneContext(player.save_id);
       const { digest: lastDigest, pending: pendingScene, persistable: sceneMemoryPersistable } = await this.worldStateRepo.readSceneMemory(player.save_id);
+      const { phase: dayPhase, shichen: pendingShichen, days: pendingDays, beat: beatScene, persistable: beatClockPersistable } = await this.worldStateRepo.readBeatClock(player.save_id);
       const situation = evaluateSituation(sceneContext, action);
       if (!situation.ok) {
         return { ok: false, status: 400, message: situation.message };
@@ -441,6 +446,23 @@ export class ActionService {
         forcedOutcomeParts.push(miracleRoll.forcedOutcomeText);
       }
 
+      // 【岁月加深 I20】：本回合钟——闭关/炼制/历练/微行按场扣时，不再采信模型 time_cost_months。
+      const actionClock = resolveActionClock({
+        actionText: action,
+        beat: beatScene,
+        phase: dayPhase,
+        shichen: pendingShichen,
+        days: pendingDays,
+        seclusionMonths,
+        craftMonths: craftingRecipe?.craftMonths ?? null,
+      });
+      const pointedPhase = pointedDayPhase(action);
+      if (pointedPhase) {
+        forcedOutcomeParts.push(`时序：玩家点名「${describeDayPhase(pointedPhase)}」时，叙事须落在该日段。`);
+      } else {
+        forcedOutcomeParts.push(`时序：此段正值「${describeDayPhase(actionClock.phase)}」。`);
+      }
+
       const forcedOutcome = forcedOutcomeParts.join('\n');
 
       // 查询背包（用于传递给 AI）
@@ -537,8 +559,8 @@ export class ActionService {
               ? applyCultivationDelta(player.cultivation ?? 0, dualCultivationResult.cultivationBonus)
               : applyCultivationDelta(player.cultivation ?? 0, deduction.cultivation_delta || 0);
 
-      // ==================== 核心状态机：时间流逝 ====================
-      const monthsPassed = seclusionMonths ?? craftingRecipe?.craftMonths ?? (deduction.time_cost_months || 1);
+      // ==================== 核心状态机：时间流逝（I20 加深：日段/时辰/按场；不采信模型月数） ====================
+      const monthsPassed = actionClock.monthsPassed;
       const { newAge, newPendingMonths } = advanceAge(player.age ?? DEFAULT_AGE, player.pending_months ?? 0, monthsPassed);
 
       // ==================== 核心状态机：死亡判定 ====================
@@ -653,6 +675,14 @@ export class ActionService {
         if (sceneMemoryPersistable) {
           transactionOps.push(this.worldStateRepo.sceneMemoryUpdate(player.save_id, { digest: nextDigest, pending: nextPending }));
         }
+        if (beatClockPersistable) {
+          transactionOps.push(this.worldStateRepo.beatClockUpdate(player.save_id, {
+            phase: actionClock.phase,
+            shichen: actionClock.shichen,
+            days: actionClock.days,
+            beat: actionClock.beat,
+          }));
+        }
       }
 
       // 3. 死亡结算
@@ -730,6 +760,7 @@ export class ActionService {
           narrative: deduction.narrative,
           options: deduction.next_options,
           monthsPassed,
+          dayPhase: actionClock.phase,
           isDead: isDeadNow,
           deathReason,
           enteredSamsaraPool: enterSamsaraPool,

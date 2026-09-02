@@ -12,6 +12,14 @@ import {
   DEFAULT_SECLUSION_MONTHS,
   getLifespanStatus,
   describeMonths,
+  applyShichen,
+  openingShichen,
+  resolveActionClock,
+  parseDayPhase,
+  parseBeatScene,
+  describeDayPhase,
+  describeShichen,
+  pointedDayPhase,
   type RealmLaw,
 } from './playerState.service';
 
@@ -381,5 +389,164 @@ describe('describeMonths（把月数格式化成人类可读的中文时长，�
   it('边界情况：0 或负数应返回"片刻"', () => {
     expect(describeMonths(0)).toBe('片刻');
     expect(describeMonths(-1)).toBe('片刻');
+  });
+});
+
+describe('applyShichen（时辰累加 → 日段 → 日 → 月，纯函数不掷骰）', () => {
+  it('正常路径：满 3 时辰换下一日段', () => {
+    expect(applyShichen('dawn', 0, 0, 3)).toEqual({ phase: 'noon', shichen: 0, days: 0, monthsToAdd: 0 });
+    expect(applyShichen('noon', 0, 0, 3)).toEqual({ phase: 'dusk', shichen: 0, days: 0, monthsToAdd: 0 });
+  });
+
+  it('边界情况：night 再满 3 时辰应进入下一天，回到 dawn，days +1', () => {
+    expect(applyShichen('night', 0, 0, 3)).toEqual({ phase: 'dawn', shichen: 0, days: 1, monthsToAdd: 0 });
+  });
+
+  it('边界情况：不满 3 时辰只累加，不换段', () => {
+    expect(applyShichen('dawn', 1, 0, 1)).toEqual({ phase: 'dawn', shichen: 2, days: 0, monthsToAdd: 0 });
+  });
+
+  it('边界情况：满 30 日折成 1 月', () => {
+    expect(applyShichen('night', 0, 29, 3)).toEqual({ phase: 'dawn', shichen: 0, days: 0, monthsToAdd: 1 });
+  });
+
+  it('边界情况：一次跨多个日段（6 时辰）也能正确推进', () => {
+    expect(applyShichen('dawn', 0, 0, 6)).toEqual({ phase: 'dusk', shichen: 0, days: 0, monthsToAdd: 0 });
+  });
+});
+
+describe('openingShichen（开场 1～2 日段，可注入 rollFn）', () => {
+  it('rollFn 返回 0 时应得 3 时辰（1 日段）', () => {
+    expect(openingShichen(() => 0)).toBe(3);
+  });
+
+  it('rollFn 返回 0.99 时应得 6 时辰（2 日段）', () => {
+    expect(openingShichen(() => 0.99)).toBe(6);
+  });
+});
+
+describe('resolveActionClock（按场扣时优先级：闭关→炼制→历练→场内→开场→未命中）', () => {
+  const base = {
+    beat: 'none' as const,
+    phase: 'dawn' as const,
+    shichen: 0,
+    days: 0,
+    seclusionMonths: null,
+    craftMonths: null,
+  };
+
+  it('正常路径：未在场 +「聊聊天」+ rollFn 0 → 置 talk，+3 时辰，不得进 1 月', () => {
+    const r = resolveActionClock({ ...base, actionText: '我想找人聊聊天', rollFn: () => 0 });
+    expect(r.beat).toBe('talk');
+    expect(r.monthsPassed).toBe(0);
+    expect(r.phase).toBe('noon'); // dawn 满 3 时辰 → noon
+    expect(r.shichen).toBe(0);
+  });
+
+  it('正常路径：同句 + rollFn 0.99 → +6 时辰，仍不得进 1 月', () => {
+    const r = resolveActionClock({ ...base, actionText: '聊聊天', rollFn: () => 0.99 });
+    expect(r.beat).toBe('talk');
+    expect(r.monthsPassed).toBe(0);
+    expect(r.phase).toBe('dusk'); // 6 时辰 = 2 日段
+  });
+
+  it('边界情况：已在 talk 再点「聊聊天」→ 0 时辰，不连刷白天', () => {
+    const r = resolveActionClock({ ...base, beat: 'talk', phase: 'noon', actionText: '再聊聊天', rollFn: () => 0 });
+    expect(r.beat).toBe('talk');
+    expect(r.monthsPassed).toBe(0);
+    expect(r.phase).toBe('noon');
+    expect(r.shichen).toBe(0);
+  });
+
+  it('边界情况：已在 talk +「我回答了一句好的」→ 0 时辰，日段不变', () => {
+    const r = resolveActionClock({ ...base, beat: 'talk', phase: 'noon', actionText: '我回答了一句好的' });
+    expect(r.beat).toBe('talk');
+    expect(r.monthsPassed).toBe(0);
+    expect(r.phase).toBe('noon');
+    expect(r.shichen).toBe(0);
+  });
+
+  it('边界情况：已在 talk +「告辞，回府」→ beat 置 none，日段落到 dusk', () => {
+    const r = resolveActionClock({ ...base, beat: 'talk', phase: 'noon', actionText: '告辞，回府' });
+    expect(r.beat).toBe('none');
+    expect(r.phase).toBe('dusk');
+    expect(r.monthsPassed).toBe(0);
+  });
+
+  it('边界情况：未命中档「搜寻机缘」→ 1 时辰，不是 1 月', () => {
+    const r = resolveActionClock({ ...base, actionText: '继续搜寻机缘' });
+    expect(r.beat).toBe('none');
+    expect(r.monthsPassed).toBe(0);
+    expect(r.shichen).toBe(1);
+  });
+
+  it('边界情况：历练 → 1 月，日段落到 dusk', () => {
+    const r = resolveActionClock({ ...base, actionText: '前往青岳山外历练' });
+    expect(r.monthsPassed).toBe(1);
+    expect(r.beat).toBe('none');
+    expect(r.phase).toBe('dusk');
+  });
+
+  it('边界情况：交手 → 1 月', () => {
+    const r = resolveActionClock({ ...base, actionText: '拔剑与他交手' });
+    expect(r.monthsPassed).toBe(1);
+  });
+
+  it('边界情况：闭关走月数，日段重置 dawn、时辰归零，不采信模型月数', () => {
+    const r = resolveActionClock({ ...base, beat: 'talk', phase: 'night', shichen: 2, actionText: '闭关十年', seclusionMonths: 120 });
+    expect(r.monthsPassed).toBe(120);
+    expect(r.beat).toBe('none');
+    expect(r.phase).toBe('dawn');
+    expect(r.shichen).toBe(0);
+  });
+
+  it('边界情况：炼制走配方月数，不动日段', () => {
+    const r = resolveActionClock({ ...base, phase: 'noon', actionText: '炼制一炉聚气丹', craftMonths: 2 });
+    expect(r.monthsPassed).toBe(2);
+    expect(r.beat).toBe('none');
+    expect(r.phase).toBe('noon');
+  });
+
+  it('边界情况：坊市开场词置 market（坊市优先于叙话）', () => {
+    const r = resolveActionClock({ ...base, actionText: '去坊市逛逛坊市聊聊天', rollFn: () => 0 });
+    expect(r.beat).toBe('market');
+  });
+});
+
+describe('parseDayPhase / parseBeatScene（库列安全解析，未知值降级不 throw）', () => {
+  it('正常路径：已知值原样返回', () => {
+    expect(parseDayPhase('night')).toBe('night');
+    expect(parseBeatScene('market')).toBe('market');
+  });
+
+  it('边界情况：未知值降级为 dawn / none，绝不 throw', () => {
+    expect(parseDayPhase('子时')).toBe('dawn');
+    expect(parseDayPhase(null)).toBe('dawn');
+    expect(parseBeatScene('combat')).toBe('none');
+    expect(parseBeatScene(undefined)).toBe('none');
+  });
+});
+
+describe('describeDayPhase / describeShichen / pointedDayPhase（文案与点名日段）', () => {
+  it('正常路径：日段文案', () => {
+    expect(describeDayPhase('dawn')).toBe('晨');
+    expect(describeDayPhase('noon')).toBe('午');
+    expect(describeDayPhase('dusk')).toBe('晚');
+    expect(describeDayPhase('night')).toBe('夜');
+  });
+
+  it('正常路径：时辰文案，0 应返回片刻', () => {
+    expect(describeShichen(0)).toBe('片刻');
+    expect(describeShichen(1)).toBe('一时辰');
+    expect(describeShichen(3)).toBe('3时辰');
+  });
+
+  it('正常路径：点名「亥时动手」→ night；「午时」→ noon', () => {
+    expect(pointedDayPhase('亥时动手偷营')).toBe('night');
+    expect(pointedDayPhase('午时约见')).toBe('noon');
+  });
+
+  it('边界情况：未点名时辰返回 null（只锁叙事，不加钟）', () => {
+    expect(pointedDayPhase('出门历练')).toBeNull();
   });
 });

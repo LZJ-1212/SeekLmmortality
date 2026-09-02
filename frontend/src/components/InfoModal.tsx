@@ -17,7 +17,7 @@ export const InfoModal: React.FC<Props> = ({ type, player, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={onClose}>
       <div
         className={`bg-paper border-2 border-jade rounded-md shadow-lg p-5 max-h-[85vh] flex flex-col font-serif ${
-          type === '地图' ? 'w-[min(640px,calc(100%-2rem))]' : 'w-[560px]'
+          type === '地图' ? 'w-[calc(100%-2rem)] max-w-2xl' : 'w-[calc(100%-2rem)] max-w-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
       >

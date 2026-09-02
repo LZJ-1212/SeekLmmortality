@@ -1,6 +1,7 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 import { parseSceneContext, type SceneContext } from '../services/situation.service';
 import { parsePendingScene, type PendingScene } from '../services/sceneMemory.service';
+import { parseDayPhase, parseBeatScene, type DayPhase, type BeatScene } from '../services/playerState.service';
 
 /**
  * world_state 读写。情境字段用原生 SQL，避免 Prisma Client 未 generate
@@ -73,6 +74,49 @@ export class WorldStateRepository {
   ): Prisma.PrismaPromise<number> {
     return this.prisma.$executeRaw`
       UPDATE world_state SET last_narrative_digest = ${data.digest}, pending_scene = ${data.pending} WHERE save_id = ${saveId}
+    `;
+  }
+
+  /**
+   * I20 加深读：日段 / 时辰 / 日 / 微行场。列缺失或查询失败时降级（dawn/0/0/none），
+   * 绝不把整次回合打成 500。
+   */
+  async readBeatClock(saveId: string): Promise<{
+    phase: DayPhase;
+    shichen: number;
+    days: number;
+    beat: BeatScene;
+    persistable: boolean;
+  }> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{
+        day_phase: string | null;
+        pending_shichen: number | null;
+        pending_days: number | null;
+        beat_scene: string | null;
+      }>>`
+        SELECT day_phase, pending_shichen, pending_days, beat_scene FROM world_state WHERE save_id = ${saveId}
+      `;
+      return {
+        phase: parseDayPhase(rows[0]?.day_phase),
+        shichen: Math.max(0, rows[0]?.pending_shichen ?? 0),
+        days: Math.max(0, rows[0]?.pending_days ?? 0),
+        beat: parseBeatScene(rows[0]?.beat_scene),
+        persistable: true,
+      };
+    } catch (error) {
+      console.error('read beat clock failed (columns missing or client stale):', error);
+      return { phase: 'dawn', shichen: 0, days: 0, beat: 'none', persistable: false };
+    }
+  }
+
+  /** I20 加深写：仅在本回合成功时调用。调用方须在 persistable 为真时再 push。 */
+  beatClockUpdate(
+    saveId: string,
+    data: { phase: DayPhase; shichen: number; days: number; beat: BeatScene },
+  ): Prisma.PrismaPromise<number> {
+    return this.prisma.$executeRaw`
+      UPDATE world_state SET day_phase = ${data.phase}, pending_shichen = ${data.shichen}, pending_days = ${data.days}, beat_scene = ${data.beat} WHERE save_id = ${saveId}
     `;
   }
 }

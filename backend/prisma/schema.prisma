@@ -144,6 +144,10 @@ model world_state {
   scene_context   String? @default("none") @db.VarChar(20) // none | combat：情境锁，交手未歇禁止闭关等
   last_narrative_digest String? @db.VarChar(120) // A6 短记忆：上一回成功叙事截断（最多 120 码位），只进 prompt 不入库整段剧情
   pending_scene   String? @default("none") @db.VarChar(20) // A6 短记忆：none | wounded_expert | secret_realm：未收束奇遇类型
+  day_phase       String? @default("dawn") @db.VarChar(10) // I20 加深：dawn | noon | dusk | night 给玩家看的日段
+  pending_shichen Int?    @default(0) // I20 加深：0~2 当前日段内已过时辰，满 3 换段
+  pending_days    Int?    @default(0) // I20 加深：0~29 本月已过整日，满 30 进 1 月
+  beat_scene      String? @default("none") @db.VarChar(10) // I20 加深：none | talk | market 未收束微行场
   saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")
 }
 

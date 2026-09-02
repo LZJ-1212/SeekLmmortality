@@ -453,3 +453,187 @@ export function resolveBreakthroughAttempt(
     },
   };
 }
+
+// ==================== 岁月加深：日段 / 时辰 / 按场扣时（B1，I20） ====================
+// 主钟仍是年/季/月；时辰只做微行累加器。禁止用模型判「这句该过几个时辰」。
+// 词表与优先级权威见 docs/player_state.md 第 5.4 节，落点见 player_state_architecture.md。
+
+/** 给玩家看的日段调度 */
+export type DayPhase = 'dawn' | 'noon' | 'dusk' | 'night';
+/** 未收束微行场：talk 叙话 / market 坊市 / none 无 */
+export type BeatScene = 'none' | 'talk' | 'market';
+
+const PHASE_ORDER: readonly DayPhase[] = ['dawn', 'noon', 'dusk', 'night'];
+const PHASE_LABEL: Record<DayPhase, string> = { dawn: '晨', noon: '午', dusk: '晚', night: '夜' };
+
+/** 1 日 = 12 时辰；1 日段 = 3 时辰；30 日 = 1 月 */
+const SHICHEN_PER_PHASE = 3;
+const DAYS_PER_MONTH = 30;
+
+/** 解析库里的 day_phase 列；未知值一律当 dawn，绝不 throw 把整次回合打 500 */
+export function parseDayPhase(raw: unknown): DayPhase {
+  return raw === 'noon' || raw === 'dusk' || raw === 'night' ? raw : 'dawn';
+}
+
+/** 解析库里的 beat_scene 列；未知值一律当 none */
+export function parseBeatScene(raw: unknown): BeatScene {
+  return raw === 'talk' || raw === 'market' ? raw : 'none';
+}
+
+/** 日段文案（给 forcedOutcome / 前端） */
+export function describeDayPhase(phase: DayPhase): string {
+  return PHASE_LABEL[phase] ?? '晨';
+}
+
+/** 把时辰数格式化成人类可读短语（日志用；禁止对 0 写「流逝 0 个月」） */
+export function describeShichen(n: number): string {
+  if (n <= 0) return '片刻';
+  if (n === 1) return '一时辰';
+  if (n === 2) return '两时辰';
+  return `${n}时辰`;
+}
+
+/** 下一日段：dawn → noon → dusk → night → dawn */
+function nextPhase(phase: DayPhase): DayPhase {
+  const i = PHASE_ORDER.indexOf(phase);
+  return PHASE_ORDER[(i + 1) % PHASE_ORDER.length] ?? 'dawn';
+}
+
+/**
+ * 时辰累加：满 3 时辰换下一日段；night 再满 3 则进入下一天（回到 dawn，pending_days +1）；
+ * 满 30 日折成整月返回。纯函数，不掷骰、不调模型。
+ */
+export function applyShichen(
+  phase: DayPhase,
+  shichen: number,
+  days: number,
+  deltaShichen: number,
+): { phase: DayPhase; shichen: number; days: number; monthsToAdd: number } {
+  let s = Math.max(0, shichen) + deltaShichen;
+  let d = Math.max(0, days);
+  let p = phase;
+  while (s >= SHICHEN_PER_PHASE) {
+    s -= SHICHEN_PER_PHASE;
+    p = nextPhase(p);
+    if (p === 'dawn') d += 1;
+  }
+  let months = 0;
+  while (d >= DAYS_PER_MONTH) {
+    d -= DAYS_PER_MONTH;
+    months += 1;
+  }
+  return { phase: p, shichen: s, days: d, monthsToAdd: months };
+}
+
+/** 开场（1～2 日段）：可注入 rollFn，< 0.5 得 3 时辰，否则 6 时辰。禁止写死 Math.random。 */
+export function openingShichen(rollFn: () => number = Math.random): number {
+  return rollFn() < 0.5 ? 3 : 6;
+}
+
+/** 叙话开场词（封闭表，只准改本处与成册 5.4.3） */
+const TALK_OPENING_KEYWORDS: readonly string[] = [
+  '聊聊天', '叙话', '闲谈', '闲聊', '一席酒', '喝一杯', '攀谈', '交谈', '说说话', '打听修仙门路',
+];
+
+/** 坊市开场词 */
+const MARKET_OPENING_KEYWORDS: readonly string[] = [
+  '逛逛坊市', '去坊市', '在坊市', '坊市四处转转', '逛街', '逛一逛',
+];
+
+/** 离开词（beat_scene 置 none；与 A6 离开表对齐，但不含「闭关」——闭关走月数档） */
+const BEAT_LEAVE_KEYWORDS: readonly string[] = [
+  '不管他', '弃之不顾', '抛下', '丢下', '告辞', '就此别过', '转身离去', '离开此地', '回府',
+];
+
+/** 历练词（1 月；与 exploration.service 出门词对齐） */
+const TRAVEL_KEYWORDS: readonly string[] = ['历练', '出门', '外出', '探索', '游历', '远行', '闯'];
+
+/** 交手词（1 月；不含情境锁语境，只锁时间档） */
+const COMBAT_KEYWORDS: readonly string[] = ['交手', '开战', '厮杀', '迎战', '动手'];
+
+/** 点名日段（只锁叙事落点，0 时辰，不加钟） */
+const POINTED_PHASE: ReadonlyArray<readonly [string, DayPhase]> = [
+  ['卯', 'dawn'], ['辰', 'dawn'], ['巳', 'dawn'],
+  ['午', 'noon'], ['未', 'noon'],
+  ['申', 'dusk'], ['酉', 'dusk'], ['戌', 'dusk'],
+  ['亥', 'night'], ['子', 'night'], ['丑', 'night'], ['寅', 'night'],
+];
+
+/** 玩家点名时辰时，返回叙事应锁到的日段；未点名返回 null（不加钟） */
+export function pointedDayPhase(actionText: string): DayPhase | null {
+  const t = actionText ?? '';
+  for (const [ch, ph] of POINTED_PHASE) {
+    if (t.includes(ch)) return ph;
+  }
+  return null;
+}
+
+export interface ActionClockInput {
+  actionText: string;
+  beat: BeatScene;
+  phase: DayPhase;
+  shichen: number;
+  days: number;
+  /** detectSeclusionMonths 的结果；null = 本回合非闭关 */
+  seclusionMonths: number | null;
+  /** 炼制配方月数；null = 本回合非炼制 */
+  craftMonths: number | null;
+  rollFn?: () => number;
+}
+
+export interface ActionClockResult {
+  monthsPassed: number;
+  beat: BeatScene;
+  phase: DayPhase;
+  shichen: number;
+  days: number;
+  logPhrase: string;
+}
+
+function openingResult(beat: BeatScene, phase: DayPhase, shichen: number, days: number, rollFn: () => number): ActionClockResult {
+  const delta = openingShichen(rollFn);
+  const applied = applyShichen(phase, shichen, days, delta);
+  return { monthsPassed: applied.monthsToAdd, beat, phase: applied.phase, shichen: applied.shichen, days: applied.days, logPhrase: describeShichen(delta) };
+}
+
+function shichenResult(phase: DayPhase, shichen: number, days: number, delta: number, beat: BeatScene, logPhrase: string): ActionClockResult {
+  const applied = applyShichen(phase, shichen, days, delta);
+  return { monthsPassed: applied.monthsToAdd, beat, phase: applied.phase, shichen: applied.shichen, days: applied.days, logPhrase };
+}
+
+/**
+ * 本回合钟：按 docs/player_state.md 5.4.1 优先级自上而下只走一档。
+ * 闭关 → 炼制 → 历练/交手(1 月) → 场内(离开/0 时辰) → 开场(3/6 时辰) → 未命中(1 时辰)。
+ * 不再采信模型的 time_cost_months；不调用第二次 LLM。
+ */
+export function resolveActionClock(input: ActionClockInput): ActionClockResult {
+  const { actionText, beat, phase, shichen, days, seclusionMonths, craftMonths } = input;
+  const rollFn = input.rollFn ?? Math.random;
+  const t = (actionText ?? '').replace(/\s+/g, '');
+
+  if (seclusionMonths !== null) {
+    return { monthsPassed: seclusionMonths, beat: 'none', phase: 'dawn', shichen: 0, days, logPhrase: describeMonths(seclusionMonths) };
+  }
+  if (craftMonths !== null) {
+    return { monthsPassed: craftMonths, beat: 'none', phase, shichen, days, logPhrase: describeMonths(craftMonths) };
+  }
+  if (TRAVEL_KEYWORDS.some((k) => t.includes(k)) || COMBAT_KEYWORDS.some((k) => t.includes(k))) {
+    return { monthsPassed: 1, beat: 'none', phase: 'dusk', shichen: 0, days, logPhrase: '1个月' };
+  }
+  if (beat === 'talk' || beat === 'market') {
+    if (BEAT_LEAVE_KEYWORDS.some((k) => t.includes(k))) {
+      const toDusk = t.includes('回府');
+      return { monthsPassed: 0, beat: 'none', phase: toDusk ? 'dusk' : phase, shichen, days, logPhrase: toDusk ? '回府，日已黄昏' : '片刻' };
+    }
+    // 场内词 / 同场再点开场词 / 未列表接话：都算场内，0 时辰，场不变（不连刷）
+    return { monthsPassed: 0, beat, phase, shichen, days, logPhrase: '片刻' };
+  }
+  // beat === none
+  if (MARKET_OPENING_KEYWORDS.some((k) => t.includes(k))) {
+    return openingResult('market', phase, shichen, days, rollFn);
+  }
+  if (TALK_OPENING_KEYWORDS.some((k) => t.includes(k))) {
+    return openingResult('talk', phase, shichen, days, rollFn);
+  }
+  return shichenResult(phase, shichen, days, 1, 'none', '一时辰');
+}

@@ -17,10 +17,11 @@ interface Props {
   onCommand: (cmd: Command) => void;
   disabledAction: boolean;
   /**
-   * rail：窄竖条（&lt; lg 过渡布局）
-   * underPanel：宽屏，铺在常驻面板下方，两列
+   * rail：768～1023 细竖条
+   * underPanel：≥1024 书房，铺在常驻面板下方两列
+   * dock：&lt;768 掌中底栏，四列多行
    */
-  variant?: 'rail' | 'underPanel';
+  variant?: 'rail' | 'underPanel' | 'dock';
 }
 
 export const CommandMenu: React.FC<Props> = ({
@@ -30,21 +31,24 @@ export const CommandMenu: React.FC<Props> = ({
   variant = 'rail',
 }) => {
   const underPanel = variant === 'underPanel';
+  const dock = variant === 'dock';
 
   return (
     <div
       className={`bg-paper border-2 border-jade rounded-md shadow-lg flex flex-col shrink-0 select-none ${
-        underPanel ? 'w-full' : 'w-[104px] h-full'
+        dock ? 'w-full border-b-0 rounded-b-none' : underPanel ? 'w-full' : 'w-[104px] h-full'
       }`}
     >
-      <div className="bg-jade text-white text-center py-2 font-bold tracking-[0.3em] text-sm">
+      <div className={`bg-jade text-white text-center font-bold tracking-[0.3em] text-sm ${dock ? 'py-1' : 'py-2'}`}>
         指令
       </div>
       <div
         className={
-          underPanel
-            ? 'grid grid-cols-2 gap-1.5 p-2'
-            : 'flex-1 flex flex-col p-1.5 gap-1 overflow-y-auto'
+          dock
+            ? 'grid grid-cols-4 gap-1 p-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))]'
+            : underPanel
+              ? 'grid grid-cols-2 gap-1.5 p-2'
+              : 'flex-1 flex flex-col p-1.5 gap-1 overflow-y-auto'
         }
       >
         {COMMANDS.map((cmd) => {
@@ -56,7 +60,7 @@ export const CommandMenu: React.FC<Props> = ({
               onClick={() => onCommand(cmd)}
               disabled={disabled}
               className={`rounded text-sm tracking-[0.2em] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                underPanel ? 'px-2 py-2.5' : 'px-2 py-1.5'
+                dock ? 'min-h-9 px-1 py-2' : underPanel ? 'px-2 py-2.5' : 'px-2 py-1.5'
               } ${
                 active
                   ? 'bg-jade text-white'

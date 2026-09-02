@@ -135,15 +135,15 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-[#EFECE6] p-4 py-8">
-      <div className="w-[520px] bg-paper border-2 border-jade rounded-md shadow-lg p-5 font-serif text-textMain select-none">
+    <div className="flex justify-center items-start min-h-screen bg-[#EFECE6] p-4 py-8 overflow-x-hidden">
+      <div className="w-full max-w-lg bg-paper border-2 border-jade rounded-md shadow-lg p-5 font-serif text-textMain select-none">
         
         <div className="bg-jade text-white text-center py-2 rounded-sm font-bold tracking-widest text-xl shadow-sm">
           天道轮回 · 凝聚命格
         </div>
         <div className="my-3 border-b border-gold opacity-80" />
 
-        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
           <div className="flex items-center space-x-2">
             <span className="text-textSub">尊名</span>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-1 rounded outline-none focus:border-jade" />
@@ -187,9 +187,9 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
               <div key={attr.key} className="flex justify-between items-center bg-[#EFECE6] px-2 py-1 rounded border border-[#E5E0D5]">
                 <span className="text-textSub text-xs">{attr.label}</span>
                 <div className="flex items-center space-x-1">
-                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, -1)} className="w-4 h-4 bg-[#E5E0D5] hover:bg-blood hover:text-white rounded flex items-center justify-center leading-none text-xs">-</button>
+                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, -1)} className="w-9 h-9 md:w-4 md:h-4 bg-[#E5E0D5] hover:bg-blood hover:text-white rounded flex items-center justify-center leading-none text-xs">-</button>
                   <span className="w-4 text-center font-bold text-xs">{attributes[attr.key as keyof typeof attributes]}</span>
-                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, 1)} className="w-4 h-4 bg-[#E5E0D5] hover:bg-jade hover:text-white rounded flex items-center justify-center leading-none text-xs">+</button>
+                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, 1)} className="w-9 h-9 md:w-4 md:h-4 bg-[#E5E0D5] hover:bg-jade hover:text-white rounded flex items-center justify-center leading-none text-xs">+</button>
                 </div>
               </div>
             ))}
@@ -242,7 +242,7 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
 
         <div className="my-3 border-b border-gold opacity-80" />
 
-        <button onClick={handleSubmit} className="w-full py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow">
+        <button onClick={handleSubmit} className="w-full min-h-10 py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow">
           踏入仙途
         </button>
       </div>

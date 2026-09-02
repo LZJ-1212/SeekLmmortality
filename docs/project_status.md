@@ -7,7 +7,7 @@
 - 总设计：[docs/game_design.md](./game_design.md)
 - 文档总目：[docs/README.md](./README.md)
 - 声音规格：[docs/audio_system.md](./audio_system.md) · 声音架构：[docs/audio_architecture.md](./audio_architecture.md)
-- 本记录最后更新：2026-09-02（路线重排：先补现有雏形阶段 B；A6 短记忆已落地）
+- 本记录最后更新：2026-09-02（B1 / I20 成册 + 加深落地 `player_state.md`）
 
 完成度含义：0 未开工；1–39 规格或骨架；40–69 能跑但不完整；70–89 主路径可用、有缺口；90–99 测试较全、仅打磨；100 含上线验收（本项目尚无 100）。
 
@@ -39,9 +39,9 @@
 
 | ID | 系统 | 要做什么 | 技术文档 | 主要代码 | 完成度 | 测试 | 缺口 / 下一动作 |
 |----|------|----------|----------|----------|--------|------|-----------------|
-| S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [game_design.md](./game_design.md) 一、四；成册待 **I20** `player_state.md` | `playerState.service.ts`，`action.service.ts` `/api/action` | 90% | 有单测；行动接口手测过 | 独立规格 **I20** |
-| S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | 同上；成册待 **I21** `realms.md` | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | 独立规格 **I21**；全境界手玩未铺满 |
-| S03 | 时间与岁月 | 闭关月数、pending_months、大限预警 | 同上；成册并入 **I20** | `detectSeclusionMonths`、`advanceAge` | 90% | 有单测 | 独立规格 **I20** |
+| S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [player_state.md](./player_state.md)（I20）；铁律 [game_design.md](./game_design.md) 一、四 | `playerState.service.ts`，`action.service.ts` `/api/action` | 92% | 有单测；行动接口手测过 | **成册+加深已完成**（日段/时辰/按场）；死后读档按钮仍属 S16 |
+| S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | 同上文件内有突破函数；成册待 **I21** `realms.md` | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | 独立规格 **I21**；全境界手玩未铺满 |
+| S03 | 时间与岁月 | 闭关月数、pending_months、大限预警、日段/时辰 | 并入 [player_state.md](./player_state.md) | `detectSeclusionMonths`、`advanceAge`、`resolveActionClock` | 92% | 有单测 | **成册+加深已完成**；微行按场扣时辰，不再默认 1 月 |
 | S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节；自由度 [player_agency.md](./player_agency.md)；成册待 **I22** `combat.md` | `combat.service.ts` | 85% | 有单测 | 独立规格 **I22**；AI 报的敌人境界仍靠 prompt；战中「捡神器反杀」已由 A5 封闭骰拦 |
 | S05 | 功德业力 | 夹紧增量、天罚掷骰 | 同上；成册待 **I23** `karma.md` | `karma.service.ts` | 85% | 有单测 | 独立规格 **I23** |
 | S06 | 百艺与洞府 | 炼丹器阵植、洞府灵气×闭关 | 同上；技艺 **I15** / 洞府 **I17** | `crafting.service.ts` `cave.service.ts` `cultivationFormula.service.ts` | 85% | 有单测 | 创角不送府；无府借地闭关灵气六成；技艺 UI 未习。功法系数仍占位 1.0 |
@@ -54,7 +54,7 @@
 | S13 | 背包物品 | 字典+自定义物品、防幻觉使用 | 无独立 md | `inventory.service.ts` 路由 | 85% | 有单测 | 独立规格待 **I18** |
 | S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 成册待 **I28** `character.md` | `characterBuild.service.ts`；HTTP 编排 `characterCreation.service.ts` | 85% | 有单测 | 独立规格 **I28** |
 | S15 | 开场剧情 | 命格生成开场并起步 | 成册并入 **I28** | `opening.service.ts` | 85% | 有单测 | 独立规格 **I28** |
-| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) · [command_ui_architecture.md](./command_ui_architecture.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` `rootElements.ts` | 80% | 无单测；构建通过 | 设置页、**I11 窄屏**未做；死亡后读档按钮仍被灰掉（规格要求可开） |
+| S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) · [command_ui_architecture.md](./command_ui_architecture.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` `rootElements.ts` | 88% | 无单测；构建通过 | 设置页未做；**I11 L1 底栏已落地**；死亡后读档按钮仍被灰掉（规格要求可开） |
 | S17 | AI 叙事约束 | json_object + forcedOutcome | [game_design.md](./game_design.md) 一 | `ai.ts`（`PlayerStateForAi` / `DeducedAction`） | 75% | 无隔离单测 | 偶发不守铁律，靠拦截器兜底 |
 | S18 | 声音（人声） | 旁白/天道/NPC 朗读 | [audio_system.md](./audio_system.md) | 无 | 规格 95% / 代码 0% | 无 | **可延后** |
 | S19 | BGM 与 SFX | 配乐循环、情境切换、打击/雷/点击 | [audio_system.md](./audio_system.md) 一、八；架构混音器仍适用 | 无 | 0% | 无 | **可先于人声做**（创角+局内 BGM + 少量特效） |
@@ -90,7 +90,7 @@
 | I08 | 法律：BGM/隐私 | 10% | 朋友试玩用 CC0 曲即可 |
 | I09 | 商业：支付与回本 | 0% | **不必为 L1 做** |
 | I10 | 启动说明 | 90% | [runbook.md](./runbook.md)；L1 口令须另给朋友，勿写入公开 README |
-| I11 | 手机浏览器适配 | 规格 90% / 代码 0% | 竖屏能创角、行动、点指令；不改后端。视觉 [ui.md](./ui.md)；必做项 [mobile.md](./mobile.md) · [mobile_architecture.md](./mobile_architecture.md) |
+| I11 | 手机浏览器适配 | 规格 90% / L1 代码已落地 | 竖屏能创角、行动、点指令；不改后端。视觉 [ui.md](./ui.md)；必做项 [mobile.md](./mobile.md) · [mobile_architecture.md](./mobile_architecture.md) |
 | I12 | 地图美术 | 规格记入路线图 / 代码 0% | 精细九州图替换 `RegionMap` 线稿；点图仍不赶路。**不挡阶段 B 成册** |
 | I13 | 地图设计与系统 | 规格散落 / 代码薄 | 只读图 + 探索骰已有；邻接赶路 S31。待补对照规格 |
 | I14 | 宗门设计与系统 | 无独立 md / 代码有 | `sect.service.ts`；待 `sect.md` |
@@ -283,6 +283,7 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 | [hosting.md](./hosting.md) | I06 L1 托管功能规格 |
 | [hosting_architecture.md](./hosting_architecture.md) | I06 隧道拓扑、基址、保活 |
 | [player_agency.md](./player_agency.md) | S36 自由度总则：三圈边界 |
+| [player_state.md](./player_state.md) | I20 / B1：状态机与岁月（成册） |
 | [situation.md](./situation.md) | 层 1 情境锁（已实现） |
 | [plausibility.md](./plausibility.md) | 层 3 宣称奇迹骰（A5，已落地） |
 | [roadmap.md](./roadmap.md) | 完善顺序 A→F（权威；B=补雏形） |
@@ -300,7 +301,7 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 
 **A6（S22 薄做）已落地：** `sceneMemory.service.ts` + `world_state` 两列已入库；近事注入 `deduceAction`；未收束跳过探索骰。「搜寻机缘」不算离开。规格 [chronicle.md](./chronicle.md) 第 0 节。`chronicles` 表仍属 **D1**。
 
-**阶段 B（A6 之后的主线，不是功法）：** **I20–I28、I13–I18** 成册并加深；**I07** 随册薄补内容。**I19 / I12** 不挡成册。B 未收束不开 S20。
+**阶段 B（当前主线）：** 下一刀成册 **B2 / I21** `realms.md`。**I20** 已成册 [player_state.md](./player_state.md)。**I13–I18、I22–I28** 仍待成册并加深；**I07** 随册薄补。**I19 / I12** 不挡成册。B 未收束不开 S20。
 
 **真机下一刀（A3 / I06）：** 穿透/保活仍须在你电脑上做（API 基址已抽）。不挡阶段 B。
 
@@ -350,11 +351,11 @@ S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26�
 
 ## 13. 代码有、独立规格没有（对照 2026-09-02）
 
-「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 **I13–I18**、**I20–I28**）。界面不停留在纯文字凑合，走 **I19**。`game_design.md` 只保留铁律与修炼公式摘要，不替代成册。
+「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 **I13–I18**、**I21–I28**；**I20 已成册**）。界面不停留在纯文字凑合，走 **I19**。`game_design.md` 只保留铁律与修炼公式摘要，不替代成册。
 
 | 已有代码 | 文档现状 | 缺口 |
 |----------|----------|------|
-| 气血/灵力/修为/寿元/死亡锁 + 闭关岁月 | 白皮书第一、四节短句 | **无** `player_state.md` → **I20** |
+| 气血/灵力/修为/寿元/死亡锁 + 闭关岁月 | 成册 [player_state.md](./player_state.md) | **I20 成册已完成**；加深见该册第 10 节 |
 | 小境/大境/雷劫 `REALM_LAWS` | 白皮书第四节短句 | **无** `realms.md` → **I21** |
 | 战斗压制 `combat.service.ts` | 白皮书第三节；招式库规划 [combat_build.md](./combat_build.md) | **无** `combat.md` → **I22** |
 | 功德业力 `karma.service.ts` | 白皮书第三节一句；人账规划 S32 | **无** `karma.md` → **I23** |
@@ -369,7 +370,7 @@ S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26�
 | 轮回池/快照 `reincarnation*` `snapshot.service.ts` | 代码即规格 | **无** `reincarnation.md` → **I27** |
 | 创角命格 + 开场 `characterBuild` / `opening` | 创角页文案 + 内容表 | **无** `character.md` → **I28** |
 | 背包熔断 `inventory.service.ts` | api / 铁律散落 | **无** `items.md` → **I18** |
-| 天玄历 `world_state` 年季 | [command_ui_architecture.md](./command_ui_architecture.md) 一句 | 并入 **I20** 岁月（不另立历法册） |
+| 天玄历 `world_state` 年季 | 并入 [player_state.md](./player_state.md) 第 5.3 节 | 不另立历法册 |
 | 未习术法 `technique.service.ts` | [combat_build.md](./combat_build.md) 已记薄拦截 | 招式库仍待 S20 |
 | 情境锁、网关、自由度 | [situation.md](./situation.md) [intent_gateway.md](./intent_gateway.md) [player_agency.md](./player_agency.md) | 已有规格 |
 | S20、S22–S36、S18/S19 | 各有 md | **规格有、代码无**（S21 最小集除外） |

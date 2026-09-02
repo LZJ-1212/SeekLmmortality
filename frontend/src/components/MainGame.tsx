@@ -29,6 +29,14 @@ const LOGS_STORAGE_PREFIX = 'sl_action_logs_';
 const OPTIONS_STORAGE_PREFIX = 'sl_action_options_';
 const LOGS_MAX = 400;
 
+/** I20 加深：日段 → 文案（与后端 playerState.describeDayPhase 一致） */
+const DAY_PHASE_LABEL: Record<string, string> = {
+  dawn: '晨',
+  noon: '午',
+  dusk: '晚',
+  night: '夜',
+};
+
 const DEFAULT_ACTION_OPTIONS: OpeningOption[] = [
   { tag: '平和', text: '闭关修炼' },
   { tag: '机缘', text: '四处打听' },
@@ -41,6 +49,8 @@ interface PlayerPayload extends PlayerCardData {
   save_id: string;
   /** 天赋（含创角命格与逆天改命天赋），已从 JSON 字符串解析为对象 */
   talents?: unknown;
+  /** I20 加深：当前日段 dawn/noon/dusk/night（后端 world_state.day_phase） */
+  day_phase?: string;
 }
 
 /** 安全解析后端存为 JSON 字符串的字段；非字符串原样返回，解析失败退化为空对象 */
@@ -210,6 +220,29 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
     const onChange = () => setIsWideLayout(mq.matches);
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    const apply = () => {
+      const palm = window.matchMedia('(max-width: 767px)').matches;
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      if (palm) {
+        document.documentElement.style.setProperty('--app-height', `${height}px`);
+      } else {
+        document.documentElement.style.removeProperty('--app-height');
+      }
+    };
+    apply();
+    const vv = window.visualViewport;
+    window.addEventListener('resize', apply);
+    vv?.addEventListener('resize', apply);
+    vv?.addEventListener('scroll', apply);
+    return () => {
+      window.removeEventListener('resize', apply);
+      vv?.removeEventListener('resize', apply);
+      vv?.removeEventListener('scroll', apply);
+      document.documentElement.style.removeProperty('--app-height');
+    };
   }, []);
 
   // 开局剧情：已有本机历史（含叙事或玩家行动）则不覆盖，避免回列表/刷新丢日志
@@ -433,7 +466,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
   if (!playerData) return <div className="p-10 text-center font-serif">天道演算中...</div>;
 
   return (
-    <div className="flex h-screen bg-[#EFECE6] p-4 gap-3 min-h-0">
+    <div className="flex h-[100dvh] max-md:h-[var(--app-height,100dvh)] bg-[#EFECE6] p-2 md:p-4 gap-3 min-h-0 overflow-hidden">
       {/* 宽屏（≥1024）：常驻面板 + 其下两列指令 */}
       <aside className="hidden lg:flex w-[420px] shrink-0 flex-col min-h-0 gap-3">
         <div className="flex-1 min-h-0 overflow-y-auto">
@@ -447,8 +480,8 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         />
       </aside>
 
-      {/* 不足 1024：细竖条指令（I11 窄屏底栏尚未落地） */}
-      <div className="flex lg:hidden self-stretch shrink-0">
+      {/* 768～1023：细竖条；&lt;768 改走底栏 dock */}
+      <div className="hidden md:flex lg:hidden self-stretch shrink-0">
         <CommandMenu
           variant="rail"
           activeCommand={activeCommand}
@@ -460,7 +493,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
       {/* 逆天改命：天赋三选一弹层，出现时遮罩全屏，强制玩家先做出抉择 */}
       {talentChoices.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-paper border-2 border-gold rounded-md shadow-lg p-5 w-[560px] font-serif">
+          <div className="bg-paper border-2 border-gold rounded-md shadow-lg p-5 w-[calc(100%-2rem)] max-w-lg max-h-[85vh] overflow-y-auto font-serif">
             <div className="bg-gold text-white text-center py-2 rounded-sm font-bold tracking-widest text-lg shadow-sm mb-4">
               逆天改命 · 天道垂青
             </div>
@@ -500,7 +533,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         />
       )}
 
-      <div className="flex-1 flex flex-col bg-paper border-2 border-jade rounded-md shadow-lg font-serif overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 bg-paper border-2 border-jade rounded-md shadow-lg font-serif overflow-hidden">
 
         <div className="bg-jade text-white px-4 py-2 font-bold tracking-widest text-lg shadow-sm flex justify-between items-center">
           <span>九州大世界</span>
@@ -509,7 +542,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
               <button
                 onClick={() => setFontSize(f => Math.max(FONT_SIZE_MIN, f - 1))}
                 disabled={fontSize <= FONT_SIZE_MIN}
-                className="w-7 h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
+                className="w-9 h-9 md:w-7 md:h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
                 title="缩小字体"
               >
                 A-
@@ -518,7 +551,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
               <button
                 onClick={() => setFontSize(f => Math.min(FONT_SIZE_MAX, f + 1))}
                 disabled={fontSize >= FONT_SIZE_MAX}
-                className="w-7 h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
+                className="w-9 h-9 md:w-7 md:h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
                 title="放大字体"
               >
                 A+
@@ -526,6 +559,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
             </div>
             <span className="text-sm font-normal opacity-90">
               {isDead ? '寂灭' : formatHeavenCalendar(playerData.current_year, playerData.current_season)}
+              {!isDead && playerData.day_phase && <span className="ml-1 opacity-80">·{DAY_PHASE_LABEL[playerData.day_phase] ?? ''}</span>}
             </span>
           </div>
         </div>
@@ -542,7 +576,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         </div>
 
         <div
-          className="flex-1 overflow-y-auto p-6 space-y-3 text-textMain leading-relaxed"
+          className="flex-1 min-h-0 overflow-y-auto p-3 md:p-6 space-y-3 text-textMain leading-relaxed"
           style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}
         >
           {logs.map(log => (
@@ -557,7 +591,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           <div ref={logsEndRef} />
         </div>
 
-        <div className="bg-[#F4EFE6] border-t-2 border-gold border-opacity-50 p-4">
+        <div className="bg-[#F4EFE6] border-t-2 border-gold border-opacity-50 p-3 md:p-4 shrink-0">
           {/* 动态按钮渲染区 */}
           <div className="flex gap-2 mb-3 flex-wrap">
             {actionOptions.map((opt, idx) => (
@@ -565,7 +599,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
                 key={idx}
                 onClick={() => handleAction(opt.text)}
                 disabled={isProcessing || isDead}
-                className={`px-3 py-1 text-white text-sm rounded shadow-sm disabled:opacity-50 transition-colors ${getTagColor(opt.tag)}`}
+                className={`min-h-10 px-3 py-2 text-white text-sm rounded shadow-sm disabled:opacity-50 transition-colors ${getTagColor(opt.tag)}`}
               >
                 〔{opt.tag}〕{opt.text}
               </button>
@@ -580,15 +614,24 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
               onKeyDown={(e) => e.key === 'Enter' && handleAction(inputText)}
               disabled={isProcessing || isDead}
               placeholder={isDead ? "道死身灭，诸法皆空..." : (isProcessing ? "天道演算中..." : "输入行动...")}
-              className="flex-1 bg-white border border-[#E5E0D5] px-3 py-2 rounded outline-none focus:border-jade disabled:bg-gray-200 disabled:cursor-not-allowed"
+              className="flex-1 min-h-10 bg-white border border-[#E5E0D5] px-3 py-2 rounded outline-none focus:border-jade disabled:bg-gray-200 disabled:cursor-not-allowed"
             />
             <button
               onClick={() => handleAction(inputText)}
               disabled={isProcessing || isDead}
-              className="px-6 py-2 bg-textDark text-white font-bold rounded hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="min-h-10 px-5 md:px-6 py-2 bg-textDark text-white font-bold rounded hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               行 动
             </button>
+          </div>
+
+          <div className="md:hidden mt-3">
+            <CommandMenu
+              variant="dock"
+              activeCommand={activeCommand}
+              onCommand={handleCommand}
+              disabledAction={isProcessing || isDead}
+            />
           </div>
         </div>
 

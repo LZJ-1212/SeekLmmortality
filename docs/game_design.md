@@ -4,7 +4,8 @@
 - **架构分离**：本游戏采用 Node.js + Express (后端) 与 React + Tailwind v3 (前端) 架构[cite: 1, 2]。
 - **防作弊铁律**：严禁将数值结算权交由 LLM。玩家的气血、灵力、修为、寿元、功德、业力等状态必须由 Node.js 后端进行硬核计算，得出具体数值增减后，通过 `forcedOutcome` 强行注入系统提示词，限制 AI 只能依据既定结果生成剧情。
 - **玩家自由度**：允许任意口吻试探世界；不允许一句话宣布胜负、境界或神兵。三圈边界见 [player_agency.md](./player_agency.md)。宣称「捡神器反杀」的骰子见 [plausibility.md](./plausibility.md)（`miracle.service.ts` 已接线）。
-- **时间流逝法则**：时间流逝由 Node.js 严格换算。日常交互（对话/坊市）消耗 0.1~0.2 个月；历练消耗 1 个月；闭关必须精确按年换算为月数（如十年 = 120 个月）。寿元耗尽（年龄 > 寿元上限）则强制判定坐化，锁死玩家操作[cite: 1]。交手当口不得闭关/逛坊市，见 [situation.md](./situation.md)。
+- **时间流逝法则**：由 Node.js 换算，细则与加深词表见 [player_state.md](./player_state.md) 第 5.4 节。微行按场扣时辰、满 3 时辰换日段、满 12 时辰过一日；历练/交手 1 月；闭关按年换月。一句「好的」不得翻日。寿元耗尽（年龄 > 寿元上限）则强制坐化、锁死行动。交手当口不得闭关/逛坊市，见 [situation.md](./situation.md)。
+- **叙事模型**：结算永不交给模型。默认 `ai.ts` 的 `deepseek-chat`（或日后等价 Flash）、`json_object`、**关闭思考**。换 V4 Pro / 打开思考只改善文笔与接戏，费 token、延迟高，**不挡阶段 B、不能当细/粗或气血裁判**。详见 [architecture.md](./architecture.md) 第 2 节末。
 
 ## 二、 前端 UI 与排版铁律 (React + Tailwind 宣纸古典风)
 
@@ -14,7 +15,7 @@
 - **禁 emoji**：剧情、系统日志、AI 叙事严禁 emoji。音量可用克制 SVG。详见 [audio_system.md](./audio_system.md) 决议第 20 条。
 - **色板**：以 `frontend/tailwind.config.js` 为准（宣纸 `#FBF8F1`、青玉 `#6FA698`、朱砂气血 `#C05F55`、修为 `#A87E2E`、寿元 `#5C8C6E` 等）。
 - **选项**：列在面板内，带 `〔机缘〕` `〔风险〕` `〔平和〕` 等标签。
-- **指令**：常驻汉字指令（现 12 键，无坊市/对话菜单）。行为见 [command_ui.md](./command_ui.md)，代码见 [command_ui_architecture.md](./command_ui_architecture.md)。禁止再叠已删除的桌面「快捷」色块。窄屏底栏见 [mobile.md](./mobile.md)（I11 未做）。
+- **指令**：常驻汉字指令（现 12 键，无坊市/对话菜单）。行为见 [command_ui.md](./command_ui.md)，代码见 [command_ui_architecture.md](./command_ui_architecture.md)。禁止再叠已删除的桌面「快捷」色块。窄屏底栏见 [mobile.md](./mobile.md)（I11 L1 已落地）。
 
 ## 三、 世界观与残酷修仙法则
 - **真实死亡与境界压制**：修仙界弱肉强食。玩家遭遇高出一个大境界的敌人时，后端强制减伤 60%，玩家伤害变为 40%[cite: 1, 3]。高出两个大境界直接秒杀[cite: 3]。AI 不得放水，玩家执意送死必须判定陨落[cite: 3]。
@@ -37,9 +38,9 @@
   - 大境界：分为人道、地道、天道[cite: 3]。必须经过 Node.js 掷骰子计算基础成功率与道心加成[cite: 1]。成功则寿元大涨、气血回满；失败则扣除雷劫伤害与修为[cite: 1, 3]。
 
 ## 五、 十二大核心系统规划
-1. 核心状态机（气血、灵力、寿元、时间）— 成册待办 **I20** `player_state.md`
+1. 核心状态机（气血、灵力、寿元、时间）— 成册 [player_state.md](./player_state.md)（**I20 / B1**）
 2. 境界突破与雷劫（含强制拦截器）— **I21** `realms.md`
-3. 时间与岁月流逝 — 并入 **I20**
+3. 时间与岁月流逝 — 并入 [player_state.md](./player_state.md)
 4. 战斗与境界压制 — **I22** `combat.md`（招式库仍见 [combat_build.md](./combat_build.md) / S20）
 5. 功德业力法则 — **I23** `karma.md`
 6. 修仙百艺与洞府 — **I15** / **I17**

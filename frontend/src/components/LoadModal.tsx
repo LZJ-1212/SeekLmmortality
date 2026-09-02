@@ -74,7 +74,7 @@ export const LoadModal: React.FC<Props> = ({ saveId, onClose, onRolledBack }) =>
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-paper border-2 border-jade rounded-md shadow-lg p-5 w-[560px] max-h-[85vh] flex flex-col font-serif"
+        className="bg-paper border-2 border-jade rounded-md shadow-lg p-5 w-[calc(100%-2rem)] max-w-lg max-h-[85vh] flex flex-col font-serif"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-jade text-white text-center py-2 rounded-sm font-bold tracking-widest text-lg shadow-sm mb-3">

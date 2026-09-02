@@ -29,6 +29,16 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState(false);
   const [playTokenInput, setPlayTokenInput] = useState(() => getPlayToken());
+  // 上次通过后端校验（/api/saves 返回 200）的令牌值；null = 尚未校验或校验失败。
+  const [validatedToken, setValidatedToken] = useState<string | null>(null);
+
+  // 公网（隧道/反代）访问时令牌必填；本机直连 localhost/127.0.0.1 可留空。
+  const isPublicAccess = typeof window !== 'undefined'
+    && window.location.hostname !== 'localhost'
+    && window.location.hostname !== '127.0.0.1';
+  const tokenInput = playTokenInput.trim();
+  // 公网：必须非空且与已校验通过的令牌一致，才算有效；本机直连无需令牌。
+  const inputValidated = !isPublicAccess || (tokenInput !== '' && tokenInput === validatedToken);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -40,15 +50,21 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
         if (res.status === 401 || data.message === '天机有封，须持令牌。') {
           setSaves([]);
           setNeedToken(true);
+          setValidatedToken(null);
           return;
         }
         if (data.status === 'success' && Array.isArray(data.data)) {
           setSaves(data.data);
+          setValidatedToken(getPlayToken());
         } else {
           setNotice(data.message || '无法读取存档。');
+          setValidatedToken(null);
         }
       })
-      .catch(() => setNotice('无法沟通天道引擎。后端未启动或地址不对。'))
+      .catch(() => {
+        setNotice('无法沟通天道引擎。后端未启动或地址不对。');
+        setValidatedToken(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -57,17 +73,25 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
   }, [load]);
 
   const commitTokenAndLoad = () => {
-    setPlayToken(playTokenInput.trim());
+    setPlayToken(tokenInput);
     load();
   };
 
   const handleEnter = (playerId: string) => {
-    setPlayToken(playTokenInput.trim());
+    if (isPublicAccess && !inputValidated) {
+      setNotice(tokenInput === '' ? '须持令牌方可进档。请在下方填写口令后再试。' : '令牌未验或错误，请先点「记下」校验。');
+      return;
+    }
+    setPlayToken(tokenInput);
     onEnter(playerId);
   };
 
   const handleCreate = () => {
-    setPlayToken(playTokenInput.trim());
+    if (isPublicAccess && !inputValidated) {
+      setNotice(tokenInput === '' ? '须持令牌方可开仙途。请在下方填写口令后再试。' : '令牌未验或错误，请先点「记下」校验。');
+      return;
+    }
+    setPlayToken(tokenInput);
     onCreate();
   };
 
@@ -114,8 +138,8 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-[#EFECE6] p-4 py-8">
-      <div className="w-[560px] bg-paper border-2 border-jade rounded-md shadow-lg p-5 font-serif text-textMain select-none">
+    <div className="flex justify-center items-start min-h-screen bg-[#EFECE6] p-4 py-8 overflow-x-hidden">
+      <div className="w-full max-w-lg bg-paper border-2 border-jade rounded-md shadow-lg p-5 font-serif text-textMain select-none">
         <div className="bg-jade text-white text-center py-2 rounded-sm font-bold tracking-widest text-xl shadow-sm">
           问道长生 · 存档
         </div>
@@ -189,11 +213,16 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
 
         <button
           onClick={handleCreate}
-          disabled={needToken}
-          className="w-full py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={needToken || !inputValidated}
+          className="w-full min-h-10 py-2.5 bg-jade text-white font-bold tracking-[0.2em] rounded hover:bg-[#5C8C6E] transition-colors shadow disabled:opacity-40 disabled:cursor-not-allowed"
         >
           新开仙途
         </button>
+        {isPublicAccess && !inputValidated && (
+          <div className="mt-2 text-xs text-blood">
+            {tokenInput === '' ? '公网进入须先填写令牌。' : '令牌未验或错误，请先点「记下」校验。'}
+          </div>
+        )}
 
         <div className="flex items-center gap-2 text-sm mt-3">
           <span className="text-textSub whitespace-nowrap">令牌</span>
@@ -203,12 +232,12 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
             onChange={(e) => setPlayTokenInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && commitTokenAndLoad()}
             placeholder="仅朋友从公网进来时必填；本机直连可留空"
-            className="flex-1 bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-1 rounded outline-none focus:border-jade"
+            className="flex-1 min-h-10 bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-2 rounded outline-none focus:border-jade"
           />
           <button
             type="button"
             onClick={commitTokenAndLoad}
-            className="px-3 py-1 bg-textDark text-white text-xs rounded hover:bg-black transition-colors whitespace-nowrap"
+            className="min-h-10 px-3 py-2 bg-textDark text-white text-sm rounded hover:bg-black transition-colors whitespace-nowrap"
           >
             记下
           </button>

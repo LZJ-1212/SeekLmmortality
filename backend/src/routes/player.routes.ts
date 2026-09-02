@@ -64,6 +64,7 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
     const sect = await sectService.getSect(player.save_id);
     const relationships = await relationshipService.getAll(player.save_id);
     const worldState = await worldStateRepo.findBySaveId(player.save_id);
+    const beatClock = await worldStateRepo.readBeatClock(player.save_id);
 
     res.json({
       status: 'success',
@@ -76,6 +77,7 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
         relationships,
         current_year: worldState?.current_year ?? 387,
         current_season: worldState?.current_season ?? '春',
+        day_phase: beatClock.phase,
       },
     });
   } catch (error) {

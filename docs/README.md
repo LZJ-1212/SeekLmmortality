@@ -15,9 +15,11 @@
 | [ui.md](./ui.md) | **电脑 / 手机 UI 设计**：宣纸气质、断点、书房 vs 掌中分栏 |
 | [command_ui.md](./command_ui.md) | 局内 12 指令功能：只读地图/技艺、三条行动、日志与选项本机保存 |
 | [command_ui_architecture.md](./command_ui_architecture.md) | 指令技术：`handleCommand`、固定句、接口、灰键缺口 |
-| [mobile.md](./mobile.md) | I11 功能规格（窄屏底栏、键盘；布局代码未做） |
+| [mobile.md](./mobile.md) | I11 功能规格（窄屏底栏、键盘；L1 布局已落地） |
 | [mobile_architecture.md](./mobile_architecture.md) | I11 改哪些组件、dvh、安全区 |
 | [player_agency.md](./player_agency.md) | **S36 自由度规范**：叙事自由、数值主权为零；三圈边界 |
+| [player_state.md](./player_state.md) | **I20 / B1 成册**：气血修为寿元、时间档、死亡锁；加深词表已封口 |
+| [player_state_architecture.md](./player_state_architecture.md) | I20 加深落点：四列、纯函数、不采信模型月数 |
 | [situation.md](./situation.md) | 情境锁：交手中禁止闭关/坊市等（不调 AI） |
 | [plausibility.md](./plausibility.md) | S36 层 3：宣称奇迹何时掷仙缘骰；气运改不了秒杀（A5 已落地） |
 | [architecture.md](./architecture.md) | 仓库分层与行动数据流 |
@@ -56,4 +58,4 @@
 
 已实现的十二系统：**铁律与公式摘要**见 [game_design.md](./game_design.md)；**成册与加深（阶段 B）**见 [roadmap.md](./roadmap.md) **B1–B16 / I13–I18、I20–I28**（未成册前以代码为准，禁止只改一边）。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。阶段 B 未收束前不要按本表去开工法/心魔/灵兽。
 
-**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；状态机岁月/境界/战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I20–I28**。整体界面 **I19**。
+**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；境界/战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I21–I28**（**I20 状态机岁月已成册** [player_state.md](./player_state.md)）。整体界面 **I19**。
