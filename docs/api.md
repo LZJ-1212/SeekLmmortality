@@ -89,7 +89,7 @@ Body：`{ playerId, action }`。`action` 为自然语言或快捷指令文本。
 | `exploration` / `regionDanger` | 奇遇与越境惩罚 |
 | `player` | 更新后的修士行 |
 
-死亡锁之后该接口拒绝一切行动。上一回合若为交手（`world_state.scene_context=combat`），本回合输入闭关/坊市/拍卖/炼器炼丹/双修 → **400**，不调模型、不占日限，见 [situation.md](./situation.md)。宣称「捡神器反杀」**不**走 400，待 **A5** 封闭骰写入 `forcedOutcome`，见 [plausibility.md](./plausibility.md)；自由度总则 [player_agency.md](./player_agency.md)。读档回滚见下方快照接口。
+死亡锁之后该接口拒绝一切行动。上一回合若为交手（`world_state.scene_context=combat`），本回合输入闭关/坊市/拍卖/炼器炼丹/双修 → **400**，不调模型、不占日限，见 [situation.md](./situation.md)。宣称「捡神器反杀」**不**走 400，由 **A5** 封闭骰（`miracle.service.ts`）写进 `forcedOutcome`，见 [plausibility.md](./plausibility.md)；自由度总则 [player_agency.md](./player_agency.md)。读档回滚见下方快照接口。
 
 ---
 

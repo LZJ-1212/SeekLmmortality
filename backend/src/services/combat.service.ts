@@ -137,7 +137,7 @@ export function resolveCombatModifiers(player: CombatParticipant, enemy: CombatP
       realmGap,
       playerDamageMultiplier: 0,
       enemyDamageMultiplier: 1,
-      narrativeHint: `境界压制：敌人境界比玩家高出 ${Math.abs(realmGap)} 个大境界，双方实力如云泥之别，玩家绝无反抗之力，此战必然重创甚至陨落（除非有逆天法宝托底）。`,
+      narrativeHint: `境界压制：敌人境界比玩家高出 ${Math.abs(realmGap)} 个大境界，双方实力如云泥之别，玩家绝无反抗之力，此战必然重创甚至陨落，气运与法宝宣称都无法改写这个结局。`,
     };
   }
 

@@ -22,7 +22,7 @@
 
 1. 玩家在浏览器提交行动文本。
 2. `POST /api/action` 先过 S21（口令、净化、黑名单、死亡锁），再 **情境锁**（可能 400，**不占日限**），再日限，再其余拦截器。
-3. 多个 **纯函数 Service** 根据关键词与状态硬算，拼 `forcedOutcome`。（宣称奇迹骰为 **A5**，见 [player_agency.md](./player_agency.md)，未接线。）
+3. 多个 **纯函数 Service** 根据关键词与状态硬算，拼 `forcedOutcome`。（宣称奇迹骰 `miracle.service.ts` 已接线，见 [plausibility.md](./plausibility.md)。）
 4. `ai.ts` 以 json_object 调 DeepSeek，只生成 `narrative` 与选项。
 5. 后端再写库（气血、时间、背包等），战斗公式覆盖胜负，把结果与 `player` 行返回前端。
 6. 前端追加日志、渲染选项与状态卡。
@@ -45,7 +45,7 @@ server.ts（组合根：CORS、json、挂路由、listen）
 - **行动编排：** `action.service.ts`（死亡锁、情境锁、日限、拦截器链、调 `ai.ts`、结算落库、快照）。
 - **S21 网关：** `backend/src/gateway/`；口令中间件、行动净化、注入黑名单、创角字段上限、`action_daily_quotas` 日限。净化/黑名单在 `action.routes.ts`；日限在 `ActionService` 内、情境锁通过之后。规格见 [intent_gateway.md](./intent_gateway.md)，目录与顺序见 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。层 E/F 意图分类未做。
 - **情境锁：** `situation.service.ts`，规格 [situation.md](./situation.md)。
-- **Service**：无 Express 对象；可注入 `rollFn` 做单测。宣称奇迹见 [plausibility.md](./plausibility.md)（A5 未接）。
+- **Service**：无 Express 对象；可注入 `rollFn` 做单测。宣称奇迹见 [plausibility.md](./plausibility.md)（`miracle.service.ts` 已接）。
 - **Prisma**：MySQL；JSON 列存灵根、命格、天赋列表等。安全解析：`parseElementsFromSpiritualRoots`、`parseCustomData`（禁止业务层 `custom_data as any`）。
 
 

@@ -19,7 +19,7 @@
 | [mobile_architecture.md](./mobile_architecture.md) | I11 改哪些组件、dvh、安全区 |
 | [player_agency.md](./player_agency.md) | **S36 自由度规范**：叙事自由、数值主权为零；三圈边界 |
 | [situation.md](./situation.md) | 情境锁：交手中禁止闭关/坊市等（不调 AI） |
-| [plausibility.md](./plausibility.md) | S36 层 3：宣称奇迹何时掷仙缘骰；气运改不了秒杀（代码 A5） |
+| [plausibility.md](./plausibility.md) | S36 层 3：宣称奇迹何时掷仙缘骰；气运改不了秒杀（A5 已落地） |
 | [architecture.md](./architecture.md) | 仓库分层与行动数据流 |
 | [api.md](./api.md) | 已实现 HTTP 接口 |
 | [content_catalog.md](./content_catalog.md) | 已实现的地区、配方、天赋等表 |
@@ -38,7 +38,7 @@
 | [combat_build.md](./combat_build.md) | S20 功法与神通构筑 |
 | [intent_gateway.md](./intent_gateway.md) | S21 功能规格（最小集已实现：口令、日限、长度、黑名单） |
 | [intent_gateway_architecture.md](./intent_gateway_architecture.md) | S21 最小集架构（与代码对齐；层 E/F 未做） |
-| [chronicle.md](./chronicle.md) | S22 长效记忆与大事记 |
+| [chronicle.md](./chronicle.md) | S22 长效记忆；**A6 薄做已提前**（短记忆 / 未收束场景） |
 | [beasts.md](./beasts.md) | S23 灵兽与傀儡 |
 | [world_sim.md](./world_sim.md) | S24 天下大势与传闻 |
 | [endings.md](./endings.md) | S25 多结局与成仙图鉴 |
@@ -52,8 +52,8 @@
 | [intelligence.md](./intelligence.md) | S33 情报与天机 |
 | [disguise.md](./disguise.md) | S34 伪装境界与神识 |
 | [spirit_veins.md](./spirit_veins.md) | S35 灵脉洞府争夺 |
-| [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | S36：自由度总则已写；情境锁已落地；宣称奇迹骰 **A5** 未接线 |
+| [player_agency.md](./player_agency.md) · [plausibility.md](./plausibility.md) | S36：自由度总则已写；情境锁、宣称奇迹骰均已落地 |
 
-已实现的十二系统细节以 `game_design.md` + `backend/src/services/*.ts` 为准，不另复制一份以免双源。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。
+已实现的十二系统：**铁律与公式摘要**见 [game_design.md](./game_design.md)；**成册规格待办**见 [roadmap.md](./roadmap.md) **I13–I18、I20–I28**（未成册前以代码为准，禁止只改一边）。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。
 
-**代码已有、独立规格未成册**（洞府/宗门/技艺/情缘/当前地图/物品等）见 [project_status.md](./project_status.md) 第 13 节；待办 **I13–I18**。整体界面 **I19**。
+**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；状态机岁月/境界/战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I20–I28**。整体界面 **I19**。

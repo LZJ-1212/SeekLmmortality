@@ -44,6 +44,7 @@ import { WorldStateRepository } from '../repositories/worldState.repository';
 import { QuotaService, QuotaRepository } from '../gateway';
 import { deduceAction } from '../../ai';
 import { unlearnedSpellForcedOutcome } from './technique.service';
+import { detectMiracleClaim, rollMiracle } from './miracle.service';
 import { calculateSeclusionCultivationGain } from './cultivationFormula.service';
 import { detectCraftingAttempt, resolveCrafting } from './crafting.service';
 import {
@@ -421,6 +422,15 @@ export class ActionService {
       const preActionLifespanStatus = getLifespanStatus(player.age ?? DEFAULT_AGE, maxLifespanForThisTurn);
       if (preActionLifespanStatus.warningMessage) {
         forcedOutcomeParts.push(preActionLifespanStatus.warningMessage);
+      }
+
+      // 【核心拦截器 11 / A5】：宣称奇迹封闭骰——狂句必骰、失败落空、不破差两大境秒杀。
+      // 与闭关/突破等拦截器并列，只看「反杀/神器/秒杀」子串，互不误触；放在调模型之前，
+      // 只追加叙事约束，不改 hp_delta / 物品 / 伤害，秒杀仍由下方战斗公式裁决。
+      const miracleClaim = detectMiracleClaim(action);
+      if (miracleClaim) {
+        const miracleRoll = rollMiracle(player.fortune ?? 10, miracleClaim);
+        forcedOutcomeParts.push(miracleRoll.forcedOutcomeText);
       }
 
       const forcedOutcome = forcedOutcomeParts.join('\n');
