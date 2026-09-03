@@ -1,3 +1,4 @@
+/** 修订：2026-09-03 23:40 +08 lzj — 闭关回复与境界叙事锁单测 */
 import type { Prisma, PrismaClient, player_cave, players } from '@prisma/client';
 import { prisma as globalPrisma } from '../db/prisma';
 import { InventoryService } from './inventory.service';
@@ -78,8 +79,11 @@ import {
   resolveActionClock,
   describeDayPhase,
   pointedDayPhase,
+  calculateSeclusionResourceRecovery,
+  buildSeclusionRealmNarrativeLock,
   type DeathReason,
   type LifespanStatus,
+  type SeclusionResourceRecovery,
 } from './playerState.service';
 import type { ItemChangeInput } from './inventory.service';
 
@@ -305,6 +309,16 @@ export class ActionService {
             seclusionMonths,
           )
         : null;
+      const seclusionRecovery: SeclusionResourceRecovery | null =
+        seclusionMonths !== null && seclusionCultivationGain !== null
+          ? calculateSeclusionResourceRecovery(
+              seclusionMonths,
+              player.hp ?? 100,
+              player.max_hp ?? 100,
+              player.mp ?? 100,
+              player.max_mp ?? 100,
+            )
+          : null;
       if (seclusionMonths !== null) {
         const auraNote = seclusionAura.source === 'cave'
           ? `此次闭关，凭借洞府灵气与自身根骨，修为精进 ${seclusionCultivationGain} 点，需在叙事中体现修为大有长进。`
@@ -313,6 +327,20 @@ export class ActionService {
           `玩家决定闭关，此次共计闭关 ${describeMonths(seclusionMonths)}。须以"山中无甲子，寒尽不知年"的笔法一笔带过这段漫长时光，直接描写出关后的状态与心境变化，不要逐日描写修炼过程。`
           + (seclusionCultivationGain !== null ? auraNote : ''),
         );
+        if (seclusionCultivationGain !== null) {
+          forcedOutcomeParts.push(buildSeclusionRealmNarrativeLock(
+            player.realm_major,
+            player.realm_minor,
+            player.cultivation ?? 0,
+            seclusionCultivationGain,
+            REALM_LAWS,
+          ));
+          if (seclusionRecovery && (seclusionRecovery.hpDelta > 0 || seclusionRecovery.mpDelta > 0)) {
+            forcedOutcomeParts.push(
+              `闭关调息：气血恢复 ${seclusionRecovery.hpDelta}、灵力恢复 ${seclusionRecovery.mpDelta}，叙事可写伤势渐愈，但不得改写上述境界与数值。`,
+            );
+          }
+        }
       }
 
       // 【核心拦截器 5】：修仙百艺——炼丹/炼器/阵法/灵植的成败与产出，由后端依据悟性/神识硬性判定
@@ -543,12 +571,16 @@ export class ActionService {
             ? clampResource(player.hp ?? 100, -Math.round(maxHp * regionDangerCheck.hpDamagePercent), maxHp)
             : dualCultivationResult?.success
               ? clampResource(player.hp ?? 100, dualCultivationResult.hpRestore, maxHp)
-              : combatResolution
-                ? clampResource(player.hp ?? 100, combatHpDelta, maxHp)
-                : clampResource(player.hp ?? 100, deduction.hp_delta || 0, maxHp);
+              : seclusionRecovery && (seclusionRecovery.hpDelta > 0 || seclusionRecovery.mpDelta > 0)
+                ? clampResource(player.hp ?? 100, seclusionRecovery.hpDelta, maxHp)
+                : combatResolution
+                  ? clampResource(player.hp ?? 100, combatHpDelta, maxHp)
+                  : clampResource(player.hp ?? 100, deduction.hp_delta || 0, maxHp);
       const newMp = dualCultivationResult?.success
         ? clampResource(player.mp ?? 100, dualCultivationResult.mpRestore, player.max_mp ?? 100)
-        : clampResource(player.mp ?? 100, deduction.mp_delta || 0, player.max_mp ?? 100);
+        : seclusionRecovery && (seclusionRecovery.hpDelta > 0 || seclusionRecovery.mpDelta > 0)
+          ? clampResource(player.mp ?? 100, seclusionRecovery.mpDelta, player.max_mp ?? 100)
+          : clampResource(player.mp ?? 100, deduction.mp_delta || 0, player.max_mp ?? 100);
       const newCultivation = breakthroughResult
         ? breakthroughResult.patch.cultivation
         : karmaRetributionResult?.triggered

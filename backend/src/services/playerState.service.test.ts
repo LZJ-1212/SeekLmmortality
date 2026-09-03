@@ -1,3 +1,4 @@
+/** 修订：2026-09-03 23:40 +08 lzj — 闭关回复与境界叙事锁单测 */
 import { describe, it, expect } from 'vitest';
 import {
   clampResource,
@@ -13,6 +14,8 @@ import {
   getLifespanStatus,
   describeMonths,
   applyShichen,
+  calculateSeclusionResourceRecovery,
+  buildSeclusionRealmNarrativeLock,
   openingShichen,
   resolveActionClock,
   parseDayPhase,
@@ -327,6 +330,35 @@ describe('detectSeclusionMonths（闭关时长解析——防止 AI 随口决定
   it('边界情况：提到"闭关"但没有写明具体时长，应使用默认时长（1 年）', () => {
     expect(detectSeclusionMonths('找个洞府闭关修炼')).toBe(DEFAULT_SECLUSION_MONTHS);
     expect(DEFAULT_SECLUSION_MONTHS).toBe(12);
+  });
+});
+
+describe('calculateSeclusionResourceRecovery（闭关调息：气血灵力随月恢复）', () => {
+  it('正常路径：闭关 12 月应大幅恢复缺失气血与灵力', () => {
+    const r = calculateSeclusionResourceRecovery(12, 45, 100, 17, 100);
+    expect(r.hpDelta).toBe(53);
+    expect(r.mpDelta).toBe(80);
+  });
+
+  it('边界情况：已满血满蓝时不恢复', () => {
+    expect(calculateSeclusionResourceRecovery(12, 100, 100, 100, 100)).toEqual({ hpDelta: 0, mpDelta: 0 });
+  });
+
+  it('边界情况：0 月不恢复', () => {
+    expect(calculateSeclusionResourceRecovery(0, 10, 100, 10, 100)).toEqual({ hpDelta: 0, mpDelta: 0 });
+  });
+});
+
+describe('buildSeclusionRealmNarrativeLock（闭关出关禁止叙事乱写境界）', () => {
+  const laws = {
+    '炼气·中期': { next: '炼气·后期', reqCultivation: 200, isMajor: false },
+  };
+
+  it('正常路径：修为够下一小境时应提示须另发突破', () => {
+    const text = buildSeclusionRealmNarrativeLock('炼气', '中期', 150, 60, laws);
+    expect(text).toContain('炼气·中期');
+    expect(text).toContain('禁止写已晋入');
+    expect(text).toContain('突破');
   });
 });
 

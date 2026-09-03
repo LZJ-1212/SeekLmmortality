@@ -1,4 +1,6 @@
 /**
+ * 修订：
+ * 2026-09-03 23:40 +08 lzj — 闭关气血灵力回复与出关境界叙事锁
  * 核心状态机（Service 层，纯函数，不依赖数据库）。
  * 负责：气血/灵力/修为的流逝与恢复、时间流逝的月份累加、寿元耗尽判定、
  * 以及境界突破的确定性数值结算（不依赖 AI 自行计算关键惩罚/奖励数值）。
@@ -145,6 +147,52 @@ export function describeMonths(months: number): string {
   if (years > 0) return `${years}年`;
   if (months >= 1) return `${Math.round(months)}个月`;
   return `${Math.round(months * 30)}天`;
+}
+
+/** 闭关调息：每月恢复「缺失量」的 8%，12 个月约回满（纯函数，可单测） */
+const SECLUSION_RECOVERY_RATE_PER_MONTH = 0.08;
+
+export interface SeclusionResourceRecovery {
+  hpDelta: number;
+  mpDelta: number;
+}
+
+export function calculateSeclusionResourceRecovery(
+  months: number,
+  hp: number,
+  maxHp: number,
+  mp: number,
+  maxMp: number,
+): SeclusionResourceRecovery {
+  const m = Math.max(0, months);
+  if (m <= 0) return { hpDelta: 0, mpDelta: 0 };
+  const factor = Math.min(1, SECLUSION_RECOVERY_RATE_PER_MONTH * m);
+  const hpMissing = Math.max(0, maxHp - hp);
+  const mpMissing = Math.max(0, maxMp - mp);
+  return {
+    hpDelta: Math.round(hpMissing * factor),
+    mpDelta: Math.round(mpMissing * factor),
+  };
+}
+
+/** 闭关出关叙事锁：境界不变，禁止模型写「已晋后期」而面板未突破 */
+export function buildSeclusionRealmNarrativeLock(
+  realmMajor: string,
+  realmMinor: string,
+  cultivationBefore: number,
+  cultivationGain: number,
+  laws: Record<string, RealmLaw>,
+): string {
+  const key = `${realmMajor}·${realmMinor}`;
+  const law = laws[key];
+  const after = cultivationBefore + cultivationGain;
+  let tail = '';
+  if (law && after >= law.reqCultivation) {
+    tail = law.isMajor
+      ? '，修为已够大境门槛，但须玩家另发「突破」渡劫方可晋境'
+      : '，修为已够下一小境门槛，但须玩家另发「突破」方可晋境';
+  }
+  return `玩家出关后境界仍为【${key}】，叙事禁止写已晋入其它小境或大境；闭关后修为约 ${after} 点${tail}。`;
 }
 
 // ==================== 时间与岁月流逝：寿元危机预警（大限压迫感） ====================
