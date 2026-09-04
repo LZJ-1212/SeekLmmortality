@@ -1,8 +1,11 @@
+/**
+ * 修订：2026-09-05 01:48 +08 lzj — 日限缺省 0（不限次）；正整数才封顶
+ */
 import { ACTION_DAILY_LIMIT_ENV, DEFAULT_ACTION_DAILY_LIMIT } from './constants';
 import { QuotaRepository } from './quota.repository';
 import type { QuotaResult } from './types';
 
-/** 读取环境变量里的每日行动上限，缺省 60，非正整数按缺省。 */
+/** 每日行动上限。未配 / 0 / 非法 → 0（不限次，不写配额表）。正整数才启用日限。 */
 export function getActionDailyLimit(): number {
   const raw = process.env[ACTION_DAILY_LIMIT_ENV];
   const parsed = raw ? Number(raw) : Number.NaN;
@@ -30,6 +33,7 @@ export class QuotaService {
     now: Date = new Date(),
     limit: number = getActionDailyLimit(),
   ): Promise<QuotaResult> {
+    if (limit <= 0) return { ok: true, used: 0 };
     const day = currentBeijingDay(now);
     const count = await this.repo.incrementAndRead(playerId, day);
     if (count > limit) return { ok: false };

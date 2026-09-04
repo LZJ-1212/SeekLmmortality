@@ -4,6 +4,7 @@
 修订：2026-09-05 01:22 +08 lzj — 服主用本机 5174 看全部存档
 修订：2026-09-05 01:31 +08 lzj — 游玩 worktree 与更新服 3001/5175 分开
 修订：2026-09-05 01:39 +08 lzj — 发版改 VERSION，merge 进 play-live
+修订：2026-09-05 01:48 +08 lzj — 「更新」走 update-play-release；日限默认关
 
 面向：你自己开发，以及 L1 时告诉朋友「电脑上怎么开」（朋友若连的是你的穿透地址，则只需浏览器，不必装 XAMPP）。
 
@@ -253,7 +254,7 @@ npm run dev:update
 
 ### 7.3 什么时候才把更新同步给朋友
 
-平时改 Cursor 这份（5175）**不会**改他们的存档。但若朋友的隧道仍打在这份仓库的 `tsx watch` 上，你一存盘他们会跟着重启。迁到 `SeekLmmortality-play` 并用 `npm run play` 之后才真正隔离。
+主人说「更新 / 发版 / 升版本」时，按 `.cursor/skills/update-play-release/SKILL.md` 执行（先 bump `VERSION`，再 merge 游玩目录）。平时改 Cursor 这份（5175）**不会**改他们的存档。但若朋友的隧道仍打在这份仓库的 `tsx watch` 上，你一存盘他们会跟着重启。迁到 `SeekLmmortality-play` 并用 `npm run play` 之后才真正隔离。
 
 要让他们升到最新：
 

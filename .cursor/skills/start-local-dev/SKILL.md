@@ -1,11 +1,12 @@
 ---
 name: start-local-dev
 description: >-
-  Starts SeekLmmortality for play OR for local updates. Play: sibling worktree
+  Starts SeekLmmortality for play or for local coding. Play: sibling worktree
   SeekLmmortality-play, backend npm run play (:3000, no watch), frontend npm run play
-  (:5174), PLAY_ACCESS_TOKEN, dual Cloudflare tunnels. Update: this repo
+  (:5174), PLAY_ACCESS_TOKEN, dual Cloudflare tunnels. Local coding: this repo
   npm run dev:update (3001 / 5175 / wendaocs_dev). Use when the user asks to 启动,
-  开机, 给朋友玩, 开隧道, 更新, 改代码, cloudflared, --host, or bring up servers.
+  开机, 给朋友玩, 开隧道, 改代码, 本机实验, cloudflared, or --host.
+  Do not use when the user says 更新 or 发版 (that is update-play-release).
 ---
 
 # 启动《问道长生》（游玩 / 更新分开）
@@ -15,13 +16,15 @@ description: >-
 修订：2026-09-05 01:25 +08 lzj — 多口令时每人私发一条
 修订：2026-09-05 01:31 +08 lzj — 游玩用旁路 worktree，更新用 3001/5175
 修订：2026-09-05 01:39 +08 lzj — 发版改 VERSION 再 merge 游玩目录
+修订：2026-09-05 01:48 +08 lzj — 「更新」改走 update-play-release skill
 
 ## 先分清用户要哪套
 
 | 用户说法 | 用哪套 |
 |----------|--------|
 | 启动、开机、给朋友玩、开隧道 | **游玩**：`../SeekLmmortality-play`，端口 **3000 / 5174**，库 `wendaocs`，后端 **`npm run play`（无 watch）** |
-| 只本机、不开隧道、改代码、更新 | **更新**：当前 Cursor 仓库，**3001 / 5175**，库 `wendaocs_dev`，`npm run dev:update` |
+| 只本机、不开隧道、改代码、本机实验 | **实验**：当前 Cursor 仓库，**3001 / 5175**，库 `wendaocs_dev`，`npm run dev:update` |
+| 更新、发版、升版本、给朋友更新 | **不要走本节**。读并执行 `.cursor/skills/update-play-release/SKILL.md` |
 
 **禁止**在 Cursor 这份目录对 3000 开 `tsx watch`：一存盘朋友的后端会重启。Prisma generate 只对**当前目录**的 `node_modules` 动手，两套目录互不抢 DLL。
 
@@ -48,7 +51,7 @@ git worktree add -b play-live ../SeekLmmortality-play lzj
 3. worktree `frontend`：`npm run play`，等到 **5174** 且 `--host`。
 4. 双隧道仍打 5174 与 3000（步骤同手册第 6.4–6.6）。未配口令则停下。
 
-## B. 更新（本仓库）
+## B. 本机改代码（本仓库，不是给朋友发版）
 
 1. `backend/.env.update` 存在（从 `.env.update.example` 复制），`PORT=3001`，库 `wendaocs_dev`。库不存在则建。
 2. `cd backend` → `npm run dev:update`，等到 **3001**。
@@ -56,7 +59,7 @@ git worktree add -b play-live ../SeekLmmortality-play lzj
 4. 本机打开 `http://localhost:5175`。不要动 3000/5174 上的游玩进程。
 5. 自检 `http://localhost:3001/api/ping`。不要默认打 `/api/ai-ping`。
 
-把更新发给朋友：改 `VERSION` 并提交后，在 **worktree** `git merge lzj`，停游玩后端后再 generate / 必要时 db push，再 `npm run play`。这会短暂打断朋友。存档页版本号应对上。
+把代码发给朋友：用户说「更新」时走 `update-play-release`（bump `VERSION`、merge `play-live`、重启 `npm run play`）。本节不要 bump 版本、不要停 3000。
 
 ## 故障
 

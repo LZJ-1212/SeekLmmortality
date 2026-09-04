@@ -1,6 +1,7 @@
 # S21 意图识别与安全网关（功能规格）
 
 修订：2026-09-05 01:25 +08 lzj — 游玩口令可逗号多分仓
+修订：2026-09-05 01:48 +08 lzj — 日配额缺省不限次
 
 规格先行。架构（目录、调用顺序、表、词表落地位置）见 [intent_gateway_architecture.md](./intent_gateway_architecture.md)。**L1 朋友试玩强制做本文件「最小集」**；完整分类器可后做。不替代现有 `/api/action` 拦截器，只作为 **更早一层**。
 
@@ -53,7 +54,7 @@
 **日配额**
 
 - 键：**playerId + 北京时间自然日**（拍板，不再用 saveId）。
-- 默认上限：60 次；环境变量 `ACTION_DAILY_LIMIT` 可覆盖。
+- 默认 **不限次**（`getActionDailyLimit() === 0` 不写配额表、不 429）。环境变量 `ACTION_DAILY_LIMIT` 设为正整数才启用日限。
 - 仅 `POST /api/action` 在「能进入层 G 之前」计数；400/401/404/死亡 403 不计数。创角不占日限。
 - 超限：**429**，不调用 DeepSeek。
 - `GET /api/ping` 不校验口令、不占日限；`GET /api/player` 穿透时要口令（若已配置）但不占日限。本机直连可不带令牌。

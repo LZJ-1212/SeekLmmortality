@@ -1,6 +1,7 @@
 # S21 安全网关代码架构（最小集）
 
 修订：2026-09-05 01:25 +08 lzj — 多口令哈希写入存档仓
+修订：2026-09-05 01:48 +08 lzj — 日限缺省 0，超限才 429
 
 依据 [intent_gateway.md](./intent_gateway.md) 的 **L1 最小集**（层 A～D）。不含层 E 意图分类、层 F 二次模型。现有突破/战斗等拦截器（层 G）不改职责，只保证网关在它们之前跑完。
 
@@ -76,7 +77,7 @@ frontend/src/
 6. `ActionService.execute`：查玩家 → 无则 **404**  
 7. 死亡锁 → **403**  
 8. 情境锁 → 失败 **400**（不占日限）  
-9. `quota.service.tryConsumeDailyAction(playerId)` → 超限 **429** `{ ..., message:'今日推演次数已尽，明日再来。' }`  
+9. `quota.service.tryConsumeDailyAction(playerId)` → 上限为 0 则跳过；否则超限 **429** `{ ..., message:'今日推演次数已尽，明日再来。' }`  
 10. 层 G 拦截器 + `deduceAction`（DeepSeek）  
 
 `GET /api/ping`：不挂口令中间件（探活）。  
@@ -115,7 +116,7 @@ model action_daily_quotas {
 
 `tryConsume`：事务或单条 `INSERT ... ON DUPLICATE KEY UPDATE count = count + 1`，读回 `count`，若 `> MAX` 则把本次视为超限（实现时须保证不会在超限后仍进入层 G；可采用「先读再条件更新」避免 count 涨到 61 仍放行——以「更新后 count≤MAX 才放行」为准）。
 
-环境变量：`ACTION_DAILY_LIMIT`（缺省 60）。
+环境变量：`ACTION_DAILY_LIMIT`（缺省 0 不限次；正整数才日限）。
 
 ---
 

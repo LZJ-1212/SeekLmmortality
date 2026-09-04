@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+/** 修订：2026-09-05 01:48 +08 lzj — 日限 0 不计数、缺省不限次 */
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { QuotaService, getActionDailyLimit, currentBeijingDay } from './quota.service';
 import type { QuotaRepository } from './quota.repository';
 
@@ -7,7 +8,7 @@ function createSeqRepo(seq: number[]): QuotaRepository {
   return { incrementAndRead: vi.fn(() => Promise.resolve(seq[Math.min(i++, seq.length - 1)] ?? 0)) } as unknown as QuotaRepository;
 }
 
-describe('QuotaService.tryConsumeDailyAction（第 60 次放行、第 61 次拒绝）', () => {
+describe('QuotaService.tryConsumeDailyAction（有上限才计数；0 不限次）', () => {
   it('正常路径：计数未超限时返回 ok 与已用次数', async () => {
     const service = new QuotaService(createSeqRepo([1, 2]));
     expect(await service.tryConsumeDailyAction('p1', new Date(), 60)).toEqual({ ok: true, used: 1 });
@@ -28,21 +29,32 @@ describe('QuotaService.tryConsumeDailyAction（第 60 次放行、第 61 次拒�
     expect(repo.incrementAndRead).toHaveBeenNthCalledWith(1, 'p-a', expect.any(String));
     expect(repo.incrementAndRead).toHaveBeenNthCalledWith(2, 'p-b', expect.any(String));
   });
+
+  it('正常路径：上限 0 不写库、永不拒绝', async () => {
+    const repo = createSeqRepo([999]);
+    const service = new QuotaService(repo);
+    expect(await service.tryConsumeDailyAction('p1', new Date(), 0)).toEqual({ ok: true, used: 0 });
+    expect(repo.incrementAndRead).not.toHaveBeenCalled();
+  });
 });
 
 describe('getActionDailyLimit（环境变量缺省与非法值兜底）', () => {
-  it('正常路径：缺省 60', () => {
-    vi.stubEnv('ACTION_DAILY_LIMIT', '');
-    expect(getActionDailyLimit()).toBe(60);
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  it('边界：非法/非正整数值回退缺省', () => {
+  it('正常路径：未配则为 0（不限次）', () => {
+    vi.stubEnv('ACTION_DAILY_LIMIT', '');
+    expect(getActionDailyLimit()).toBe(0);
+  });
+
+  it('边界：非法或非正整数也是 0（不限次）', () => {
     vi.stubEnv('ACTION_DAILY_LIMIT', 'abc');
-    expect(getActionDailyLimit()).toBe(60);
+    expect(getActionDailyLimit()).toBe(0);
     vi.stubEnv('ACTION_DAILY_LIMIT', '-5');
-    expect(getActionDailyLimit()).toBe(60);
+    expect(getActionDailyLimit()).toBe(0);
     vi.stubEnv('ACTION_DAILY_LIMIT', '0');
-    expect(getActionDailyLimit()).toBe(60);
+    expect(getActionDailyLimit()).toBe(0);
   });
 
   it('边界：合法覆盖值生效', () => {

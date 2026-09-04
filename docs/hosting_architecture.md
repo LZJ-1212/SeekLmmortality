@@ -3,6 +3,7 @@
 修订：2026-09-05 01:25 +08 lzj — 创角令牌对应存档仓
 修订：2026-09-05 01:22 +08 lzj — 本机页面无视 VITE_API_BASE 打 3000
 修订：2026-09-05 01:31 +08 lzj — 游玩 3000/5174，更新 3001/5175
+修订：2026-09-05 01:48 +08 lzj — 日限缺省关闭
 
 依据 [hosting.md](./hosting.md) 的 **L1 最小集**。前端 API 基址 **已落地**（`apiBase.ts`）；隧道与 NSSM 仍须真机。不含云厂商账号与真实域名。
 
@@ -117,7 +118,7 @@ NSSM 的可执行文件路径、本机目录 **不写进 Git**。架构只规定
 | `PORT` | 默认 3000 |
 | `PLAY_ACCESS_TOKEN` | **公网必填** |
 | `PLAY_CORS_ORIGIN` | 拓扑 B：前端公网 Origin |
-| `ACTION_DAILY_LIMIT` | 可选，默认 60 |
+| `ACTION_DAILY_LIMIT` | 可选，默认不限；正整数才日限 |
 
 **前端 `frontend/.env.local`（不入库）**
 
