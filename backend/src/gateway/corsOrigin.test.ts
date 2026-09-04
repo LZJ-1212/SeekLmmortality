@@ -1,7 +1,8 @@
+/** 修订：2026-09-05 01:31 +08 lzj — 覆盖更新服 5175 */
 import { describe, it, expect } from 'vitest';
 import { isAllowedCorsOrigin, parseCorsOriginList } from './corsOrigin';
 
-describe('CORS Origin 白名单（本机开发端口 5174/5173 + 逗号分隔公网）', () => {
+describe('CORS Origin 白名单（本机 5174/5175/5173 + 逗号分隔公网）', () => {
   it('正常路径：公网 Origin 在列表里则放行', () => {
     expect(isAllowedCorsOrigin('https://front.example.tld', 'https://front.example.tld')).toBe(true);
   });
@@ -15,6 +16,11 @@ describe('CORS Origin 白名单（本机开发端口 5174/5173 + 逗号分隔公
   it('边界：本机固定端口 5174 在已配公网 CORS 时仍放行', () => {
     expect(isAllowedCorsOrigin('http://localhost:5174', 'https://front.example.tld')).toBe(true);
     expect(isAllowedCorsOrigin('http://127.0.0.1:5174', 'https://front.example.tld')).toBe(true);
+  });
+
+  it('边界：更新服端口 5175 在已配公网 CORS 时仍放行', () => {
+    expect(isAllowedCorsOrigin('http://localhost:5175', 'https://front.example.tld')).toBe(true);
+    expect(isAllowedCorsOrigin('http://127.0.0.1:5175', 'https://front.example.tld')).toBe(true);
   });
 
   it('边界：历史默认端口 5173 在已配公网 CORS 时仍放行（兼容旧书签）', () => {

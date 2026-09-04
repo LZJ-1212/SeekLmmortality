@@ -69,6 +69,8 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.update.example
+# 修订：2026-09-05 01:31 +08 lzj — 放行更新服示例 env
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

@@ -1,4 +1,5 @@
 /** 修订：2026-09-05 01:01 +08 lzj — 字号控件抽到共用模块 */
+/** 修订：2026-09-05 01:39 +08 lzj — 局内顶栏展示版本号 */
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../playToken';
 import { CommandMenu, type Command } from './CommandMenu';
@@ -7,6 +8,7 @@ import { LoadModal } from './LoadModal';
 import { StatusCard, type PlayerCardData } from './StatusCard';
 import { formatHeavenCalendar } from '../catalogDisplay';
 import { FontSizeButtons, usePersistedFontSize } from '../fontSize';
+import { GameVersionLabel } from '../GameVersionLabel';
 
 // 定义每条日志的格式
 interface LogEntry {
@@ -528,7 +530,10 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
       <div className="flex-1 flex flex-col min-h-0 bg-paper border-2 border-jade rounded-md shadow-lg font-serif overflow-hidden">
 
         <div className="bg-jade text-white px-4 py-2 font-bold tracking-widest text-lg shadow-sm flex justify-between items-center">
-          <span>九州大世界</span>
+          <span className="flex flex-col items-start leading-tight">
+            <span>九州大世界</span>
+            <GameVersionLabel className="text-[10px] font-normal tracking-normal opacity-80 mt-0.5" />
+          </span>
           <div className="flex items-center gap-3">
             <FontSizeButtons fontSize={fontSize} onChange={setFontSize} />
             <span className="text-sm font-normal opacity-90">

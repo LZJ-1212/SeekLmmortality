@@ -2,6 +2,8 @@
 
 修订：2026-09-05 01:25 +08 lzj — 多口令逗号分隔，好友存档互不可见
 修订：2026-09-05 01:22 +08 lzj — 服主用本机 5174 看全部存档
+修订：2026-09-05 01:31 +08 lzj — 游玩 worktree 与更新服 3001/5175 分开
+修订：2026-09-05 01:39 +08 lzj — 发版改 VERSION，merge 进 play-live
 
 面向：你自己开发，以及 L1 时告诉朋友「电脑上怎么开」（朋友若连的是你的穿透地址，则只需浏览器，不必装 XAMPP）。
 
@@ -87,7 +89,7 @@ npm test
 | 前端 `npm run dev -- --host` | 网页 | 5174 |
 | 两条隧道 | 把 5174 / 3000 接到公网 | 无 |
 
-你关机、关终端、隧道进程退出 → 朋友立刻玩不了。未配 `PLAY_ACCESS_TOKEN` **禁止**开隧道。
+你关机、关终端、隧道进程退出 → 朋友立刻玩不了。未配 `PLAY_ACCESS_TOKEN` **禁止**开隧道。改代码请用第 7 节的更新服，不要在这份目录对 3000 开 `tsx watch`。
 
 ### 6.1 本机先自己能玩
 
@@ -205,7 +207,66 @@ VITE_API_BASE=https://api.example.tld
 
 **保活**：L1 不强制。要开机自启用 NSSM 包后端/前端，MySQL 用 XAMPP 的 Windows 服务；隧道客户端用厂商自带开机项。做不到就在朋友须知写「需服主手动开」。固定域名（named tunnel）需自有域名托管到 Cloudflare，与 quick tunnel 不是同一套配置。
 
-## 7. 常见故障
+## 7. 游玩与更新分开
+
+朋友走 **3000 / 5174** 和隧道。你改代码走 **另一份目录 + 3001 / 5175 + 库 `wendaocs_dev`**。这样存盘、HMR、`tsx watch`、`prisma generate` 都碰不到正在玩的那一套。
+
+### 7.1 游玩目录（旁路 worktree）
+
+在仓库的**上一级**另放一份，不要和 Cursor 正在改的这份混用：
+
+```
+git worktree add -b play-live ../SeekLmmortality-play lzj
+```
+
+（本仓库已经占着分支 `lzj`，游玩目录用分支 `play-live`，避免抢同一分支。）
+
+只在这份里给朋友开服。后端 **不要** `tsx watch`：
+
+```
+cd ../SeekLmmortality-play/backend
+npm run play
+```
+
+```
+cd ../SeekLmmortality-play/frontend
+npm run play
+```
+
+隧道仍打 **5174** 与 **3000**。`.env` / `.env.local` 从你现在这份拷过去（勿提交）。口令、CORS、Key 与现在相同；库名仍是 `wendaocs`。
+
+### 7.2 更新（本仓库）
+
+复制 `backend/.env.update.example` 为 `backend/.env.update`，库名 `wendaocs_dev`（XAMPP 里建一次即可）。然后：
+
+```
+cd backend
+npm run dev:update
+```
+
+```
+cd frontend
+npm run dev:update
+```
+
+浏览器打开 `http://localhost:5175`。本机 5175 会打 **3001**，用实验库，看不见朋友正在玩的档，也不会改他们的表。
+
+### 7.3 什么时候才把更新同步给朋友
+
+平时改 Cursor 这份（5175）**不会**改他们的存档。但若朋友的隧道仍打在这份仓库的 `tsx watch` 上，你一存盘他们会跟着重启。迁到 `SeekLmmortality-play` 并用 `npm run play` 之后才真正隔离。
+
+要让他们升到最新：
+
+1. 发版前改仓库根目录 `VERSION`（如 `0.2.0` → `0.3.0`），提交到 `lzj`。
+2. 停游玩目录的后端（短暂停服）。
+3. 在 `SeekLmmortality-play` 执行 `git merge lzj`。
+4. 按需 `npm install`；该目录 `npx prisma generate`；若改了表再 `db push`（动的是 `wendaocs`）。
+5. 再开后端、前端的 `npm run play`。隧道没关就不用重发链接。
+6. 存档页应显示新的「版本 x.y.z」。若出现「界面 A · 天道 B」，把游玩目录的前后端都重启。
+
+**不要**在 Cursor 这份仓库里对 3000 开 `tsx watch`，否则一存盘朋友的后端会重启。
+
+## 8. 常见故障
 
 | 现象 | 处理 |
 |------|------|
@@ -213,12 +274,12 @@ VITE_API_BASE=https://api.example.tld
 | 创角失败 | 后端没开；口令错（401）；或 CORS（公网须 `PLAY_CORS_ORIGIN` 等于前端 Origin） |
 | 踏入仙途无反应 | 看浏览器 F12 网络；后端 console |
 | DeepSeek 失败 | Key 错、欠费、或没配 `.env` |
-| Prisma unlink EPERM | 停 `npm run dev` 再 generate |
+| Prisma unlink EPERM | 停**正在 generate 的那份目录**里的后端；游玩目录与更新目录分开则互不抢 DLL |
 | 前端隧道 403 | Vite `allowedHosts`；quick tunnel 已放行 `.trycloudflare.com` |
 | 朋友请求打到他自己的 localhost | 未设 `VITE_API_BASE` 或前端没重启 |
 | 隧道一重启朋友打不开 | quick tunnel URL 变了，重做第 6.5–6.6 节并重发链接 |
 
-## 8. 不要做的事
+## 9. 不要做的事
 
 - 把 `.env`、`.env.local`、真实口令、真实隧道域名提交 GitHub
 - 把 `DEEPSEEK_API_KEY` 写进前端

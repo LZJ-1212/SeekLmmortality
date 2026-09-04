@@ -1,8 +1,10 @@
 /** 修订：2026-09-05 01:01 +08 lzj — 创角页共用局内字号 A- / A+ */
+/** 修订：2026-09-05 01:39 +08 lzj — 创角页展示版本号 */
 import React, { useState } from 'react';
 import { apiFetch } from '../playToken';
 import { ROOT_ELEMENTS, ELEMENT_COLORS } from '../rootElements';
 import { FontSizeButtons, usePersistedFontSize } from '../fontSize';
+import { GameVersionLabel } from '../GameVersionLabel';
 
 // 1. 严格定义接收的 Props
 interface OpeningOption {
@@ -147,6 +149,9 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
         <div className="bg-jade text-white py-2 px-3 rounded-sm font-bold tracking-widest text-xl shadow-sm flex justify-between items-center">
           <span>天道轮回 · 凝聚命格</span>
           <FontSizeButtons fontSize={fontSize} onChange={setFontSize} />
+        </div>
+        <div className="mt-1 mb-2 text-right text-[11px] text-textSub">
+          <GameVersionLabel />
         </div>
         <div className="my-3 border-b border-gold opacity-80" />
 

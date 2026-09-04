@@ -1,6 +1,8 @@
 /** 修订：2026-09-05 01:25 +08 lzj — 存档页提示按口令分仓，清空只动本列表 */
+/** 修订：2026-09-05 01:39 +08 lzj — 存档页展示版本号 */
 import React, { useCallback, useEffect, useState } from 'react';
 import { apiFetch, getPlayToken, setPlayToken } from '../playToken';
+import { GameVersionLabel } from '../GameVersionLabel';
 
 interface SaveSummary {
   saveId: string;
@@ -147,6 +149,9 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
         <p className="mt-3 text-xs text-textSub text-center leading-relaxed">
           每位道友持自己的口令，只能看见自己的仙途。
         </p>
+        <div className="mt-1 text-center text-[11px] text-textSub">
+          <GameVersionLabel />
+        </div>
         <div className="my-3 border-b border-gold opacity-80" />
 
         {loading && <div className="py-10 text-center text-textSub">推演诸般因果中...</div>}

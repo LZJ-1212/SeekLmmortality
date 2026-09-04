@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch server.ts",
+    "play": "tsx server.ts",
+    "dev:update": "tsx watch server.ts -- --update",
     "test": "vitest run"
   },
   "dependencies": {

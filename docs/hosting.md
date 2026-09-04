@@ -1,6 +1,7 @@
 # I06 托管、穿透与进程保活（功能规格）
 
 修订：2026-09-05 01:25 +08 lzj — 每位朋友私发不同口令
+修订：2026-09-05 01:31 +08 lzj — 游玩与更新分目录、分端口
 
 规格先行。架构（拓扑、端口、环境变量、前端 API 基址、保活落点）见 [hosting_architecture.md](./hosting_architecture.md)。本机开发启动仍以 [runbook.md](./runbook.md) 为准；**给朋友试玩（L1）以本文件为准**。
 
@@ -23,6 +24,7 @@
 | 前端请求打到**你的**后端，而不是朋友机器上的 localhost | **必做** |
 | MySQL、XAMPP、`.env`、DeepSeek Key 只留在服主机 | **必做** |
 | 后端 + 前端 + MySQL 在你关机/关终端后仍能被拉起或明确告知「服主不在线」 | **必做**（保活或诚实停服） |
+| 改代码不影响正在玩的朋友（另目录 / 另端口 / 实验库） | **必做**（步骤见 [runbook.md](./runbook.md) 第 7 节） |
 | 买云主机、备案、CDN、Docker、CI 部署 | **L1 不做**（可作备选拓扑，见架构文） |
 | 账号系统、HTTPS 证书自签以外的商业证书 | **L1 不做**（隧道产品自带 HTTPS 即可） |
 | GitHub Pages 托管本游戏 | **禁止**（无 Express/MySQL） |
@@ -83,7 +85,7 @@
 ## 6. 与其它系统
 
 - 依赖已落地：[intent_gateway.md](./intent_gateway.md)（口令、日限、CORS）；[I05 存档列表](./project_status.md)（免手抄 UUID）。
-- 本机步骤：[runbook.md](./runbook.md) 第 2–4 节必须先通。
+- 本机步骤：[runbook.md](./runbook.md) 第 2–4 节必须先通；给朋友玩与改代码分开见该手册第 7 节。
 - 不依赖 I07 内容填充。
 
 ---

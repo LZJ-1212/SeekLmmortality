@@ -2,6 +2,7 @@
 
 修订：2026-09-05 01:25 +08 lzj — 创角令牌对应存档仓
 修订：2026-09-05 01:22 +08 lzj — 本机页面无视 VITE_API_BASE 打 3000
+修订：2026-09-05 01:31 +08 lzj — 游玩 3000/5174，更新 3001/5175
 
 依据 [hosting.md](./hosting.md) 的 **L1 最小集**。前端 API 基址 **已落地**（`apiBase.ts`）；隧道与 NSSM 仍须真机。不含云厂商账号与真实域名。
 
@@ -15,14 +16,14 @@
 |----|------|
 | L1 默认拓扑 | **拓扑 B（双 Origin + 隧道）**。不强制先买 VPS、不强制 Nginx。 |
 | L1 备选拓扑 | 拓扑 A（单 Origin 反代）留给已有 Nginx/Caddy 或以后上云。 |
-| 前端 API 基址 | **已抽** `frontend/src/apiBase.ts`。禁止再在组件里写死 `http://localhost:3000`。地址栏为本机时一律打 3000；未设 `VITE_API_BASE` 时缺省本机 3000。 |
+| 前端 API 基址 | **已抽** `frontend/src/apiBase.ts`。禁止再在组件里写死 `http://localhost:3000`。地址栏本机 **5175** 打更新服 3001；其它本机页打游玩服 3000。未设 `VITE_API_BASE` 时缺省本机 3000。 |
 | 环境变量（前端） | `VITE_API_BASE`：空或未设 → `http://localhost:3000`；L1 设为 API 的公网 Origin（无尾斜杠）。**不要**把口令放进 `VITE_*`。 |
 | 环境变量（后端） | L1 必配 `PLAY_ACCESS_TOKEN`；`PLAY_CORS_ORIGIN` = 前端公网 Origin；`PORT=3000`；`DATABASE_URL` 仍指本机 MySQL。 |
 | MySQL | 只绑 `127.0.0.1:3306`。隧道映射列表**不准出现 3306**。 |
 | 公网映射 | 只映射前端端口（默认 5174）与后端端口（默认 3000）。 |
 | 隧道产品 | **不锁厂商**（Cloudflare Tunnel / cpolar / ngrok 等）。契约只有：两条公网 URL、HTTPS 更好、能关隧道。 |
 | 进程保活 L1 | Windows：**NSSM**（或等价服务包装）各包一层后端与前端；MySQL 用 XAMPP 的 Windows 服务。禁止把「Cursor 里开着的终端」当保活。 |
-| L1 前端形态 | 允许继续 `vite` 开发服务器（少一次 build）。不把 Docker 当 L1 门槛。 |
+| L1 前端形态 | **游玩**：旁路 git worktree + `npm run play`（后端无 watch）。**更新**：本仓库 `dev:update` 走 5175/3001。不要用 Cursor 这份的 `tsx watch` 给朋友玩。 |
 | 明确不做 | Kubernetes、GitHub Actions 自动部署、把 Key 写入隧道 Dashboard 截图进仓库。 |
 
 ---

@@ -1,3 +1,8 @@
+/**
+ * 修订：2026-09-05 01:31 +08 lzj — --update 叠读 .env.update，与游玩服分端口
+ */
+import path from 'node:path';
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -16,14 +21,21 @@ import inventoryRoutes from './src/routes/inventory.routes';
  * - 安全网关在 src/gateway/*
  */
 
-// 加载 .env 环境变量
 dotenv.config();
+if (process.argv.includes('--update')) {
+  const updateEnv = path.join(__dirname, '.env.update');
+  if (!fs.existsSync(updateEnv)) {
+    console.error('更新服用 backend/.env.update（可复制 .env.update.example），当前文件不存在。');
+    process.exit(1);
+  }
+  dotenv.config({ path: updateEnv, override: true });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 中间件配置：允许跨域请求和解析 JSON
-// S21 / I06：配了 PLAY_CORS_ORIGIN 则只放行该（逗号分隔）列表 + 本机开发端口（5174/5173），避免隧道配置把 localhost 创角卡死
+// S21 / I06：配了 PLAY_CORS_ORIGIN 则只放行该（逗号分隔）列表 + 本机 5174（游玩）/ 5175（更新）/ 5173（历史）
 const playCorsOrigin = process.env.PLAY_CORS_ORIGIN;
 if (playCorsOrigin) {
   app.use(

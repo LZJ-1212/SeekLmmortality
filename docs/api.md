@@ -1,6 +1,7 @@
 # HTTP 接口（已实现）
 
 修订：2026-09-05 01:25 +08 lzj — GET/DELETE /api/saves 按口令仓过滤
+修订：2026-09-05 01:39 +08 lzj — GET /api/ping 返回 version
 
 与代码同步日期：2026-09-05。实现以 `backend/src/routes/*.ts` 为准（`server.ts` 只挂载）。本文件只描述契约，不写实现。
 
@@ -15,7 +16,7 @@
 
 ### `GET /api/ping`
 
-探测进程与数据库。成功则返回可达信息（含库是否通）。不消耗 DeepSeek。
+探测进程与数据库。成功则返回可达信息（含库是否通）以及 `version`（仓库根目录 `VERSION`，如 `0.2.0`）。不消耗 DeepSeek。
 
 ### `GET /api/ai-ping`
 

@@ -1,9 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '../db/prisma';
 import { wakeUpHeaven } from '../../ai';
+import { getGameVersion } from '../gameVersion';
 import { requirePlayToken } from '../gateway';
 
 /**
+ * 修订：2026-09-05 01:39 +08 lzj — /api/ping 返回 version
  * 健康检查路由：数据库连通性 + AI 灵魂连通性。
  * /ping 无需令牌（探活），/ai-ping 需要令牌（会真实调一次 DeepSeek）。
  */
@@ -16,6 +18,7 @@ router.get('/ping', async (_req: Request, res: Response) => {
     res.json({
       status: 'success',
       message: '天地之桥已打通！天道系统（数据库）连接成功。',
+      version: getGameVersion(),
     });
   } catch (error) {
     console.error('数据库连接失败:', error);
