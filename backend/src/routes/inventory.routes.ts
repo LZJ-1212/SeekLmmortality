@@ -1,6 +1,9 @@
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '../db/prisma';
 import { InventoryService } from '../services/inventory.service';
+import { isSaveVisibleToOwner } from '../services/saveAccess.service';
+
+/** 修订：2026-09-05 01:11 +08 lzj — 背包按口令仓校验存档 */
 
 const router = Router();
 const inventoryService = new InventoryService(prisma);
@@ -18,6 +21,9 @@ function requireParam(res: Response, value: string | undefined, paramName: strin
 router.get('/:saveId', async (req: Request, res: Response) => {
   const { saveId } = req.params;
   if (!requireParam(res, saveId, 'saveId')) return;
+  if (!(await isSaveVisibleToOwner(prisma, saveId, req.saveOwnerHash ?? null))) {
+    return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+  }
   try {
     const items = await inventoryService.getInventory(saveId);
     res.json({ status: 'success', data: items });
@@ -31,6 +37,9 @@ router.get('/:saveId', async (req: Request, res: Response) => {
 router.post('/:saveId/items', async (req: Request, res: Response) => {
   const { saveId } = req.params;
   if (!requireParam(res, saveId, 'saveId')) return;
+  if (!(await isSaveVisibleToOwner(prisma, saveId, req.saveOwnerHash ?? null))) {
+    return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+  }
   try {
     const { name, quantity, category, rarity, description, effects } = req.body;
     const entry = await inventoryService.addItem(saveId, {
@@ -51,6 +60,9 @@ router.post('/:saveId/items', async (req: Request, res: Response) => {
 router.delete('/:saveId/items/by-name', async (req: Request, res: Response) => {
   const { saveId } = req.params;
   if (!requireParam(res, saveId, 'saveId')) return;
+  if (!(await isSaveVisibleToOwner(prisma, saveId, req.saveOwnerHash ?? null))) {
+    return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+  }
   try {
     const { name, quantity } = req.body;
     await inventoryService.removeItemByName(saveId, name, quantity);
@@ -65,6 +77,10 @@ router.patch('/entries/:entryId', async (req: Request, res: Response) => {
   const { entryId } = req.params;
   if (!requireParam(res, entryId, 'entryId')) return;
   try {
+    const entry = await prisma.player_inventory.findUnique({ where: { id: entryId }, select: { save_id: true } });
+    if (!entry || !(await isSaveVisibleToOwner(prisma, entry.save_id, req.saveOwnerHash ?? null))) {
+      return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+    }
     const { quantity, isEquipped } = req.body;
 
     if (quantity !== undefined) {
@@ -84,6 +100,10 @@ router.delete('/entries/:entryId', async (req: Request, res: Response) => {
   const { entryId } = req.params;
   if (!requireParam(res, entryId, 'entryId')) return;
   try {
+    const entry = await prisma.player_inventory.findUnique({ where: { id: entryId }, select: { save_id: true } });
+    if (!entry || !(await isSaveVisibleToOwner(prisma, entry.save_id, req.saveOwnerHash ?? null))) {
+      return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+    }
     await inventoryService.deleteEntry(entryId);
     res.json({ status: 'success', message: '物品已丢弃' });
   } catch (error: any) {

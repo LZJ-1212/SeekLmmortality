@@ -1,5 +1,6 @@
+/** 修订：2026-09-05 01:11 +08 lzj — 多口令与仓哈希单测 */
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { doesPlayTokenMatch, isPlayTokenConfigured, isProxiedIncomingRequest, mustEnforcePlayToken } from './playToken';
+import { doesPlayTokenMatch, isPlayTokenConfigured, isProxiedIncomingRequest, mustEnforcePlayToken, hashSaveOwnerToken, resolveSaveOwnerHash } from './playToken';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -19,11 +20,20 @@ describe('playToken（口令配置判定 + 时序安全比较）', () => {
     expect(doesPlayTokenMatch('secret-token')).toBe(true);
   });
 
-  it('边界：配置后错误/缺失头拒绝', () => {
+  it('失败/拒绝：错误口令拒绝；逗号列表中只有完全一致的一条能过', () => {
     vi.stubEnv('PLAY_ACCESS_TOKEN', 'secret-token');
     expect(doesPlayTokenMatch(undefined)).toBe(false);
     expect(doesPlayTokenMatch('wrong-token')).toBe(false);
     expect(doesPlayTokenMatch('secret-token-x')).toBe(false);
+  });
+
+  it('正常路径：逗号分隔的多个口令各自可过，且哈希不同', () => {
+    vi.stubEnv('PLAY_ACCESS_TOKEN', 'alice-key, bob-key');
+    expect(doesPlayTokenMatch('alice-key')).toBe(true);
+    expect(doesPlayTokenMatch('bob-key')).toBe(true);
+    expect(doesPlayTokenMatch('alice-key, bob-key')).toBe(false);
+    expect(hashSaveOwnerToken('alice-key')).not.toBe(hashSaveOwnerToken('bob-key'));
+    expect(resolveSaveOwnerHash('alice-key')).toBe(hashSaveOwnerToken('alice-key'));
   });
 
   it('边界：首尾空白不影响匹配（容忍客户端意外空格）', () => {

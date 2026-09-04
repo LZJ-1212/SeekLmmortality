@@ -1,5 +1,8 @@
 # I06 托管代码与部署架构
 
+修订：2026-09-05 01:25 +08 lzj — 创角令牌对应存档仓
+修订：2026-09-05 01:22 +08 lzj — 本机页面无视 VITE_API_BASE 打 3000
+
 依据 [hosting.md](./hosting.md) 的 **L1 最小集**。前端 API 基址 **已落地**（`apiBase.ts`）；隧道与 NSSM 仍须真机。不含云厂商账号与真实域名。
 
 现有 S21 网关、Prisma、Express **不改职责**；I06 只改「谁从哪进、进程谁拉起、前端 API 基址从哪读」。
@@ -12,7 +15,7 @@
 |----|------|
 | L1 默认拓扑 | **拓扑 B（双 Origin + 隧道）**。不强制先买 VPS、不强制 Nginx。 |
 | L1 备选拓扑 | 拓扑 A（单 Origin 反代）留给已有 Nginx/Caddy 或以后上云。 |
-| 前端 API 基址 | **已抽** `frontend/src/apiBase.ts`。禁止再在组件里写死 `http://localhost:3000`。未设 `VITE_API_BASE` 时缺省本机 3000。 |
+| 前端 API 基址 | **已抽** `frontend/src/apiBase.ts`。禁止再在组件里写死 `http://localhost:3000`。地址栏为本机时一律打 3000；未设 `VITE_API_BASE` 时缺省本机 3000。 |
 | 环境变量（前端） | `VITE_API_BASE`：空或未设 → `http://localhost:3000`；L1 设为 API 的公网 Origin（无尾斜杠）。**不要**把口令放进 `VITE_*`。 |
 | 环境变量（后端） | L1 必配 `PLAY_ACCESS_TOKEN`；`PLAY_CORS_ORIGIN` = 前端公网 Origin；`PORT=3000`；`DATABASE_URL` 仍指本机 MySQL。 |
 | MySQL | 只绑 `127.0.0.1:3306`。隧道映射列表**不准出现 3306**。 |
@@ -40,7 +43,7 @@
 
 后端：`PLAY_CORS_ORIGIN=https://front.example.tld`（与地址栏完全一致，含 https、无路径）。  
 前端构建/启动环境：`VITE_API_BASE=https://api.example.tld`。  
-创角/局内请求带的令牌值 = 后端 `PLAY_ACCESS_TOKEN`（在**存档列表**页填写，不是创角页）。
+创角/局内请求带的令牌值须能对上 `PLAY_ACCESS_TOKEN` 里的某一条（逗号列表中的一项）。在**存档列表**页填写，不是创角页。每人一条则存档互不可见。
 
 ### 拓扑 A（备选）：单 Origin
 

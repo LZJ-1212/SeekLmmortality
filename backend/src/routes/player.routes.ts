@@ -8,8 +8,10 @@ import { SectService } from '../services/sect.service';
 import { RelationshipService } from '../services/relationship.service';
 import { WorldStateRepository } from '../repositories/worldState.repository';
 import { getLifespanStatus } from '../services/playerState.service';
+import { isPlayerVisibleToOwner } from '../services/saveAccess.service';
 
 /**
+ * 修订：2026-09-05 01:11 +08 lzj — 创角落仓哈希；读档按口令仓隔离
  * 玩家路由：创角（/api/create-player）与状态探查（/api/player/:id）。
  * 业务逻辑在 Service 层；此处只做 HTTP 入参解析、网关校验与响应组装。
  */
@@ -30,7 +32,7 @@ router.post('/create-player', requirePlayToken, async (req: Request, res: Respon
     return res.status(400).json({ status: 'error', message: check.message });
   }
 
-  const result = await characterCreationService.create(req.body);
+  const result = await characterCreationService.create(req.body, req.saveOwnerHash ?? null);
   if (!result.ok) {
     return res.status(500).json({ status: 'error', message: result.message });
   }
@@ -55,6 +57,9 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
     });
 
     if (!player) {
+      return res.status(404).json({ status: 'error', message: '查无此人，该修士恐已陨落。' });
+    }
+    if (!(await isPlayerVisibleToOwner(prisma, playerId, req.saveOwnerHash ?? null))) {
       return res.status(404).json({ status: 'error', message: '查无此人，该修士恐已陨落。' });
     }
 

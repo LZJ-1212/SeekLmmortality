@@ -3,10 +3,10 @@ import { prisma } from '../db/prisma';
 import { requirePlayToken } from '../gateway';
 import { SaveService } from '../services/save.service';
 import { SnapshotService } from '../services/snapshot.service';
+import { isSaveVisibleToOwner } from '../services/saveAccess.service';
 
 /**
- * 存档路由：/api/saves。
- * 存档列表、删除（单个/全部）、时间戳快照列表与回滚。
+ * 修订：2026-09-05 01:11 +08 lzj — 存档列表/删除/快照按口令仓隔离
  */
 const router = Router();
 const saveService = new SaveService(prisma);
@@ -23,9 +23,9 @@ function requireSaveId(req: Request, res: Response): string | null {
 }
 
 /** 存档列表：列出全部存档（免手抄 UUID）；薄做只读列表，不做快照回滚 UI */
-router.get('/', requirePlayToken, async (_req: Request, res: Response) => {
+router.get('/', requirePlayToken, async (req: Request, res: Response) => {
   try {
-    const saves = await saveService.listSaves();
+    const saves = await saveService.listSaves(req.saveOwnerHash ?? null);
     res.json({ status: 'success', data: saves });
   } catch (error) {
     console.error('查询存档列表失败:', error);
@@ -34,9 +34,9 @@ router.get('/', requirePlayToken, async (_req: Request, res: Response) => {
 });
 
 /** 删除全部存档（级联清理关联表与每日配额） */
-router.delete('/', requirePlayToken, async (_req: Request, res: Response) => {
+router.delete('/', requirePlayToken, async (req: Request, res: Response) => {
   try {
-    const { deleted } = await saveService.deleteAllSaves();
+    const { deleted } = await saveService.deleteAllSaves(req.saveOwnerHash ?? null);
     res.json({ status: 'success', data: { deleted } });
   } catch (error) {
     console.error('清空存档失败:', error);
@@ -49,7 +49,7 @@ router.delete('/:saveId', requirePlayToken, async (req: Request, res: Response) 
   const saveId = requireSaveId(req, res);
   if (saveId === null) return;
   try {
-    const { deleted } = await saveService.deleteSave(saveId);
+    const { deleted } = await saveService.deleteSave(saveId, req.saveOwnerHash ?? null);
     if (!deleted) {
       return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
     }
@@ -65,6 +65,9 @@ router.get('/:saveId/snapshots', requirePlayToken, async (req: Request, res: Res
   const saveId = requireSaveId(req, res);
   if (saveId === null) return;
   try {
+    if (!(await isSaveVisibleToOwner(prisma, saveId, req.saveOwnerHash ?? null))) {
+      return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+    }
     const snapshots = await snapshotService.listSnapshots(saveId);
     res.json({
       status: 'success',
@@ -81,6 +84,9 @@ router.post('/:saveId/rollback', requirePlayToken, async (req: Request, res: Res
   const saveId = requireSaveId(req, res);
   if (saveId === null) return;
   try {
+    if (!(await isSaveVisibleToOwner(prisma, saveId, req.saveOwnerHash ?? null))) {
+      return res.status(404).json({ status: 'error', message: '该存档已不存在。' });
+    }
     const { snapshotId } = req.body;
     if (!snapshotId) {
       return res.status(400).json({ status: 'error', message: '缺少要回滚到的快照 id' });

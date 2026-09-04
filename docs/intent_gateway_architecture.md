@@ -1,5 +1,7 @@
 # S21 安全网关代码架构（最小集）
 
+修订：2026-09-05 01:25 +08 lzj — 多口令哈希写入存档仓
+
 依据 [intent_gateway.md](./intent_gateway.md) 的 **L1 最小集**（层 A～D）。不含层 E 意图分类、层 F 二次模型。现有突破/战斗等拦截器（层 G）不改职责，只保证网关在它们之前跑完。
 
 功能阈值与验收仍以规格为准。实现落在 `backend/src/gateway/` 与 `frontend/src/playToken.ts`。
@@ -84,7 +86,7 @@ frontend/src/
 
 ## 4. 受保护路由清单
 
-`PLAY_ACCESS_TOKEN` **已配置** 时，下列必须经过 `requirePlayToken`：
+`PLAY_ACCESS_TOKEN` **已配置** 时，下列必须经过 `requirePlayToken`。变量可逗号多口令；匹配口令的哈希写入 `req.saveOwnerHash`，列表/读档/行动只看见该仓。
 
 | 方法 | 路径 | 另检 |
 |------|------|------|

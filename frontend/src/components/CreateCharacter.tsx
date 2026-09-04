@@ -1,6 +1,8 @@
+/** 修订：2026-09-05 01:01 +08 lzj — 创角页共用局内字号 A- / A+ */
 import React, { useState } from 'react';
 import { apiFetch } from '../playToken';
 import { ROOT_ELEMENTS, ELEMENT_COLORS } from '../rootElements';
+import { FontSizeButtons, usePersistedFontSize } from '../fontSize';
 
 // 1. 严格定义接收的 Props
 interface OpeningOption {
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
+  const [fontSize, setFontSize] = usePersistedFontSize();
   const [name, setName] = useState('');
   const [gender, setGender] = useState('男');
   
@@ -136,14 +139,18 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
 
   return (
     <div className="flex justify-center items-start min-h-screen bg-[#EFECE6] p-4 py-8 overflow-x-hidden">
-      <div className="w-full max-w-lg bg-paper border-2 border-jade rounded-md shadow-lg p-5 font-serif text-textMain select-none">
+      <div
+        className="w-full max-w-lg bg-paper border-2 border-jade rounded-md shadow-lg p-5 font-serif text-textMain select-none"
+        style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
+      >
         
-        <div className="bg-jade text-white text-center py-2 rounded-sm font-bold tracking-widest text-xl shadow-sm">
-          天道轮回 · 凝聚命格
+        <div className="bg-jade text-white py-2 px-3 rounded-sm font-bold tracking-widest text-xl shadow-sm flex justify-between items-center">
+          <span>天道轮回 · 凝聚命格</span>
+          <FontSizeButtons fontSize={fontSize} onChange={setFontSize} />
         </div>
         <div className="my-3 border-b border-gold opacity-80" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="flex items-center space-x-2">
             <span className="text-textSub">尊名</span>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-1 rounded outline-none focus:border-jade" />
@@ -168,7 +175,7 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
           </div>
         </div>
 
-        <div className="mb-4 -mt-2 text-[11px] text-textSub leading-relaxed">
+        <div className="mb-4 -mt-2 text-[0.8em] text-textSub leading-relaxed">
           <span className="text-textDark">出身：</span>{originEffects[origin] ?? ''}
           <span className="mx-2">｜</span>
           <span className="text-textDark">道途：</span>{pursuitEffects[daoPursuit] ?? ''}
@@ -177,63 +184,63 @@ export const CreateCharacter: React.FC<Props> = ({ onCreated }) => {
         <div className="bg-[#F4EFE6] p-3 rounded border border-[#E5E0D5] mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="font-bold text-textDark">先天六维</span>
-            <span className="text-xs text-textSub">剩：<strong className={remainingPoints > 0 ? "text-blood" : "text-jade"}>{remainingPoints}</strong></span>
+            <span className="text-[0.85em] text-textSub">剩：<strong className={remainingPoints > 0 ? "text-blood" : "text-jade"}>{remainingPoints}</strong></span>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-sm">
+          <div className="grid grid-cols-3 gap-2">
             {[
               { key: 'aptitude', label: '资质' }, { key: 'comprehension', label: '悟性' }, { key: 'divine_sense', label: '神识' },
               { key: 'speed', label: '遁速' }, { key: 'dao_heart', label: '道心' }, { key: 'fortune', label: '仙缘' }
             ].map(attr => (
               <div key={attr.key} className="flex justify-between items-center bg-[#EFECE6] px-2 py-1 rounded border border-[#E5E0D5]">
-                <span className="text-textSub text-xs">{attr.label}</span>
+                <span className="text-textSub text-[0.85em]">{attr.label}</span>
                 <div className="flex items-center space-x-1">
-                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, -1)} className="w-9 h-9 md:w-4 md:h-4 bg-[#E5E0D5] hover:bg-blood hover:text-white rounded flex items-center justify-center leading-none text-xs">-</button>
-                  <span className="w-4 text-center font-bold text-xs">{attributes[attr.key as keyof typeof attributes]}</span>
-                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, 1)} className="w-9 h-9 md:w-4 md:h-4 bg-[#E5E0D5] hover:bg-jade hover:text-white rounded flex items-center justify-center leading-none text-xs">+</button>
+                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, -1)} className="w-9 h-9 md:w-4 md:h-4 bg-[#E5E0D5] hover:bg-blood hover:text-white rounded flex items-center justify-center leading-none text-[0.85em]">-</button>
+                  <span className="w-4 text-center font-bold text-[0.85em]">{attributes[attr.key as keyof typeof attributes]}</span>
+                  <button onClick={() => handleAttrChange(attr.key as keyof typeof attributes, 1)} className="w-9 h-9 md:w-4 md:h-4 bg-[#E5E0D5] hover:bg-jade hover:text-white rounded flex items-center justify-center leading-none text-[0.85em]">+</button>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-2 text-[10px] text-textSub leading-relaxed border-t border-[#E5E0D5] pt-1">
+          <div className="mt-2 text-[0.75em] text-textSub leading-relaxed border-t border-[#E5E0D5] pt-1">
             资质→修炼速度 ｜ 悟性→炼丹炼器 ｜ 神识→阵法灵植 ｜ 遁速→战斗闪避 ｜ 道心→突破·修炼 ｜ 仙缘→奇遇触发
           </div>
         </div>
 
         <div className="bg-[#F4EFE6] p-3 rounded border border-[#E5E0D5] mb-4">
            <div className="flex justify-between items-center mb-2">
-             <span className="font-bold text-textDark text-sm">灵根塑形</span>
-             <span className={`text-xs font-bold ${getRootQuality().color}`}>{getRootQuality().name}</span>
+             <span className="font-bold text-textDark">灵根塑形</span>
+             <span className={`text-[0.85em] font-bold ${getRootQuality().color}`}>{getRootQuality().name}</span>
            </div>
            <div className="flex flex-wrap gap-2 mb-3">
              {ROOT_ELEMENTS.map(el => (
-               <button key={el} onClick={() => toggleRoot(el)} className={`px-2 py-1 text-xs rounded font-bold border transition-all ${roots.includes(el) ? `${ELEMENT_COLORS[el]} text-white border-transparent` : 'bg-[#EFECE6] text-textSub border-[#E5E0D5] hover:border-jade'}`}>
+               <button key={el} onClick={() => toggleRoot(el)} className={`px-2 py-1 text-[0.85em] rounded font-bold border transition-all ${roots.includes(el) ? `${ELEMENT_COLORS[el]} text-white border-transparent` : 'bg-[#EFECE6] text-textSub border-[#E5E0D5] hover:border-jade'}`}>
                  {el}
                </button>
              ))}
            </div>
            
-           <div className="flex items-center space-x-2 text-sm border-t border-[#E5E0D5] pt-2">
+           <div className="flex items-center space-x-2 border-t border-[#E5E0D5] pt-2">
              <span className="text-textSub font-bold">先天体质</span>
              <select value={constitution} onChange={e => setConstitution(e.target.value)} className="flex-1 bg-transparent border-b border-textSub outline-none">
                 {constitutions.map(c => <option key={c}>{c}</option>)}
              </select>
            </div>
-           <div className="mt-1 text-[10px] text-textSub">{constitutionEffects[constitution] ?? ''}</div>
+           <div className="mt-1 text-[0.75em] text-textSub">{constitutionEffects[constitution] ?? ''}</div>
         </div>
 
-        <div className="bg-[#F4EFE6] p-3 rounded border border-[#E5E0D5] mb-4 text-sm">
+        <div className="bg-[#F4EFE6] p-3 rounded border border-[#E5E0D5] mb-4">
            <div className="flex justify-between items-center mb-2">
              <span className="font-bold text-textDark">先天天赋</span>
-             <span className="text-xs text-textSub">已选 {selectedTalents.length}/3</span>
+             <span className="text-[0.85em] text-textSub">已选 {selectedTalents.length}/3</span>
            </div>
            <div className="flex flex-wrap gap-2">
              {talentList.map(t => (
-               <button key={t} onClick={() => toggleTalent(t)} className={`px-2 py-1 text-[11px] rounded transition-all ${selectedTalents.includes(t) ? 'bg-jade text-white shadow-sm' : 'bg-[#EFECE6] text-textSub border border-[#E5E0D5] hover:border-jade'}`}>
+               <button key={t} onClick={() => toggleTalent(t)} className={`px-2 py-1 text-[0.8em] rounded transition-all ${selectedTalents.includes(t) ? 'bg-jade text-white shadow-sm' : 'bg-[#EFECE6] text-textSub border border-[#E5E0D5] hover:border-jade'}`}>
                  {t}
                </button>
              ))}
            </div>
-           <div className="mt-2 text-[10px] text-textSub leading-relaxed border-t border-[#E5E0D5] pt-1">
+           <div className="mt-2 text-[0.75em] text-textSub leading-relaxed border-t border-[#E5E0D5] pt-1">
              {selectedTalents.length > 0
                ? selectedTalents.map(t => `${t}：${talentEffects[t] ?? ''}`).join(' ｜ ')
                : '点击上方天赋查看效果（最多选 3 个）'}

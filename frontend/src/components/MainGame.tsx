@@ -1,3 +1,4 @@
+/** 修订：2026-09-05 01:01 +08 lzj — 字号控件抽到共用模块 */
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../playToken';
 import { CommandMenu, type Command } from './CommandMenu';
@@ -5,6 +6,7 @@ import { InfoModal, type InfoPanelType } from './InfoModal';
 import { LoadModal } from './LoadModal';
 import { StatusCard, type PlayerCardData } from './StatusCard';
 import { formatHeavenCalendar } from '../catalogDisplay';
+import { FontSizeButtons, usePersistedFontSize } from '../fontSize';
 
 // 定义每条日志的格式
 interface LogEntry {
@@ -22,9 +24,6 @@ interface Opening {
   options: OpeningOption[];
 }
 
-const FONT_SIZE_KEY = 'sl_font_size';
-const FONT_SIZE_MIN = 12;
-const FONT_SIZE_MAX = 24;
 const LOGS_STORAGE_PREFIX = 'sl_action_logs_';
 const OPTIONS_STORAGE_PREFIX = 'sl_action_options_';
 const LOGS_MAX = 400;
@@ -191,14 +190,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeCommand, setActiveCommand] = useState<Command | null>(null);
 
-  // 字体大小：读取本地持久化的偏好，越界则回退到默认 15px
-  const [fontSize, setFontSize] = useState<number>(() => {
-    const saved = Number(localStorage.getItem(FONT_SIZE_KEY));
-    return saved >= FONT_SIZE_MIN && saved <= FONT_SIZE_MAX ? saved : 15;
-  });
-  useEffect(() => {
-    localStorage.setItem(FONT_SIZE_KEY, String(fontSize));
-  }, [fontSize]);
+  const [fontSize, setFontSize] = usePersistedFontSize();
 
   const [actionOptions, setActionOptions] = useState<OpeningOption[]>(
     () => readStoredOptions(playerId) ?? DEFAULT_ACTION_OPTIONS,
@@ -538,25 +530,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         <div className="bg-jade text-white px-4 py-2 font-bold tracking-widest text-lg shadow-sm flex justify-between items-center">
           <span>九州大世界</span>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 text-xs font-normal">
-              <button
-                onClick={() => setFontSize(f => Math.max(FONT_SIZE_MIN, f - 1))}
-                disabled={fontSize <= FONT_SIZE_MIN}
-                className="w-9 h-9 md:w-7 md:h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
-                title="缩小字体"
-              >
-                A-
-              </button>
-              <span className="opacity-90 w-5 text-center">{fontSize}</span>
-              <button
-                onClick={() => setFontSize(f => Math.min(FONT_SIZE_MAX, f + 1))}
-                disabled={fontSize >= FONT_SIZE_MAX}
-                className="w-9 h-9 md:w-7 md:h-7 rounded border border-white/40 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-none"
-                title="放大字体"
-              >
-                A+
-              </button>
-            </div>
+            <FontSizeButtons fontSize={fontSize} onChange={setFontSize} />
             <span className="text-sm font-normal opacity-90">
               {isDead ? '寂灭' : formatHeavenCalendar(playerData.current_year, playerData.current_season)}
               {!isDead && playerData.day_phase && <span className="ml-1 opacity-80">·{DAY_PHASE_LABEL[playerData.day_phase] ?? ''}</span>}

@@ -2,8 +2,10 @@ import { Router, type Request, type Response } from 'express';
 import { prisma } from '../db/prisma';
 import { requirePlayToken } from '../gateway';
 import { addRealmTalent } from '../services/talent.service';
+import { isPlayerVisibleToOwner } from '../services/saveAccess.service';
 
 /**
+ * 修订：2026-09-05 01:11 +08 lzj — 选天赋按口令仓校验修士
  * 逆天改命路由：/api/talents/choose。
  * 确认玩家从三选一里选中的天赋，写入 talents JSON。
  */
@@ -17,6 +19,9 @@ router.post('/talents/choose', requirePlayToken, async (req: Request, res: Respo
     }
     const player = await prisma.players.findUnique({ where: { id: playerId } });
     if (!player) return res.status(404).json({ status: 'error', message: '修士不存在' });
+    if (!(await isPlayerVisibleToOwner(prisma, playerId, req.saveOwnerHash ?? null))) {
+      return res.status(404).json({ status: 'error', message: '修士不存在' });
+    }
 
     let updatedTalentsJson: string;
     try {

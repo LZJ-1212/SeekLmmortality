@@ -1,10 +1,11 @@
+/** 修订：2026-09-05 01:11 +08 lzj — 列表按口令仓转交 repository */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SaveService } from './save.service';
 import type { SaveRepository } from '../repositories/save.repository';
 
 function createMockRepo(): SaveRepository {
   return {
-    listAll: vi.fn(),
+    listForOwner: vi.fn(),
     deleteById: vi.fn(),
     deleteAll: vi.fn(),
   } as unknown as SaveRepository;
@@ -20,7 +21,7 @@ describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () =>
   });
 
   it('正常路径：把 saves + 玩家行整理成摘要，按原顺序返回', async () => {
-    (repo.listAll as any).mockResolvedValue([
+    (repo.listForOwner as any).mockResolvedValue([
       {
         id: 'save-1',
         save_name: '云逸的修仙录',
@@ -31,6 +32,7 @@ describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () =>
     ]);
 
     const result = await service.listSaves();
+    expect(repo.listForOwner).toHaveBeenCalledWith(null);
 
     expect(result).toEqual([
       {
@@ -47,12 +49,12 @@ describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () =>
   });
 
   it('边界：空列表返回空数组，不抛异常', async () => {
-    (repo.listAll as any).mockResolvedValue([]);
+    (repo.listForOwner as any).mockResolvedValue([]);
     expect(await service.listSaves()).toEqual([]);
   });
 
   it('失败/拒绝：玩家行缺失的脏存档兜底为无名氏，playerId 为 null', async () => {
-    (repo.listAll as any).mockResolvedValue([
+    (repo.listForOwner as any).mockResolvedValue([
       {
         id: 'save-x',
         save_name: '幽灵存档',
@@ -71,6 +73,12 @@ describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () =>
       isGameOver: true,
     });
   });
+
+  it('正常路径：传入仓哈希时转交 listForOwner', async () => {
+    (repo.listForOwner as any).mockResolvedValue([]);
+    await service.listSaves('hash-a');
+    expect(repo.listForOwner).toHaveBeenCalledWith('hash-a');
+  });
 });
 
 describe('SaveService.deleteSave / deleteAllSaves（删除存档）', () => {
@@ -85,7 +93,7 @@ describe('SaveService.deleteSave / deleteAllSaves（删除存档）', () => {
   it('正常路径：删除存在的存档，deleted 为 true', async () => {
     (repo.deleteById as any).mockResolvedValue(true);
     expect(await service.deleteSave('save-1')).toEqual({ deleted: true });
-    expect(repo.deleteById).toHaveBeenCalledWith('save-1');
+    expect(repo.deleteById).toHaveBeenCalledWith('save-1', null);
   });
 
   it('边界：删除不存在的存档，deleted 为 false 而不抛异常', async () => {

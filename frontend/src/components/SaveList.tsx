@@ -1,3 +1,4 @@
+/** 修订：2026-09-05 01:25 +08 lzj — 存档页提示按口令分仓，清空只动本列表 */
 import React, { useCallback, useEffect, useState } from 'react';
 import { apiFetch, getPlayToken, setPlayToken } from '../playToken';
 
@@ -114,7 +115,7 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
   };
 
   const handleDeleteAll = async () => {
-    if (!window.confirm('确定要散去全部存档吗？所有因果将一并烟消云散。')) return;
+    if (!window.confirm('确定要散去列表中的存档吗？你能看见的这些仙途将一并烟消云散。')) return;
     setPlayToken(playTokenInput.trim());
     setBusyAll(true);
     try {
@@ -143,6 +144,9 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
         <div className="bg-jade text-white text-center py-2 rounded-sm font-bold tracking-widest text-xl shadow-sm">
           问道长生 · 存档
         </div>
+        <p className="mt-3 text-xs text-textSub text-center leading-relaxed">
+          每位道友持自己的口令，只能看见自己的仙途。
+        </p>
         <div className="my-3 border-b border-gold opacity-80" />
 
         {loading && <div className="py-10 text-center text-textSub">推演诸般因果中...</div>}
@@ -205,7 +209,7 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
             disabled={busyAll || busyId !== null}
             className="w-full mb-2 py-2 text-blood border border-blood/40 rounded hover:bg-[#F6E3E3] transition-colors disabled:opacity-50"
           >
-            {busyAll ? '散功中...' : '清空全部存档'}
+            {busyAll ? '散功中...' : '清空列表中的存档'}
           </button>
         )}
 
@@ -231,7 +235,7 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
             value={playTokenInput}
             onChange={(e) => setPlayTokenInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && commitTokenAndLoad()}
-            placeholder="仅朋友从公网进来时必填；本机直连可留空"
+            placeholder="向服主索取你自己的口令；本机直连可留空"
             className="flex-1 min-h-10 bg-[#F4EFE6] border border-[#E5E0D5] px-2 py-2 rounded outline-none focus:border-jade"
           />
           <button

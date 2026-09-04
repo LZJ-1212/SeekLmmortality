@@ -1,3 +1,4 @@
+/** 修订：2026-09-05 01:11 +08 lzj — 创角落口令仓哈希 */
 import crypto from 'crypto';
 import type { PrismaClient } from '@prisma/client';
 import { InventoryService } from './inventory.service';
@@ -89,7 +90,7 @@ export class CharacterCreationService {
     return finalAttributes;
   }
 
-  async create(input: CreatePlayerInput): Promise<CreatePlayerResult> {
+  async create(input: CreatePlayerInput, ownerTokenHash: string | null = null): Promise<CreatePlayerResult> {
     try {
       const {
         name, gender, attributes, roots,
@@ -144,6 +145,7 @@ export class CharacterCreationService {
             id: saveId,
             save_slot: 1,
             save_name: `${name}的修仙录`,
+            ...(ownerTokenHash ? { owner_token_hash: ownerTokenHash } : {}),
           },
         }),
         this.prisma.world_state.create({

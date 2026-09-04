@@ -1,3 +1,6 @@
+/**
+ * 修订：2026-09-05 01:11 +08 lzj — 列表与删除按口令仓过滤
+ */
 import type { PrismaClient } from '@prisma/client';
 import { SaveRepository } from '../repositories/save.repository';
 
@@ -25,8 +28,8 @@ export class SaveService {
     this.repo = repo ?? new SaveRepository(prisma);
   }
 
-  async listSaves(): Promise<SaveSummary[]> {
-    const rows = await this.repo.listAll();
+  async listSaves(ownerHash: string | null = null): Promise<SaveSummary[]> {
+    const rows = await this.repo.listForOwner(ownerHash);
     return rows.map((s) => ({
       saveId: s.id,
       saveName: s.save_name,
@@ -40,14 +43,13 @@ export class SaveService {
   }
 
   /** 删除单个存档；返回该存档是否存在过（存在并删除 true，不存在 false） */
-  async deleteSave(saveId: string): Promise<{ deleted: boolean }> {
-    const deleted = await this.repo.deleteById(saveId);
+  async deleteSave(saveId: string, ownerHash: string | null = null): Promise<{ deleted: boolean }> {
+    const deleted = await this.repo.deleteById(saveId, ownerHash);
     return { deleted };
   }
 
-  /** 删除全部存档；返回实际删除的存档数量 */
-  async deleteAllSaves(): Promise<{ deleted: number }> {
-    const deleted = await this.repo.deleteAll();
+  async deleteAllSaves(ownerHash: string | null = null): Promise<{ deleted: number }> {
+    const deleted = await this.repo.deleteAll(ownerHash);
     return { deleted };
   }
 }

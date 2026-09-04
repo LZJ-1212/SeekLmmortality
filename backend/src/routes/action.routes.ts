@@ -1,8 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import { requirePlayToken, sanitizeAction, hitsInjectionBlocklist } from '../gateway';
 import { ActionService } from '../services/action.service';
+import { prisma } from '../db/prisma';
+import { isPlayerVisibleToOwner } from '../services/saveAccess.service';
 
 /**
+ * 修订：2026-09-05 01:11 +08 lzj — 行动前校验口令仓可见性
  * 天道推演路由：/api/action。
  * 网关层职责（净化 / 注入黑名单）在此完成，推演编排逻辑全部在 ActionService。
  */
@@ -28,6 +31,10 @@ router.post('/action', requirePlayToken, async (req: Request, res: Response) => 
   // S21 层 D：注入黑名单（命令模型改数值/泄密），命中即拒绝，不调 DeepSeek
   if (hitsInjectionBlocklist(action)) {
     return res.status(400).json({ status: 'error', message: '此言大逆天道，天机不予推演。' });
+  }
+
+  if (typeof playerId === 'string' && !(await isPlayerVisibleToOwner(prisma, playerId, req.saveOwnerHash ?? null))) {
+    return res.status(404).json({ status: 'error', message: '修士不存在' });
   }
 
   const result = await actionService.execute(playerId, action);

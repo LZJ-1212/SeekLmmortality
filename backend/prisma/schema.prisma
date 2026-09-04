@@ -2,6 +2,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// 修订：2026-09-05 01:25 +08 lzj — saves.owner_token_hash 按口令隔离存档
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -92,6 +94,8 @@ model saves {
   in_samsara_pool      Boolean?               @default(false)
   created_at           DateTime               @default(now()) @db.Timestamp(0)
   updated_at           DateTime               @default(now()) @db.Timestamp(0)
+  /// 创角时所用游玩口令的 sha256；公网按口令隔离列表。旧档为 null，公网不列出。
+  owner_token_hash     String?                @db.VarChar(64)
   player_inventory     player_inventory[]
   player_relationships player_relationships[]
   players              players?
@@ -99,6 +103,8 @@ model saves {
   player_cave          player_cave?
   player_sect          player_sect?
   save_snapshot        save_snapshot[]
+
+  @@index([owner_token_hash])
 }
 
 // 修仙百艺与洞府（生活经营）：洞府的灵气浓度直接决定闭关修炼的收益倍率

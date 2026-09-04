@@ -1,5 +1,8 @@
 # 电脑与手机 UI 设计
 
+修订：2026-09-05 01:01 +08 lzj — 创角页与局内共用字号
+修订：2026-09-05 01:25 +08 lzj — 存档页注明按口令分仓
+
 规格先行。本文件记录 **当前已落地的分栏、色板、断点**。不是「产品永远只有指令加日志」的决议。整体界面与信息架构待办 **I19**（[roadmap.md](./roadmap.md)）。
 
 **不写玩法公式、不写接口。** 指令点下去做什么见 [command_ui.md](./command_ui.md)；组件与分发见 [command_ui_architecture.md](./command_ui_architecture.md)。
@@ -79,7 +82,7 @@ Tailwind：`md` = 768px，`lg` = 1024px。与代码 `MainGame` 的 `lg:flex` / `
 
 ### 3.5 字号
 
-局内日志字号可调，约 12～24px，默认约 15px，存在本机（现键名 `sl_font_size`）。创角/列表用主题默认即可，不必第二套字号系统。
+局内日志与创角表单字号可调，约 12～24px，默认约 15px，共用本机键 `sl_font_size`（`frontend/src/fontSize.tsx`）。存档列表仍用主题默认。
 
 ---
 
@@ -109,7 +112,7 @@ Tailwind：`md` = 768px，`lg` = 1024px。与代码 `MainGame` 的 `lg:flex` / `
 
 | 页 | 设计 | 代码（约） |
 |----|------|------------|
-| 存档列表 | 居中宣纸卡，约 `max-w` 560；列表可滚；「新开仙途」；口令只在该页新开下方 | `SaveList.tsx` |
+| 存档列表 | 居中宣纸卡，约 `max-w` 560；列表可滚；「新开仙途」；口令只在该页新开下方；提示各持一口令只见自己的仙途 | `SaveList.tsx` |
 | 创角 | 居中卡，选项与内容表一致 | `CreateCharacter.tsx` |
 | 局内 | 上图 | `MainGame.tsx` |
 

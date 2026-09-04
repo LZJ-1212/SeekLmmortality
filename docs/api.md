@@ -1,11 +1,13 @@
 # HTTP 接口（已实现）
 
-与代码同步日期：2026-09-02。实现以 `backend/src/routes/*.ts` 为准（`server.ts` 只挂载）。本文件只描述契约，不写实现。
+修订：2026-09-05 01:25 +08 lzj — GET/DELETE /api/saves 按口令仓过滤
+
+与代码同步日期：2026-09-05。实现以 `backend/src/routes/*.ts` 为准（`server.ts` 只挂载）。本文件只描述契约，不写实现。
 
 - 基址：本机 `http://localhost:3000`（`PORT` 可改，前端默认仍打 3000）。
 - 通用成功：`{ status: "success", ... }`；失败：`{ status: "error", message: string }`。
 - 前端默认：Vite 固定 **`http://localhost:5174`**（`vite.config.ts` `strictPort`）；请求基址见 `frontend/src/apiBase.ts`（`VITE_API_BASE`，未设则本机 3000）。历史书签 `5173` 本机 CORS 仍放行。
-- **口令：** 已配 `PLAY_ACCESS_TOKEN` 时，**穿透流量**须带 `X-Play-Token`，否则 401；浏览器直连本机可不验。未配口令则不校验（禁止此时做公网映射，见 [hosting.md](./hosting.md)）。`POST /api/action` 另有每日 60 次配额，超限 429。规格见 [intent_gateway.md](./intent_gateway.md)。
+- **口令：** 已配 `PLAY_ACCESS_TOKEN` 时，**穿透流量**须带 `X-Play-Token`，否则 401；浏览器直连本机可不验。变量可逗号分隔多个口令，每个口令一个存档仓。未配口令则不校验（禁止此时做公网映射，见 [hosting.md](./hosting.md)）。`POST /api/action` 另有每日 60 次配额，超限 429。规格见 [intent_gateway.md](./intent_gateway.md)。
 
 ---
 
@@ -105,17 +107,17 @@ Body：`{ playerId, talentId }`。`talentId` 必须是上一回合 `talentChoice
 
 ### `GET /api/saves`
 
-列出全部存档摘要（按更新时间倒序），供存档列表页免手抄 `playerId`。须口令，不占日限。
+列出当前口令仓内的存档摘要（按更新时间倒序），供存档列表页免手抄 `playerId`。须口令，不占日限。公网请求只返回该 `X-Play-Token` 对应仓；本机未带头则返回全部。哈希为空的旧档不会出现在公网列表。
 
 返回 `data`：`{ saveId, saveName, playerId, playerName, realmMajor, realmMinor, isGameOver, updatedAt }[]`。`playerId` 为 `null` 表示该存档玩家行缺失（脏数据，前端应禁用进入）。
 
 ### `DELETE /api/saves`
 
-清空全部存档。级联删除 `players` / `world_state` / `player_cave` / `player_sect` / `player_inventory` / `player_relationships` / `save_snapshot`，并清理对应 `action_daily_quotas`。返回 `data.deleted`（删除数量）。**不可逆。**
+清空**当前口令仓内**的存档（本机未带头则清空全部）。级联删除 `players` / `world_state` / `player_cave` / `player_sect` / `player_inventory` / `player_relationships` / `save_snapshot`，并清理对应 `action_daily_quotas`。返回 `data.deleted`（删除数量）。**不可逆。**
 
 ### `DELETE /api/saves/:saveId`
 
-删除单个存档，级联同上。404：存档不存在。**不可逆。**
+删除单个存档，级联同上。须属于当前口令仓，否则 404。404：存档不存在或不在本仓。**不可逆。**
 
 ### `GET /api/saves/:saveId/snapshots`
 

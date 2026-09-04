@@ -1,5 +1,7 @@
 # 《问道长生》项目工作记录
 
+修订：2026-09-05 01:25 +08 lzj — I04/I05 多口令存档仓
+
 维护约定：每完成一个系统或重大决议，更新本表「完成度 / 测试 / 下一动作 / 日期」。本文件只做项目管理，不写实现代码。
 
 - 仓库：`https://github.com/LZJ-1212/SeekLmmortality`（当前公开，许可证 MIT，见仓库根目录 `LICENSE`）
@@ -83,8 +85,8 @@
 | I01 | 本地运行（XAMPP MySQL + 双 npm） | 90% | [runbook.md](./runbook.md) + `.cursor/rules/project.mdc` |
 | I02 | Git / GitHub | 90% | 公开库 + MIT；`.env` 已忽略；Key 未上传 |
 | I03 | 密钥安全 | 85% | 从未把 API Key 推上 GitHub；L1 仍须防公网刷接口 |
-| I04 | 接口鉴权 / 限流 | 90% | 口令 `PLAY_ACCESS_TOKEN` + `X-Play-Token`；每日行动上限。给朋友玩必须**配置口令**。本机直连即使配了口令也不验；穿透必验。 |
-| I05 | 存档列表 | 70% | 薄做已落地：`GET /api/saves` + 前端存档列表页，免手抄 UUID；单删/清空。局内快照回滚见 `LoadModal`（S12）。账号仍缺 |
+| I04 | 接口鉴权 / 限流 | 90% | 口令 `PLAY_ACCESS_TOKEN`（可逗号多条）+ `X-Play-Token`；每日行动上限。给朋友玩必须**配置口令**。本机直连即使配了口令也不验；穿透必验。 |
+| I05 | 存档列表 | 80% | `GET /api/saves` + 存档页；公网按口令仓隔离，互看不见。单删/清空只动本仓。局内快照回滚见 `LoadModal`（S12）。账号仍缺 |
 | I06 | 托管 | 规格 90% / 代码 50% | 前端 API 基址已抽 `apiBase.ts`（`VITE_API_BASE`）+ `.env.example`；隧道与 NSSM 保活待真机。规格 [hosting.md](./hosting.md) · 架构 [hosting_architecture.md](./hosting_architecture.md)。不要裸映射 3000 |
 | I07 | 内容填充 | 30% | 机制有、世界薄；L1 可先薄 |
 | I08 | 法律：BGM/隐私 | 10% | 朋友试玩用 CC0 曲即可 |
