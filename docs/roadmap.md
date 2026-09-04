@@ -1,5 +1,7 @@
 # 完善顺序与真实感路线（权威排期）
 
+修订：2026-09-04 01:16 +08 lzj — 「依赖」列去掉「代码已有雏形」，改写成现码档案名
+
 规格先行。本文件回答「先做什么、后做什么」。各系统细节见对应 `docs/*.md`。完成度见 [project_status.md](./project_status.md)。
 
 **当前方针：** 先把**已经能玩的雏形**做成有成册规格、主路径不空、叙事能续场，**再**开全新系统（功法槽、心魔、师徒、灵兽等）。
@@ -68,27 +70,29 @@ A6 曾从「大事记全表」抽到阶段 A，理由与范围见下表（禁止
 
 **本阶段未收束前，不开阶段 C～F 的新系统。** 每项：先成册 md（与代码对照），再按册加深代码与 [content_catalog.md](./content_catalog.md) 薄层。`game_design.md` 只留铁律与公式摘要。
 
-建议开工顺序（核 → 地 → 社 → 命；同一行内可并行写两本 md）：
+建议开工顺序（核 → 地 → 社 → 命；同一行内可并行写两本 md）。
+
+「依赖」列：反引号是**现码对照**（开工前就有，不是挡开工）；加粗 ID 才是真挡。已完成的现码仍写档案名，方便成册时对源。
 
 | 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
 |----|-----|--------|------|--------|------|
-| B1 | I20 | 成册并加深状态机与岁月；死亡锁/时间档与代码对齐；日段/时辰/按场扣时已落地 | [player_state.md](./player_state.md) · [player_state_architecture.md](./player_state_architecture.md) | **已完成** | 代码已有雏形 |
-| B2 | I21 | 成册境界与雷劫，并对照现有代码加深 | [realms.md](./realms.md) · [realms_architecture.md](./realms_architecture.md) | **成册已写**（耗时/终局键加深未落地） | 代码已有雏形 |
-| B3 | I22 | 成册战斗压制（本阶段**不**做 S20 招式库） | [combat.md](./combat.md) | **未完成** | 代码已有雏形 |
-| B4 | I23 | 成册功德业力（人账 S32 仍属 E） | [karma.md](./karma.md) | **未完成** | 代码已有雏形 |
-| B5 | I24 | 成册坊市 + 物价薄表 | [market.md](./market.md) | **未完成** | 代码已有雏形 |
-| B6 | I18 | 成册物品；鉴定/堆叠按册加深 | [items.md](./items.md) | **未完成** | 熔断已有 |
-| B7 | I25 | 成册探索奇遇；补地区/奇遇薄表 | [exploration.md](./exploration.md) | **未完成** | 骰子已有；**A6** |
-| B8 | I13 | 写清当前地图与 S31 分工；点图仍不赶路 | [ui.md](./ui.md)（`RegionMap`） | **未完成** | 美术 I12 可后做 |
-| B9 | I14 | 成册宗门；拜山/任务薄内容 | [sect.md](./sect.md) | **未完成** | 代码薄 |
-| B10 | I15 | 成册技艺；未习不能冒充出师（丹毒 S30 仍属 C） | [crafts.md](./crafts.md) | **未完成** | 炼制已有 |
-| B11 | I17 | 成册洞府（灵脉争夺 S35 仍属 D） | [cave.md](./cave.md) | **未完成** | 开辟已有 |
-| B12 | I16 | 成册情缘（凡人父母 S29 仍属 D） | [bonds.md](./bonds.md) | **未完成** | 代码薄 |
-| B13 | I26 | 成册逆天改命；补天赋池 | [talents.md](./talents.md) | **未完成** | 代码已有雏形 |
-| B14 | I27 | 成册轮回与读档（账号云存档仍缺，不本阶段强制） | [reincarnation.md](./reincarnation.md) | **未完成** | 代码已有雏形 |
-| B15 | I28 | 成册创角与开场；选项与内容表对齐 | [character.md](./character.md) | **未完成** | 代码已有雏形 |
-| B16 | I07 | 上列每收束一本就加 3～8 条，禁止表空 | [content_catalog.md](./content_catalog.md) | **未完成** | 约 30% |
-| B17 | I19 | 整体信息架构（**不挡** B1–B16；窄屏 I11 已做 L1） | [ui.md](./ui.md) | **未完成** | 指令+日志已有 |
+| B1 | I20 | 成册并加深状态机与岁月；死亡锁/时间档与代码对齐；日段/时辰/按场扣时已落地 | [player_state.md](./player_state.md) · [player_state_architecture.md](./player_state_architecture.md) | **已完成** | `playerState.service.ts` `action.service.ts` |
+| B2 | I21 | 成册境界与雷劫，并对照现有代码加深 | [realms.md](./realms.md) · [realms_architecture.md](./realms_architecture.md) | **成册已写**（耗时/终局键加深未落地） | `playerState.service.ts` `REALM_LAWS` |
+| B3 | I22 | 成册战斗压制（本阶段**不**做 S20 招式库） | [combat.md](./combat.md) | **未完成** | `combat.service.ts` |
+| B4 | I23 | 成册功德业力（人账 S32 仍属 E） | [karma.md](./karma.md) | **未完成** | `karma.service.ts` |
+| B5 | I24 | 成册坊市 + 物价薄表 | [market.md](./market.md) | **未完成** | `economy.service.ts` |
+| B6 | I18 | 成册物品；鉴定/堆叠按册加深 | [items.md](./items.md) | **未完成** | `inventory.service.ts` |
+| B7 | I25 | 成册探索奇遇；补地区/奇遇薄表 | [exploration.md](./exploration.md) | **未完成** | `exploration.service.ts`；**A6** |
+| B8 | I13 | 写清当前地图与 S31 分工；点图仍不赶路 | [ui.md](./ui.md)（`RegionMap`） | **未完成** | `RegionMap`；I12 不挡 |
+| B9 | I14 | 成册宗门；拜山/任务薄内容 | [sect.md](./sect.md) | **未完成** | `sect.service.ts` |
+| B10 | I15 | 成册技艺；未习不能冒充出师（丹毒 S30 仍属 C） | [crafts.md](./crafts.md) | **未完成** | `crafting.service.ts` |
+| B11 | I17 | 成册洞府（灵脉争夺 S35 仍属 D） | [cave.md](./cave.md) | **未完成** | `cave.service.ts` |
+| B12 | I16 | 成册情缘（凡人父母 S29 仍属 D） | [bonds.md](./bonds.md) | **未完成** | `npc.service.ts` `relationship.service.ts` |
+| B13 | I26 | 成册逆天改命；补天赋池 | [talents.md](./talents.md) | **未完成** | `talent.service.ts` |
+| B14 | I27 | 成册轮回与读档（账号云存档仍缺，不本阶段强制） | [reincarnation.md](./reincarnation.md) | **未完成** | `reincarnation.service.ts` `snapshot.service.ts` `LoadModal.tsx` |
+| B15 | I28 | 成册创角与开场；选项与内容表对齐 | [character.md](./character.md) | **未完成** | `characterBuild.service.ts` `opening.service.ts` |
+| B16 | I07 | 上列每收束一本就加 3～8 条，禁止表空 | [content_catalog.md](./content_catalog.md) | **未完成** | 随 B1–B15 薄补 |
+| B17 | I19 | 整体信息架构（**不挡** B1–B16；窄屏 I11 已做 L1） | [ui.md](./ui.md) | **未完成** | `MainGame.tsx` `CommandMenu.tsx`；不挡 B1–B16 |
 | B18 | I12 | 精细九州图替换 `RegionMap` 线稿；点图仍不赶路 | [ui.md](./ui.md) | **未完成** | 可与 B8/B17 穿插，**不挡**成册 |
 
 S36 完整档（敌境缓存、凡器、承伤×0.7、脱身）**不**进本阶段，避免和「只补雏形」抢工；维持 A5 薄做即可。
@@ -105,10 +109,10 @@ S36 完整档（敌境缓存、凡器、承伤×0.7、脱身）**不**进本阶�
 
 | 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
 |----|-----|--------|------|--------|------|
-| D1 | S22 | 大事记全表 + 30 回合备忘录 | [chronicle.md](./chronicle.md) | **未完成**（薄做 A6） | A6 近事已落地 |
-| D2 | S29 | 凡人亲眷、归乡 | [mortal_kin.md](./mortal_kin.md) | **未完成** | I16；大事记可后补写入 |
-| D3 | S28 | 师徒与衣钵 | [mentorship.md](./mentorship.md) | **未完成** | S20 残卷；D1 记叛师 |
-| D4 | S24 | 季节骰、传闻 | [world_sim.md](./world_sim.md) | **未完成** | 世界时钟已有 |
+| D1 | S22 | 大事记全表 + 30 回合备忘录 | [chronicle.md](./chronicle.md) | **未完成**（薄做 A6） | `sceneMemory.service.ts`（A6）；全表仍待做 |
+| D2 | S29 | 凡人亲眷、归乡 | [mortal_kin.md](./mortal_kin.md) | **未完成** | **I16**；大事记可后补写入 |
+| D3 | S28 | 师徒与衣钵 | [mentorship.md](./mentorship.md) | **未完成** | **S20** 残卷；**D1** 记叛师 |
+| D4 | S24 | 季节骰、传闻 | [world_sim.md](./world_sim.md) | **未完成** | `world_state` / `resolveActionClock` |
 | D5 | S31 | 邻接赶路、关隘 | [geography.md](./geography.md) | **未完成** | I13 / I25 |
 | D6 | S35 | 灵脉争夺与搬迁 | [spirit_veins.md](./spirit_veins.md) | **未完成** | I17；D4、D5 |
 
@@ -116,7 +120,7 @@ S36 完整档（敌境缓存、凡器、承伤×0.7、脱身）**不**进本阶�
 
 | 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
 |----|-----|--------|------|--------|------|
-| E1 | S25 | 结局与天道点 | [endings.md](./endings.md) | **未完成** | 死亡锁已有 |
+| E1 | S25 | 结局与天道点 | [endings.md](./endings.md) | **未完成** | `is_game_over`（死亡锁已有；结局引擎未写） |
 | E2 | S27 | 毒誓、禁术；夺舍不做 | [oaths.md](./oaths.md) | **未完成** | 天罚；E1 可记破誓 |
 | E3 | S32 | 江湖名声、城中追缉 | [reputation.md](./reputation.md) | **未完成** | I23 功德成册；必须分账 |
 
