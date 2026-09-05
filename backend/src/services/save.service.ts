@@ -1,5 +1,6 @@
 /**
  * 修订：2026-09-05 01:11 +08 lzj — 列表与删除按口令仓过滤
+ * 修订：2026-09-05 15:08 +08 lzj — 列表带 endingId
  */
 import type { PrismaClient } from '@prisma/client';
 import { SaveRepository } from '../repositories/save.repository';
@@ -13,6 +14,7 @@ export interface SaveSummary {
   realmMajor: string;
   realmMinor: string;
   isGameOver: boolean;
+  endingId: string | null;
   updatedAt: Date;
 }
 
@@ -38,6 +40,7 @@ export class SaveService {
       realmMajor: s.players?.realm_major ?? '',
       realmMinor: s.players?.realm_minor ?? '',
       isGameOver: s.is_game_over ?? false,
+      endingId: (s as { ending_id?: string | null }).ending_id ?? null,
       updatedAt: s.updated_at,
     }));
   }

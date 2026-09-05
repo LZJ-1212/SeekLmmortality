@@ -1,6 +1,9 @@
 # 问道长生 (SeekLmmortality) - Cursor Development Rules
 
 修订：2026-09-02 21:37 +08 lzj — 规格索引增加署名底线
+修订：2026-09-05 14:40 +08 lzj — I22 成册；下一刀 I21/I22 加深或 I23
+修订：2026-09-05 14:51 +08 lzj — I22 本场气血加深已落地
+修订：2026-09-05 15:35 +08 lzj — I28 六维成册
 
 ## 1. 核心工作流规范
 - **先读后写**：在修改任何代码前，必须先使用工具查看目标文件及关联文件的最新代码，禁止凭记忆推断文件结构。
@@ -26,10 +29,12 @@
 - 玩家自由度（叙事自由、数值零主权）：`docs/player_agency.md`。
 - 情境锁（战中闭关等）：`docs/situation.md`。
 - 宣称奇迹（封闭骰、不破秒杀）：`docs/plausibility.md`。代码 `miracle.service.ts`（排期 `docs/roadmap.md` **A5 / S36**，已接线），不让模型演神兵。
-- 开工顺序：`docs/roadmap.md`（阶段 A→F）。当前主线是 **阶段 B（补已有雏形）**；**I20 / I21 已成册**，I21 加深与 I22 战斗成册为下一刀；禁止为新系统跳过 B。
+- 开工顺序：`docs/roadmap.md`（阶段 A→F）。当前主线是 **阶段 B（补已有雏形）**；**I20 / I21 / I22 / I28 已成册**；下一刀 I21 加深或 I23 功德成册；禁止为新系统跳过 B。
 - 双人协作：`docs/dev_guide.md`（分支 `lzj` / `Loading_line`，不要直推 `main`）。
 - 修订署名（底层行动）：`docs/attribution.md`；规则 `.cursor/rules/attribution.mdc`。改代码/文档/新建文件必须追加作者与北京时间。
 - 境界与雷劫（I21）：`docs/realms.md`。加深落点：`docs/realms_architecture.md`。未按架构改钟/终局键前不要先改 `REALM_LAWS` 数字。
+- 战斗压制（I22）：`docs/combat.md`。加深落点：`docs/combat_architecture.md`。交手算术只认该册。
+- 六维与创角（I28）：`docs/character.md`。每个数字干什么、仙缘机缘语义只认该册，禁止另写用途表。
 - **编码规范与仓库潜规则：** `.cursor/rules/项目编码规范与潜规则.mdc`（分层、测试、Git、UI、环境）。
 
 ## 3. 技术与代码规范

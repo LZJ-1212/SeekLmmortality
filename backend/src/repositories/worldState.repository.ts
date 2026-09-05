@@ -1,7 +1,9 @@
+/** 修订：2026-09-05 14:51 +08 lzj — 本场遭遇气血读写 */
 import type { PrismaClient, Prisma } from '@prisma/client';
 import { parseSceneContext, type SceneContext } from '../services/situation.service';
 import { parsePendingScene, type PendingScene } from '../services/sceneMemory.service';
 import { parseDayPhase, parseBeatScene, type DayPhase, type BeatScene } from '../services/playerState.service';
+import type { EncounterState } from '../services/combat.service';
 
 /**
  * world_state 读写。情境字段用原生 SQL，避免 Prisma Client 未 generate
@@ -117,6 +119,60 @@ export class WorldStateRepository {
   ): Prisma.PrismaPromise<number> {
     return this.prisma.$executeRaw`
       UPDATE world_state SET day_phase = ${data.phase}, pending_shichen = ${data.shichen}, pending_days = ${data.days}, beat_scene = ${data.beat} WHERE save_id = ${saveId}
+    `;
+  }
+
+  /**
+   * I22 加深读：本场对手。列缺失时 persistable=false，本回合仍可结算但不落库。
+   */
+  async readEncounter(saveId: string): Promise<{ encounter: EncounterState | null; persistable: boolean }> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{
+        encounter_hp: number | null;
+        encounter_max_hp: number | null;
+        encounter_name: string | null;
+        encounter_realm: string | null;
+        encounter_element: string | null;
+      }>>`
+        SELECT encounter_hp, encounter_max_hp, encounter_name, encounter_realm, encounter_element
+        FROM world_state WHERE save_id = ${saveId}
+      `;
+      const row = rows[0];
+      const hp = row?.encounter_hp ?? 0;
+      const maxHp = row?.encounter_max_hp ?? 0;
+      if (hp <= 0 || maxHp <= 0) {
+        return { encounter: null, persistable: true };
+      }
+      return {
+        persistable: true,
+        encounter: {
+          name: row?.encounter_name || '无名敌手',
+          realmMajor: row?.encounter_realm ?? '',
+          element: row?.encounter_element ?? '',
+          hp,
+          maxHp,
+        },
+      };
+    } catch (error) {
+      console.error('read encounter failed (columns missing or client stale):', error);
+      return { encounter: null, persistable: false };
+    }
+  }
+
+  encounterUpdate(saveId: string, encounter: EncounterState | null): Prisma.PrismaPromise<number> {
+    const hp = encounter?.hp ?? 0;
+    const maxHp = encounter?.maxHp ?? 0;
+    const name = encounter?.name ?? '';
+    const realm = encounter?.realmMajor ?? '';
+    const element = encounter?.element ?? '';
+    return this.prisma.$executeRaw`
+      UPDATE world_state SET
+        encounter_hp = ${hp},
+        encounter_max_hp = ${maxHp},
+        encounter_name = ${name},
+        encounter_realm = ${realm},
+        encounter_element = ${element}
+      WHERE save_id = ${saveId}
     `;
   }
 }

@@ -1,3 +1,4 @@
+/** 修订：2026-09-05 15:27 +08 lzj — 六维标明攻防速对应神识道心遁速 */
 import React from 'react';
 import { ELEMENT_COLORS } from '../rootElements';
 
@@ -101,9 +102,9 @@ export const StatusCard: React.FC<Props> = ({ player }) => {
         <div className="bg-[#F4EFE6] p-2 rounded text-xs text-textSub grid grid-cols-3 gap-1 border border-[#E5E0D5]">
           <span>资质: <strong className="text-textMain">{player.aptitude}</strong></span>
           <span>悟性: <strong className="text-textMain">{player.comprehension}</strong></span>
-          <span>神识: <strong className="text-textMain">{player.divine_sense}</strong></span>
-          <span>遁速: <strong className="text-textMain">{player.speed}</strong></span>
-          <span>道心: <strong className="text-textMain">{player.dao_heart}</strong></span>
+          <span>神识(攻): <strong className="text-textMain">{player.divine_sense}</strong></span>
+          <span>遁速(速): <strong className="text-textMain">{player.speed}</strong></span>
+          <span>道心(防): <strong className="text-textMain">{player.dao_heart}</strong></span>
           <span>仙缘: <strong className="text-textMain">{player.fortune}</strong></span>
         </div>
 

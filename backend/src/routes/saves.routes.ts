@@ -7,6 +7,7 @@ import { isSaveVisibleToOwner } from '../services/saveAccess.service';
 
 /**
  * 修订：2026-09-05 01:11 +08 lzj — 存档列表/删除/快照按口令仓隔离
+ * 修订：2026-09-05 15:08 +08 lzj — 回滚清飞升结局
  */
 const router = Router();
 const saveService = new SaveService(prisma);
@@ -94,6 +95,7 @@ router.post('/:saveId/rollback', requirePlayToken, async (req: Request, res: Res
     const restoredPlayer = await snapshotService.rollbackToSnapshot(saveId, snapshotId);
     // 读档回滚可能会让存档从"已终结"状态复活（例如回滚到死亡之前），需要同步解除死亡锁
     await prisma.saves.update({ where: { id: saveId }, data: { is_game_over: false } });
+    await prisma.$executeRaw`UPDATE saves SET ending_id = NULL WHERE id = ${saveId}`;
     res.json({ status: 'success', message: '时光倒流，存档已回滚至选定的时间点。', data: { player: restoredPlayer } });
   } catch (error) {
     console.error('存档回滚失败:', error);

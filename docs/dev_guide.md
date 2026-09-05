@@ -1,6 +1,8 @@
 # 双人开发指南
 
 修订：2026-09-02 21:37 +08 lzj — 补文件内署名与北京时间底线
+修订：2026-09-05 14:40 +08 lzj — 下一刀改为 I21/I22 加深或成册 I23
+修订：2026-09-05 14:51 +08 lzj — I22 本场气血已落地
 
 给一起改《问道长生》的人看：怎么开环境、怎么分分支、先改什么、什么绝对不能做。本机点开游戏的逐步命令见 [runbook.md](./runbook.md)，本文件不重复抄。规格总目 [README.md](./README.md)。排期权威 [roadmap.md](./roadmap.md)。每改一处文件还要按 [attribution.md](./attribution.md) 署名。
 
@@ -131,7 +133,7 @@ src/routes/*（薄）→ src/services/*（规则 + 可注入骰子）→ src/rep
 
 ## 6. 现在该做什么
 
-看 [roadmap.md](./roadmap.md) 阶段 B 表。已经成册的：**I20 岁月**、**I21 境界**（加深代码未落地）。下一刀通常是 I21 加深（[realms_architecture.md](./realms_architecture.md)）或成册 **I22** `combat.md`。
+看 [roadmap.md](./roadmap.md) 阶段 B 表。已经成册的：**I20 岁月**、**I21 境界**（加深代码未落地）、**I22 战斗**（本场气血已落地）。下一刀通常是 I21 加深，或成册 **I23** `karma.md`。
 
 不要跳到阶段 C～F 去「更修仙」。进度感觉见 [project_status.md](./project_status.md)。
 

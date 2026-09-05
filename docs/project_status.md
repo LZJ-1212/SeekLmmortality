@@ -3,6 +3,11 @@
 修订：2026-09-05 01:25 +08 lzj — I04/I05 多口令存档仓
 修订：2026-09-05 01:31 +08 lzj — 游玩/更新分实例
 修订：2026-09-05 01:48 +08 lzj — 朋友试玩默认不日限
+修订：2026-09-05 14:40 +08 lzj — B3 / I22 战斗成册
+修订：2026-09-05 14:51 +08 lzj — B3 本场气血与击毙加深
+修订：2026-09-05 15:27 +08 lzj — 交手底数改攻防速
+修订：2026-09-05 15:35 +08 lzj — I28 六维成册
+修订：2026-09-05 15:08 +08 lzj — 渡劫成仙锁档
 
 维护约定：每完成一个系统或重大决议，更新本表「完成度 / 测试 / 下一动作 / 日期」。本文件只做项目管理，不写实现代码。
 
@@ -11,7 +16,7 @@
 - 总设计：[docs/game_design.md](./game_design.md)
 - 文档总目：[docs/README.md](./README.md)
 - 声音规格：[docs/audio_system.md](./audio_system.md) · 声音架构：[docs/audio_architecture.md](./audio_architecture.md)
-- 本记录最后更新：2026-09-02（B1 / I20 成册 + 加深落地 `player_state.md`）
+- 本记录最后更新：2026-09-05（B3 本场遭遇气血 / 击毙加深）
 
 完成度含义：0 未开工；1–39 规格或骨架；40–69 能跑但不完整；70–89 主路径可用、有缺口；90–99 测试较全、仅打磨；100 含上线验收（本项目尚无 100）。
 
@@ -44,9 +49,9 @@
 | ID | 系统 | 要做什么 | 技术文档 | 主要代码 | 完成度 | 测试 | 缺口 / 下一动作 |
 |----|------|----------|----------|----------|--------|------|-----------------|
 | S01 | 核心状态机 | HP/MP/修为/寿元/死亡锁 | [player_state.md](./player_state.md)（I20）；铁律 [game_design.md](./game_design.md) 一、四 | `playerState.service.ts`，`action.service.ts` `/api/action` | 92% | 有单测；行动接口手测过 | **成册+加深已完成**（日段/时辰/按场）；死后读档按钮仍属 S16 |
-| S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成 | [realms.md](./realms.md)（I21 成册）；加深 [realms_architecture.md](./realms_architecture.md) | `playerState.service.ts` `REALM_LAWS` | 90% | 有单测 | **成册已写**；耗时/终局键加深未落地；全境界手玩不挡成册 |
+| S02 | 境界突破与雷劫 | 小境无风险、大境掷骰、功德加成、成仙锁档 | [realms.md](./realms.md) | `playerState.service.ts` `REALM_LAWS` | 92% | 有单测 | **成册已写**；大乘圆满成功即 `ending_id=ascend`；渡劫入钟未接线 |
 | S03 | 时间与岁月 | 闭关月数、pending_months、大限预警、日段/时辰 | 并入 [player_state.md](./player_state.md) | `detectSeclusionMonths`、`advanceAge`、`resolveActionClock` | 92% | 有单测 | **成册+加深已完成**；微行按场扣时辰，不再默认 1 月 |
-| S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行 | 同上第三节；自由度 [player_agency.md](./player_agency.md)；成册待 **I22** `combat.md` | `combat.service.ts` | 85% | 有单测 | 独立规格 **I22**；AI 报的敌人境界仍靠 prompt；战中「捡神器反杀」已由 A5 封闭骰拦 |
+| S04 | 战斗与境界压制 | 差 1 级 40% 输出、差 2 级秒杀、五行、本场气血击毙、攻防速底数 | 成册 [combat.md](./combat.md)；招式库仍 [combat_build.md](./combat_build.md) | `combat.service.ts` | 92% | 有单测 | **I22**：击毙看本场气血；攻=神识 防=道心 速=遁速；战中「捡神器反杀」A5；招式库 S20 |
 | S05 | 功德业力 | 夹紧增量、天罚掷骰 | 同上；成册待 **I23** `karma.md` | `karma.service.ts` | 85% | 有单测 | 独立规格 **I23** |
 | S06 | 百艺与洞府 | 炼丹器阵植、洞府灵气×闭关 | 同上；技艺 **I15** / 洞府 **I17** | `crafting.service.ts` `cave.service.ts` `cultivationFormula.service.ts` | 85% | 有单测 | 创角不送府；无府借地闭关灵气六成；技艺 UI 未习。功法系数仍占位 1.0 |
 | S07 | 经济坊市 | 买卖/拍卖硬计价 | 成册待 **I24** `market.md` | `economy.service.ts` | 80% | 有单测 | 独立规格 **I24**；无真实玩家市场 |
@@ -56,8 +61,8 @@
 | S11 | 逆天改命 | 大境三选一天赋乘数 | 成册待 **I26** `talents.md` | `talent.service.ts` | 85% | 有单测 | 独立规格 **I26**；天赋池偏少 |
 | S12 | 轮回与读档 | 轮回池遗泽、快照回滚 | 成册待 **I27** `reincarnation.md` | `reincarnation*.ts` `snapshot.service.ts` `LoadModal.tsx` | 85% | 有单测；手测过池与回滚 | 独立规格 **I27**；局内「读档」弹窗已有；账号级云存档仍缺 |
 | S13 | 背包物品 | 字典+自定义物品、防幻觉使用 | 无独立 md | `inventory.service.ts` 路由 | 85% | 有单测 | 独立规格待 **I18** |
-| S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 成册待 **I28** `character.md` | `characterBuild.service.ts`；HTTP 编排 `characterCreation.service.ts` | 85% | 有单测 | 独立规格 **I28** |
-| S15 | 开场剧情 | 命格生成开场并起步 | 成册并入 **I28** | `opening.service.ts` | 85% | 有单测 | 独立规格 **I28** |
+| S14 | 创角命格 | 六维/出身/体质/天赋数值落地 | 成册 [character.md](./character.md) | `characterBuild.service.ts`；HTTP 编排 `characterCreation.service.ts` | 88% | 有单测 | **I28 成册已写**；地区奇遇加成未接线 |
+| S15 | 开场剧情 | 命格生成开场并起步 | 并入 [character.md](./character.md) | `opening.service.ts` | 88% | 有单测 | **I28**；选项名须与命格表一致 |
 | S16 | 前端主界面 | 日志、选项、指令、字号 | [ui.md](./ui.md) · [command_ui.md](./command_ui.md) · [command_ui_architecture.md](./command_ui_architecture.md) | `MainGame.tsx` `StatusCard.tsx` `CommandMenu.tsx` `rootElements.ts` | 88% | 无单测；构建通过 | 设置页未做；**I11 L1 底栏已落地**；死亡后读档按钮仍被灰掉（规格要求可开） |
 | S17 | AI 叙事约束 | json_object + forcedOutcome | [game_design.md](./game_design.md) 一 | `ai.ts`（`PlayerStateForAi` / `DeducedAction`） | 75% | 无隔离单测 | 偶发不守铁律，靠拦截器兜底 |
 | S18 | 声音（人声） | 旁白/天道/NPC 朗读 | [audio_system.md](./audio_system.md) | 无 | 规格 95% / 代码 0% | 无 | **可延后** |
@@ -305,7 +310,7 @@ L1 最低集仍是路线 **A1–A3**。**A1（S21 过滤）与 A2（I04 口令�
 
 **A6（S22 薄做）已落地：** `sceneMemory.service.ts` + `world_state` 两列已入库；近事注入 `deduceAction`；未收束跳过探索骰。「搜寻机缘」不算离开。规格 [chronicle.md](./chronicle.md) 第 0 节。`chronicles` 表仍属 **D1**。
 
-**阶段 B（当前主线）：** 下一刀 **B2 加深**（渡劫入钟、终局键）或成册 **B3 / I22** `combat.md`。**I20** [player_state.md](./player_state.md)、**I21** [realms.md](./realms.md) 已成册。**I13–I18、I22–I28** 仍待成册并加深；**I07** 随册薄补。**I19 / I12** 不挡成册。B 未收束不开 S20。
+**阶段 B（当前主线）：** 下一刀 **B2 渡劫入钟** 或成册 **B4 / I23** `karma.md`。**I20 / I21 / I22 / I28** 已成册。**I13–I18、I23–I27** 仍待成册。B 未收束不开 S20。
 
 **真机下一刀（A3 / I06）：** 穿透/保活仍须在你电脑上做（API 基址已抽）。不挡阶段 B。
 
@@ -355,13 +360,13 @@ S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26�
 
 ## 13. 代码有、独立规格没有（对照 2026-09-02）
 
-「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 **I13–I18**、**I22–I28**；**I20 / I21 已成册**）。界面不停留在纯文字凑合，走 **I19**。`game_design.md` 只保留铁律与修炼公式摘要，不替代成册。
+「没有文档」分两种：规划中系统已有 md 但代码未写；**已在玩的系统只有代码、没有成册规格**。深化前先补对应 md（待办 **I13–I18**、**I23–I27**；**I20 / I21 / I22 / I28 已成册**）。界面不停留在纯文字凑合，走 **I19**。`game_design.md` 只保留铁律与修炼公式摘要，不替代成册。六维用途只认 [character.md](./character.md)。
 
 | 已有代码 | 文档现状 | 缺口 |
 |----------|----------|------|
 | 气血/灵力/修为/寿元/死亡锁 + 闭关岁月 | 成册 [player_state.md](./player_state.md) | **I20 成册已完成**；加深见该册第 10 节 |
 | 小境/大境/雷劫 `REALM_LAWS` | 成册 [realms.md](./realms.md) | **I21 成册已完成**；加深见该册第 10 节 |
-| 战斗压制 `combat.service.ts` | 白皮书第三节；招式库规划 [combat_build.md](./combat_build.md) | **无** `combat.md` → **I22** |
+| 战斗压制 `combat.service.ts` | 成册 [combat.md](./combat.md) | **I22 成册+本场气血加深已完成**；招式库仍 S20 |
 | 功德业力 `karma.service.ts` | 白皮书第三节一句；人账规划 S32 | **无** `karma.md` → **I23** |
 | 洞府开辟/借地闭关 `cave.service.ts` | 白皮书 S06 一句；争夺规划 [spirit_veins.md](./spirit_veins.md) | **无** `cave.md` → **I17** |
 | 宗门声望职位叛宗 `sect.service.ts` | 进度表写「代码即规格」 | **无** `sect.md` → **I14** |
@@ -372,7 +377,7 @@ S20–S25 补「构筑、安全、记忆、宠物、活世界、结局」；S26�
 | 坊市拍卖 `economy.service.ts` | 无独立 md | **无** `market.md` → **I24** |
 | 逆天改命 `talent.service.ts` | 内容表有天赋名 | **无** `talents.md` → **I26** |
 | 轮回池/快照 `reincarnation*` `snapshot.service.ts` | 代码即规格 | **无** `reincarnation.md` → **I27** |
-| 创角命格 + 开场 `characterBuild` / `opening` | 创角页文案 + 内容表 | **无** `character.md` → **I28** |
+| 创角命格 + 开场 `characterBuild` / `opening` | 成册 [character.md](./character.md) | **I28 成册已完成**；加深见该册第 10 节 |
 | 背包熔断 `inventory.service.ts` | api / 铁律散落 | **无** `items.md` → **I18** |
 | 天玄历 `world_state` 年季 | 并入 [player_state.md](./player_state.md) 第 5.3 节 | 不另立历法册 |
 | 未习术法 `technique.service.ts` | [combat_build.md](./combat_build.md) 已记薄拦截 | 招式库仍待 S20 |

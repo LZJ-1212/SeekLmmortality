@@ -1,6 +1,8 @@
 # I21 境界加深架构
 
-依据 [realms.md](./realms.md) 第 10 节。**代码尚未按本文落地**；改拦截器前先对成册。不改第 5.2 节门槛数字、不写结局 UI、不把压制公式搬进 `playerState.service.ts`。
+修订：2026-09-05 15:08 +08 lzj — 成仙改为锁档
+
+依据 [realms.md](./realms.md) 第 10 节。**成仙锁档已落地**；渡劫入钟仍未接线。不改第 5.2 节门槛数字、不写图鉴 UI、不把压制公式搬进 `playerState.service.ts`。
 
 ---
 
@@ -11,7 +13,7 @@
 | 表权威 | `REALM_LAWS` 与成册第 5.2 节同一套数字；改一处必须改另一处 |
 | 位阶 | 继续只用 `combat.service.ts` 的 `REALM_RANKS`；突破函数不复制 rank |
 | 随机 | 已有 `successRoll` / `deathRoll`；钟用现有 `rollFn` 通道，本项加深 **不新掷骰** |
-| 终局 | `isTerminal: true` 写在法则行上；`resolveBreakthroughAttempt` 在无键判定之后、修为判定之前认终局 |
+| 终局 | `isTerminal: true`；大乘圆满成功或终局键再突破 → `ascended` 锁档 |
 | 钟 | `resolveActionClock` 增加可选 `tribulationClock`，由 `ActionService` 按突破结果填，**禁止**在钟函数里再 `includes('渡劫')` |
 | LLM | 禁止第二次调用；禁止模型填境界 |
 | 搬家 | 法则表可仍留 `playerState.service.ts`；禁止新路由 `/api/realm` |
@@ -51,7 +53,7 @@ frontend：不必新页；状态卡已有 大境·小境
 
 改为：无键 → **终局（`law.isTerminal`）** → 修为不足 → …
 
-终局返回：`success: false`，`patch` 原样，文案见成册第 10.2 节。
+终局返回：`success: true`，`ascended: true`，`patch` 原样（已在飞升态）或大乘成功写入 `渡劫期·飞升` 后锁档。文案写登仙离去。
 
 无键文案改为成册第 10.3 节，**不改 mp**（本项不引入扣灵力）。
 

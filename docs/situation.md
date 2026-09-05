@@ -1,6 +1,8 @@
 # 情境锁（不合理行动）
 
-规格先行。自由度总则见 [player_agency.md](./player_agency.md)（本文件是其中 **层 1 硬拒绝**）。实现落在 `situation.service.ts`，由 `/api/action` 在配额与闭关等拦截器**之前**调用。不改战斗公式本身。
+修订：2026-09-05 14:40 +08 lzj — 战斗公式指向成册 combat.md
+
+规格先行。自由度总则见 [player_agency.md](./player_agency.md)（本文件是其中 **层 1 硬拒绝**）。实现落在 `situation.service.ts`，由 `/api/action` 在配额与闭关等拦截器**之前**调用。不改压制倍率；倍率见 [combat.md](./combat.md)。
 
 ---
 

@@ -43,6 +43,7 @@ describe('SaveService.listSaves（存档列表摘要，免手抄 UUID）', () =>
         realmMajor: '炼气',
         realmMinor: '初期',
         isGameOver: false,
+        endingId: null,
         updatedAt: new Date('2026-09-01T10:00:00Z'),
       },
     ]);

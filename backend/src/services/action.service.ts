@@ -1,4 +1,8 @@
-/** 修订：2026-09-03 23:40 +08 lzj — 闭关回复与境界叙事锁单测 */
+/** 修订：2026-09-03 23:40 +08 lzj — 闭关回复与境界叙事锁单测
+ * 修订：2026-09-05 14:51 +08 lzj — 交手击毙改走本场遭遇气血
+ * 修订：2026-09-05 15:08 +08 lzj — 渡劫成仙锁档
+ * 修订：2026-09-05 15:27 +08 lzj — 交手底数改攻防速
+ */
 import type { Prisma, PrismaClient, player_cave, players } from '@prisma/client';
 import { prisma as globalPrisma } from '../db/prisma';
 import { InventoryService } from './inventory.service';
@@ -15,7 +19,7 @@ import {
 import { RelationshipService, deceasedNpcForcedOutcome } from './relationship.service';
 import { isDualCultivationAttempt, resolveDualCultivation } from './npc.service';
 import { findLongestMatchingName } from '../utils/textMatch';
-import { REALM_RANKS, resolveCombatModifiers, parseElementsFromSpiritualRoots } from './combat.service';
+import { REALM_RANKS, resolveCombatTurn, parseElementsFromSpiritualRoots, buildContinuingCombatDirective, describeEncounterWound, playerCombatStats } from './combat.service';
 import {
   isExplorationAttempt,
   rollExplorationEncounter,
@@ -36,7 +40,6 @@ import {
   getBuildCultivationSpeedMultiplier,
   getBuildCombatDamageMultiplier,
   getBuildCombatDefenseMultiplier,
-  getSpeedDodgeMultiplier,
 } from './characterBuild.service';
 import { isEligibleForSamsara } from './reincarnation.service';
 import { SnapshotService } from './snapshot.service';
@@ -78,6 +81,7 @@ import {
   getLifespanStatus,
   resolveActionClock,
   describeDayPhase,
+  ASCEND_ENDING_ID,
   pointedDayPhase,
   calculateSeclusionResourceRecovery,
   buildSeclusionRealmNarrativeLock,
@@ -102,6 +106,7 @@ export interface ActionSuccessData {
   options: { tag: string; text: string }[] | undefined;
   monthsPassed: number;
   isDead: boolean;
+  isAscended: boolean;
   deathReason: DeathReason;
   enteredSamsaraPool: boolean;
   dayPhase: string;
@@ -112,6 +117,10 @@ export interface ActionSuccessData {
     realmGap: number;
     damageTaken: number;
     damageDealt: number;
+    enemyHp: number;
+    enemyMaxHp: number;
+    wound: string;
+    summary: string;
   } | null;
   talentChoices: { id: string; name: string; description: string }[] | null;
   karmaRetribution: { tier: string | null; fatal: boolean } | null;
@@ -178,9 +187,16 @@ export class ActionService {
       });
       if (!player) return { ok: false, status: 404, message: '修士不存在' };
 
-      // 【死亡锁】：存档一旦被标记为终结（气血耗尽或寿元耗尽），无论如何都不允许再有任何行动
-      const alreadyDead = player.saves?.is_game_over
-        || getDeathReason(player.hp ?? 100, player.age ?? DEFAULT_AGE, player.max_lifespan ?? 100) !== null;
+      // 【终局锁】：陨落或渡劫成仙后不再行动
+      if (player.saves?.is_game_over) {
+        const ascendedLock = (player.saves as { ending_id?: string | null } | null)?.ending_id === ASCEND_ENDING_ID;
+        return {
+          ok: false,
+          status: 403,
+          message: ascendedLock ? '仙途已成，此身不复问人间事。' : '大限已至，道消身陨，万事皆休。',
+        };
+      }
+      const alreadyDead = getDeathReason(player.hp ?? 100, player.age ?? DEFAULT_AGE, player.max_lifespan ?? 100) !== null;
       if (alreadyDead) {
         return { ok: false, status: 403, message: '大限已至，道消身陨，万事皆休。' };
       }
@@ -190,6 +206,7 @@ export class ActionService {
       const { context: sceneContext, persistable: scenePersistable } = await this.worldStateRepo.readSceneContext(player.save_id);
       const { digest: lastDigest, pending: pendingScene, persistable: sceneMemoryPersistable } = await this.worldStateRepo.readSceneMemory(player.save_id);
       const { phase: dayPhase, shichen: pendingShichen, days: pendingDays, beat: beatScene, persistable: beatClockPersistable } = await this.worldStateRepo.readBeatClock(player.save_id);
+      const { encounter: storedEncounter, persistable: encounterPersistable } = await this.worldStateRepo.readEncounter(player.save_id);
       const situation = evaluateSituation(sceneContext, action);
       if (!situation.ok) {
         return { ok: false, status: 400, message: situation.message };
@@ -474,6 +491,10 @@ export class ActionService {
         forcedOutcomeParts.push(miracleRoll.forcedOutcomeText);
       }
 
+      if (sceneContext === 'combat' && storedEncounter) {
+        forcedOutcomeParts.push(buildContinuingCombatDirective(storedEncounter));
+      }
+
       // 【岁月加深 I20】：本回合钟——闭关/炼制/历练/微行按场扣时，不再采信模型 time_cost_months。
       const actionClock = resolveActionClock({
         actionText: action,
@@ -535,12 +556,30 @@ export class ActionService {
 
       // ==================== 战斗与境界压制 ====================
       const combat = deduction.combat ?? null;
-      const combatResolution = combat?.in_combat
-        ? resolveCombatModifiers(
-            { realmMajor: player.realm_major, elements: parseElementsFromSpiritualRoots(player.spiritual_roots) },
-            { realmMajor: combat.enemy_realm_major ?? '', elements: combat.enemy_element ? [combat.enemy_element] : [] },
-          )
-        : null;
+      const talentDamageMultiplier = getCombatDamageMultiplier(ownedTalents) * getBuildCombatDamageMultiplier(characterBuild);
+      const talentDefenseMultiplier = getCombatDefenseMultiplier(ownedTalents) * getBuildCombatDefenseMultiplier(characterBuild);
+      const combatTurn = resolveCombatTurn(
+        {
+          playerRealmMajor: player.realm_major,
+          playerElements: parseElementsFromSpiritualRoots(player.spiritual_roots),
+          actionText: action,
+          sceneWasCombat: sceneContext === 'combat',
+          stored: storedEncounter,
+          playerCombat: playerCombatStats({
+            divineSense: player.divine_sense,
+            daoHeart: player.dao_heart,
+            speed: player.speed,
+          }),
+          ai: {
+            inCombat: Boolean(combat?.in_combat),
+            enemyName: combat?.enemy_name,
+            enemyRealmMajor: combat?.enemy_realm_major,
+            enemyElement: combat?.enemy_element,
+          },
+        },
+        { damage: talentDamageMultiplier, defense: talentDefenseMultiplier },
+      );
+      const combatResolution = combatTurn.resolution;
 
       // ==================== 核心状态机：气血/灵力/修为结算 ====================
       const maxHp = breakthroughResult ? breakthroughResult.patch.maxHp : (player.max_hp ?? 100);
@@ -548,19 +587,12 @@ export class ActionService {
       const realmMajor = breakthroughResult ? breakthroughResult.patch.realmMajor : player.realm_major;
       const realmMinor = breakthroughResult ? breakthroughResult.patch.realmMinor : player.realm_minor;
 
-      const talentDamageMultiplier = getCombatDamageMultiplier(ownedTalents) * getBuildCombatDamageMultiplier(characterBuild);
-      const talentDefenseMultiplier = getCombatDefenseMultiplier(ownedTalents) * getBuildCombatDefenseMultiplier(characterBuild) * getSpeedDodgeMultiplier(player.speed ?? 10);
-
       let combatHpDelta = 0;
-      let effectiveDamageToEnemy = 0;
-      if (combatResolution) {
-        if (combatResolution.outcome === 'enemy_instant_win') {
-          combatHpDelta = -(player.hp ?? 100); // 直接碾压秒杀：气血归零
-        } else if (combatResolution.outcome === 'normal') {
-          combatHpDelta = -Math.round((combat!.base_damage_to_player || 0) * combatResolution.enemyDamageMultiplier * talentDefenseMultiplier);
-          effectiveDamageToEnemy = Math.round((combat!.base_damage_to_enemy || 0) * combatResolution.playerDamageMultiplier * talentDamageMultiplier);
-        }
-        // 'player_instant_win'：玩家碾压获胜，不掉血
+      let effectiveDamageToEnemy = combatTurn.damageDealt;
+      if (combatTurn.playerSlainByRealm) {
+        combatHpDelta = -(player.hp ?? 100);
+      } else if (combatTurn.kind !== 'none') {
+        combatHpDelta = combatTurn.combatHpDeltaFromIncoming;
       }
 
       const newHp = breakthroughResult
@@ -606,6 +638,7 @@ export class ActionService {
               ? 'realm_suppression'
               : getDeathReason(newHp, newAge, maxLifespan);
       const isDeadNow = deathReason !== null;
+      const ascendedNow = Boolean(breakthroughResult?.ascended) && !isDeadNow;
 
       const lifespanStatus = isDeadNow ? null : getLifespanStatus(newAge, maxLifespan);
 
@@ -693,7 +726,7 @@ export class ActionService {
           worldState.pending_months ?? 0,
           monthsPassed,
         );
-        const nextScene = nextSceneContext({ inCombat: Boolean(combat?.in_combat), isDead: isDeadNow });
+        const nextScene = nextSceneContext({ inCombat: combatTurn.nextInCombat, isDead: isDeadNow || ascendedNow });
         const clockOp = this.worldStateRepo.clockUpdate(player.save_id, {
           current_year: newYear,
           current_season: newSeason,
@@ -715,6 +748,9 @@ export class ActionService {
             beat: actionClock.beat,
           }));
         }
+        if (encounterPersistable) {
+          transactionOps.push(this.worldStateRepo.encounterUpdate(player.save_id, combatTurn.encounter));
+        }
       }
 
       // 3. 死亡结算
@@ -725,6 +761,12 @@ export class ActionService {
             where: { id: player.save_id },
             data: { is_game_over: true, ...(enterSamsaraPool ? { in_samsara_pool: true } : {}) },
           }),
+        );
+      } else if (ascendedNow) {
+        transactionOps.push(
+          this.prisma.$executeRaw`
+            UPDATE saves SET is_game_over = 1, ending_id = ${ASCEND_ENDING_ID} WHERE id = ${player.save_id}
+          `,
         );
       }
 
@@ -794,15 +836,22 @@ export class ActionService {
           monthsPassed,
           dayPhase: actionClock.phase,
           isDead: isDeadNow,
+          isAscended: ascendedNow,
           deathReason,
           enteredSamsaraPool: enterSamsaraPool,
           lifespanStatus,
-          combat: combatResolution ? {
-            enemyName: combat?.enemy_name ?? '神秘敌人',
-            outcome: combatResolution.outcome,
+          combat: combatTurn.kind !== 'none' && combatResolution ? {
+            enemyName: combatTurn.foeName || '神秘敌人',
+            outcome: combatTurn.kind,
             realmGap: combatResolution.realmGap,
-            damageTaken: -combatHpDelta,
+            damageTaken: combatTurn.playerSlainByRealm ? (player.hp ?? 100) : combatTurn.damageTakenIncoming,
             damageDealt: effectiveDamageToEnemy,
+            enemyHp: combatTurn.encounter?.hp ?? 0,
+            enemyMaxHp: combatTurn.encounter?.maxHp ?? 0,
+            wound: combatTurn.encounter
+              ? describeEncounterWound(combatTurn.encounter.hp, combatTurn.encounter.maxHp)
+              : (combatTurn.kind === 'enemy_slain' || combatTurn.kind === 'player_instant_win' ? '绝' : ''),
+            summary: combatTurn.summary,
           } : null,
           talentChoices: talentChoices.length > 0 ? talentChoices.map((t) => ({ id: t.id, name: t.name, description: t.description })) : null,
           karmaRetribution: karmaRetributionResult?.triggered ? { tier: karmaRetributionResult.tier, fatal: karmaRetributionResult.fatal } : null,

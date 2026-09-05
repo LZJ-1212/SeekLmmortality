@@ -3,6 +3,8 @@ generator client {
 }
 
 // 修订：2026-09-05 01:25 +08 lzj — saves.owner_token_hash 按口令隔离存档
+// 修订：2026-09-05 14:51 +08 lzj — world_state 本场遭遇气血五列
+// 修订：2026-09-05 15:08 +08 lzj — saves.ending_id 渡劫成仙
 
 datasource db {
   provider = "mysql"
@@ -91,6 +93,8 @@ model saves {
   save_name            String                 @db.VarChar(50)
   play_time_seconds    Int?                   @default(0)
   is_game_over         Boolean?               @default(false)
+  /// 结局标签：ascend=渡劫成仙；死亡仍只靠 is_game_over + 气血/寿元
+  ending_id            String?                @db.VarChar(20)
   in_samsara_pool      Boolean?               @default(false)
   created_at           DateTime               @default(now()) @db.Timestamp(0)
   updated_at           DateTime               @default(now()) @db.Timestamp(0)
@@ -154,6 +158,11 @@ model world_state {
   pending_shichen Int?    @default(0) // I20 加深：0~2 当前日段内已过时辰，满 3 换段
   pending_days    Int?    @default(0) // I20 加深：0~29 本月已过整日，满 30 进 1 月
   beat_scene      String? @default("none") @db.VarChar(10) // I20 加深：none | talk | market 未收束微行场
+  encounter_hp    Int?    @default(0) // I22 加深：本场对手气血，0 表示无遭遇
+  encounter_max_hp Int?   @default(0)
+  encounter_name  String? @default("") @db.VarChar(40)
+  encounter_realm String? @default("") @db.VarChar(20)
+  encounter_element String? @default("") @db.VarChar(10)
   saves           saves   @relation(fields: [save_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "world_state_ibfk_1")
 }
 

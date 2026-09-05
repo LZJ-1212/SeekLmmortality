@@ -1,6 +1,10 @@
 # 完善顺序与真实感路线（权威排期）
 
 修订：2026-09-04 01:16 +08 lzj — 「依赖」列去掉「代码已有雏形」，改写成现码档案名
+修订：2026-09-05 14:40 +08 lzj — B3 / I22 成册已写（估算伤夹紧未落地）
+修订：2026-09-05 14:51 +08 lzj — B3 本场气血与击毙加深落地
+修订：2026-09-05 15:08 +08 lzj — 渡劫成仙锁档
+修订：2026-09-05 15:35 +08 lzj — B15 / I28 成册已写
 
 规格先行。本文件回答「先做什么、后做什么」。各系统细节见对应 `docs/*.md`。完成度见 [project_status.md](./project_status.md)。
 
@@ -77,8 +81,8 @@ A6 曾从「大事记全表」抽到阶段 A，理由与范围见下表（禁止
 | 序 | ID | 做什么 | 文档 | 完成度 | 依赖 |
 |----|-----|--------|------|--------|------|
 | B1 | I20 | 成册并加深状态机与岁月；死亡锁/时间档与代码对齐；日段/时辰/按场扣时已落地 | [player_state.md](./player_state.md) · [player_state_architecture.md](./player_state_architecture.md) | **已完成** | `playerState.service.ts` `action.service.ts` |
-| B2 | I21 | 成册境界与雷劫，并对照现有代码加深 | [realms.md](./realms.md) · [realms_architecture.md](./realms_architecture.md) | **成册已写**（耗时/终局键加深未落地） | `playerState.service.ts` `REALM_LAWS` |
-| B3 | I22 | 成册战斗压制（本阶段**不**做 S20 招式库） | [combat.md](./combat.md) | **未完成** | `combat.service.ts` |
+| B2 | I21 | 成册境界与雷劫，并对照现有代码加深 | [realms.md](./realms.md) · [realms_architecture.md](./realms_architecture.md) | **成册已写；成仙锁档已落地**（渡劫入钟未接线） | `playerState.service.ts` `REALM_LAWS` |
+| B3 | I22 | 成册战斗压制（本阶段**不**做 S20 招式库） | [combat.md](./combat.md) · [combat_architecture.md](./combat_architecture.md) | **成册已写；本场气血/击毙加深已落地** | `combat.service.ts` |
 | B4 | I23 | 成册功德业力（人账 S32 仍属 E） | [karma.md](./karma.md) | **未完成** | `karma.service.ts` |
 | B5 | I24 | 成册坊市 + 物价薄表 | [market.md](./market.md) | **未完成** | `economy.service.ts` |
 | B6 | I18 | 成册物品；鉴定/堆叠按册加深 | [items.md](./items.md) | **未完成** | `inventory.service.ts` |
@@ -90,7 +94,7 @@ A6 曾从「大事记全表」抽到阶段 A，理由与范围见下表（禁止
 | B12 | I16 | 成册情缘（凡人父母 S29 仍属 D） | [bonds.md](./bonds.md) | **未完成** | `npc.service.ts` `relationship.service.ts` |
 | B13 | I26 | 成册逆天改命；补天赋池 | [talents.md](./talents.md) | **未完成** | `talent.service.ts` |
 | B14 | I27 | 成册轮回与读档（账号云存档仍缺，不本阶段强制） | [reincarnation.md](./reincarnation.md) | **未完成** | `reincarnation.service.ts` `snapshot.service.ts` `LoadModal.tsx` |
-| B15 | I28 | 成册创角与开场；选项与内容表对齐 | [character.md](./character.md) | **未完成** | `characterBuild.service.ts` `opening.service.ts` |
+| B15 | I28 | 成册创角与开场；六维用途唯一表 | [character.md](./character.md) | **成册已写**（地区奇遇加成未接线） | `characterBuild.service.ts` `opening.service.ts` |
 | B16 | I07 | 上列每收束一本就加 3～8 条，禁止表空 | [content_catalog.md](./content_catalog.md) | **未完成** | 随 B1–B15 薄补 |
 | B17 | I19 | 整体信息架构（**不挡** B1–B16；窄屏 I11 已做 L1） | [ui.md](./ui.md) | **未完成** | `MainGame.tsx` `CommandMenu.tsx`；不挡 B1–B16 |
 | B18 | I12 | 精细九州图替换 `RegionMap` 线稿；点图仍不赶路 | [ui.md](./ui.md) | **未完成** | 可与 B8/B17 穿插，**不挡**成册 |

@@ -1,8 +1,15 @@
 # 《问道长生》文档目录
 
 修订：2026-09-02 21:37 +08 lzj — 目录增加署名规范入口
+修订：2026-09-05 14:40 +08 lzj — 成册 I22 combat.md 入总目
+修订：2026-09-05 14:51 +08 lzj — I22 本场气血加深
+修订：2026-09-05 15:08 +08 lzj — 渡劫成仙锁档
+修订：2026-09-05 15:35 +08 lzj — I28 character.md 入总目
+修订：2026-09-05 15:50 +08 lzj — 加深架构文案与成册对齐
 
 规格先行。实现代码以仓库为准；本目录说明「读哪份文档」。项目管理见 [project_status.md](./project_status.md)。
+
+已落地公式不要两处展开：**岁月** [player_state.md](./player_state.md)；**境界雷劫** [realms.md](./realms.md)；**交手** [combat.md](./combat.md)；**六维与仙缘** [character.md](./character.md)；**闭关乘式** [game_design.md](./game_design.md) 第四节；**命格名** [content_catalog.md](./content_catalog.md) 第 4 节。未成册的已有代码仍以 Service 为准。规划中玩法各 md 不是现码。
 
 ## 总览与运行
 
@@ -24,8 +31,11 @@
 | [player_agency.md](./player_agency.md) | **S36 自由度规范**：叙事自由、数值主权为零；三圈边界 |
 | [player_state.md](./player_state.md) | **I20 / B1 成册**：气血修为寿元、时间档、死亡锁；加深词表已封口 |
 | [player_state_architecture.md](./player_state_architecture.md) | I20 加深落点：四列、纯函数、不采信模型月数 |
-| [realms.md](./realms.md) | **I21 / B2 成册**：境界链、雷劫骰、功德/道心；加深（耗时/终局键）未落地 |
+| [realms.md](./realms.md) | **I21 / B2 成册**：境界链、雷劫骰；成仙锁档已落地；渡劫入钟未接线 |
 | [realms_architecture.md](./realms_architecture.md) | I21 加深落点：`isTerminal`、`clockKind`、不搬压制公式 |
+| [combat.md](./combat.md) | **I22 / B3 成册**：境界压制、本场气血击毙；招式库仍属 S20 |
+| [character.md](./character.md) | **I28 / B15 成册**：六维用途唯一表、创角命格与开场 |
+| [combat_architecture.md](./combat_architecture.md) | I22 加深落点：攻防速底数、敌境单测；算术仍认 combat.md |
 | [situation.md](./situation.md) | 情境锁：交手中禁止闭关/坊市等（不调 AI） |
 | [plausibility.md](./plausibility.md) | S36 层 3：宣称奇迹何时掷仙缘骰；气运改不了秒杀（A5 已落地） |
 | [architecture.md](./architecture.md) | 仓库分层与行动数据流 |
@@ -64,4 +74,4 @@
 
 已实现的十二系统：**铁律与公式摘要**见 [game_design.md](./game_design.md)；**成册与加深（阶段 B）**见 [roadmap.md](./roadmap.md) **B1–B16 / I13–I18、I20–I28**（未成册前以代码为准，禁止只改一边）。排期以 [roadmap.md](./roadmap.md) 为准，不以本表行序为准。阶段 B 未收束前不要按本表去开工法/心魔/灵兽。
 
-**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；战斗/功德/坊市/探索/逆天改命/轮回/创角开场 **I22–I28**（**I20** [player_state.md](./player_state.md)、**I21** [realms.md](./realms.md) 已成册；I21 加深见架构文）。整体界面 **I19**。
+**代码已有、独立规格未成册** 见 [project_status.md](./project_status.md) 第 13 节：洞府/宗门/技艺/情缘/地图/物品 **I13–I18**；功德/坊市/探索/逆天改命/轮回 **I23–I27**（**I20** [player_state.md](./player_state.md)、**I21** [realms.md](./realms.md)、**I22** [combat.md](./combat.md)、**I28** [character.md](./character.md) 已成册）。整体界面 **I19**。

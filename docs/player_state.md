@@ -1,5 +1,7 @@
 # I20 核心状态机与岁月（成册）
 
+修订：2026-09-05 15:35 +08 lzj — 六维用途指向 character.md
+
 排期见 [roadmap.md](./roadmap.md) **B1**。代码已有；本文件与实现对齐，不另开一套字段名。加深（日段、时辰、按场扣时）已拍板并落地，见第 5.4 节与第 10 节；落点见 [player_state_architecture.md](./player_state_architecture.md)。
 
 权威实现：`backend/src/services/playerState.service.ts`（纯函数）、`action.service.ts`（编排与死亡锁）、表 `players` / `saves` / `world_state`。铁律摘要仍见 [game_design.md](./game_design.md) 第一、四节。境界雷劫细则属 **I21** [realms.md](./realms.md)（成册已写，加深见该册第 10 节）；本册只锁「突破会改气血上限与寿元上限，不让 AI 填这些数」。
@@ -354,6 +356,7 @@ openingShichen(rollFn) = rollFn() < 0.5 ? 3 : 6
 | 心累、走火 | [heart_demon.md](./heart_demon.md) **S26** | 打选项与道心 |
 | 名字取得奇怪 | **I28** + 网关长度；**S17** prompt 用姓名 | 不为怪名加喜剧拦截器 |
 | 性别非男女 | **I28** 开场代词：男他、女她、其余**其** | 不改境界公式 |
+| 六维用途、仙缘机缘 | [character.md](./character.md) **I28** | 本册只管气血寿元时间，不定义攻防速 |
 | 天赋好/差影响剧情 | 数值：`characterBuild` + **I26**；身世：开场模板 + 每回合命格铁律 | 模型不得改六维 |
 
-成册 I28 时把代词与开场表写进 `character.md`，与本册第 12 节对照即可。
+代词与开场表已写入 [character.md](./character.md) 第 6 节。

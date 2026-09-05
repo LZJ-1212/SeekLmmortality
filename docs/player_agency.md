@@ -1,5 +1,9 @@
 # 玩家自由度规范（边界，不是「随便写」）
 
+修订：2026-09-05 14:40 +08 lzj — 层 2 铁律指向成册 combat.md
+修订：2026-09-05 15:35 +08 lzj — 仙缘语义指向 character.md
+修订：2026-09-05 15:50 +08 lzj — 落点表补六维与闭关乘式唯一入口
+
 规格先行。本文件是 **S36** 的总则：玩家能自由说什么、天道（后端）锁死什么、什么才配新代码。
 
 **一句话：** 叙事自由度高，数值主权为零。你可以说任何话；气血、胜负、物品、境界、寿元只认拦截器与公式。
@@ -10,7 +14,9 @@
 |----|------|----------------|
 | 总则（本文件） | 自由度三圈、何时加锁 | — |
 | 层 1 硬拒绝 | [situation.md](./situation.md) | `situation.service.ts` **已做** |
-| 层 2 铁律 | [game_design.md](./game_design.md) 战斗节；物品熔断在背包服务 | `combat.service.ts`、`inventory.service.ts`、死亡锁 **已做** |
+| 层 2 铁律 | [combat.md](./combat.md)（I22）；物品熔断在背包服务 | `combat.service.ts`、`inventory.service.ts`、死亡锁 **已做** |
+| 六维 / 仙缘概率 | [character.md](./character.md) | 历练与奇迹骰 **已做** |
+| 闭关乘式 | [game_design.md](./game_design.md) 第四节 | `cultivationFormula.service.ts` |
 | 层 3 宣称奇迹 | [plausibility.md](./plausibility.md) | `miracle.service.ts` **已做**（路线图 **A5**） |
 | 注入与配额 | [intent_gateway.md](./intent_gateway.md) | `backend/src/gateway/` **已做** |
 
@@ -68,7 +74,7 @@ DeepSeek 只描写。禁止用模型给每句打「合不合理」分（贵、�
 | 「我已金丹 / 修为九千」 | `realm_major`、修为字段不听这句话 |
 | 对 NPC 的态度、誓言（未来 S27） | 未实现前不改功德/名声账；实现后仍走服务不是模型 |
 
-仙缘（六维里的运气）只提高**中圈检定**的概率，不是内圈通行证。
+仙缘（六维里的运气）只提高**中圈检定**的概率，不是内圈通行证。用途与公式见 [character.md](./character.md) 第 5 节。
 
 ---
 

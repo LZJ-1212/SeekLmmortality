@@ -1,6 +1,10 @@
 # I21 境界与雷劫（成册）
 
-排期见 [roadmap.md](./roadmap.md) **B2**。代码已有雏形；本文件与实现对齐，不另开一套境界名。铁律摘要仍见 [game_design.md](./game_design.md) 第三、四节。岁月与死亡锁见 [player_state.md](./player_state.md)；压制倍率见 **I22** [combat.md](./combat.md)（未成册前以 `combat.service.ts` 为准）。加深落点见 [realms_architecture.md](./realms_architecture.md)。
+修订：2026-09-05 14:40 +08 lzj — 压制倍率改指向已成册 combat.md
+修订：2026-09-05 15:08 +08 lzj — 渡劫成仙锁档为结局
+修订：2026-09-05 15:35 +08 lzj — 道心用途指向 character.md
+
+排期见 [roadmap.md](./roadmap.md) **B2**。代码已有雏形；本文件与实现对齐，不另开一套境界名。铁律摘要仍见 [game_design.md](./game_design.md) 第三、四节。岁月与死亡锁见 [player_state.md](./player_state.md)；压制倍率见 **I22** [combat.md](./combat.md)。加深落点见 [realms_architecture.md](./realms_architecture.md)。
 
 权威实现：`playerState.service.ts` 的 `REALM_LAWS`、`resolveBreakthroughAttempt`；编排 `action.service.ts`。大境位阶表 `REALM_RANKS` 在 `combat.service.ts`（战斗与轮回资格共用，**禁止**再抄第三份）。
 
@@ -25,12 +29,14 @@ AI 不得改 `realm_major` / `realm_minor` / 修为清零 / 寿元上限 / 雷�
 | 大境骰：基础率 + 道心 + 功德；失败伤/陨落 | **已实现** |
 | 拦截关键词、未知键不 500、同回不算闭关修为/天罚 | **已实现** |
 | 大境成功 → 逆天改命三选一 | 本册只锁「何时触发」；池与 UI 属 **I26** |
-| 渡劫耗时入岁月钟、终局键、文案与 patch 对齐 | **加深决议**，见第 10 节（代码未写） |
+| 渡劫耗时入岁月钟 | **加深未落地**，见第 10.1 节 |
+| 终局键 `渡劫期·飞升` / 大乘圆满成功 → 成仙锁档 | **已实现**（`ending_id=ascend`；无图鉴） |
+| 飞升图鉴、天道点、多结局 UI | **S25** 其余；本册只锁「何时锁档」 |
 | 差 1 境 40% 输出、差 2 境秒杀、五行 | **I22**，本册只锁大境名与位阶 0～8 |
 | 探索越境扣血、地区安全位阶 | **I25** |
 | 伪装境界 | **S34**，开战仍按真实大境 |
 | 心魔、走火 | **S26**，阶段 C；不并进雷劫骰 |
-| 飞升结局演出、`ending_id` | **S25**；本册只到「大乘圆满成功写入 `渡劫期·飞升`」 |
+| 飞升结局演出、`ending_id` | 成仙锁档已做；图鉴/天道点仍 **S25** |
 | 筑基丹等丹药直接破境 | **不做**；丹药属 **I15**，不能替本册骰子 |
 | 小境涨气血上限、记渡劫失败次数加陨落 | **不做**（注释曾暗示连败，**现码没有**，本册作废该暗示） |
 
@@ -198,9 +204,9 @@ NPC 大境寿元见 `npc.service.ts` `REALM_MAX_LIFESPAN_BY_MAJOR`，与下表�
 | 大乘·后期 | 大乘·圆满 | 1300000 | 否 | | | | | | |
 | 大乘·圆满 | 渡劫期·飞升 | 1600000 | 是 | 天道 | 0.20 | 0.80 | 0.55 | 12000 | 99999 |
 
-**终局键（加深后才入库；现码没有这一行）**
+**终局键（已入库）**
 
-`渡劫期·飞升`：不是下一境的门槛，是大乘圆满雷劫成功后的展示态。再点突破不得当「未知境界扣血」。见第 10 节。飞升演出 **S25**。
+`渡劫期·飞升`：`isTerminal: true`。大乘圆满雷劫成功写入此键并 **立刻锁档**（`saves.ending_id = ascend`，`is_game_over`）。已在此键再点突破：数值不变，同样锁档。不进轮回池、不发三选一。图鉴与天道点仍见 [endings.md](./endings.md)。
 
 ### 5.3 寿元与 NPC 对照
 
@@ -242,7 +248,7 @@ meritBonus = min(0.15, max(0, merit) * 0.0005)
 successRate = clamp(baseSuccess + daoHeart * 0.01 + meritBonus, 0.05, 0.95)
 ```
 
-功德约 300 点顶满 +15%。道心 10 → +0.10。禁止业力改本骰（业力走天罚，且本回合有突破则跳过天罚）。
+功德约 300 点顶满 +15%。道心 10 → +0.10。道心在六维里的其它用途见 [character.md](./character.md)，本册不另编。禁止业力改本骰（业力走天罚，且本回合有突破则跳过天罚）。
 
 成功判定：**`successRoll() <= successRate`**（骰到 `0` 且成功率大于 0 时必成）。
 
@@ -289,26 +295,20 @@ deathChance = max(0, deathChanceOnFailure - daoHeart * 0.002)
 | I26 | `isMajorBreakthroughSuccess` 才发三选一 | 天赋池内容 |
 | I27 | 死后大境是否入池 | 遗泽骰 |
 | I15 | 无 | 筑基丹当突破 |
-| S25 | 成功目标可以是飞升键 | 结局 UI |
+| S25 | 成仙锁档已接线；图鉴/天道点未做 | 结局列表 UI |
 | S26 / S34 / S20 | 无 | 心魔、伪装、功法改骰 |
 
 ---
 
-## 10. 本阶段加深（词表与语义已封口，代码未写）
+## 10. 本阶段加深
 
-只补「渡劫像渡劫」与终局不 500/不谎报，**不改第 5.2 节数字、不开结局、不搬战斗公式。**
+渡劫入钟仍见 [realms_architecture.md](./realms_architecture.md)（**代码未写**）。终局成仙 **已落地**：
 
-1. **渡劫入钟**（交给 `resolveActionClock` 的显式档，禁止再猜关键词）：
-   - 编排已算出突破结果后传入 `tribulationClock`：`none` / `minor` / `major` / `blocked`。
-   - `minor`（小境成功或失败里的「修为不足」走 `blocked`）：小境 **成功** → **1 时辰**；`beat_scene` 不变也可清成 `none`（建议清 `none`，与炼制一样出戏）。
-   - `major`：大境无论成败（含轰灭）→ **1 月**；`beat_scene = none`；日段落 `dusk`（与历练同，跳过微行时辰）。
-   - `blocked`：无键、修为不足、终局键拒绝 → **1 时辰**，不加月。
-   - 优先级：闭关 → 炼制 → **本档** → 历练/交手 → 场内 → 开场 → 未命中。同句「闭关十年并突破」仍先闭关（现码互斥已不算闭关修为；钟仍先闭关——加深保持，避免十年+雷劫双扣）。
-2. **终局键**：`REALM_LAWS['渡劫期·飞升']` 设 `isMajor: false` 不够；用 `isTerminal: true`（或 `next` 指向自身且拦截器先认终局）。结算：失败、不改数值、文案「天路已现，飞升之期不在此间强求。」不调 S25 演出。
-3. **文案**：无键改为「前方境界未明，气机空转，境界不变。」禁止写扣了灵力却不改 `mp`。注释删除「失败次数越多陨落越高」。
-4. 不启用心魔检定；不把 `渡劫` 误判为历练 1 月之外再加一月（本档已覆盖）。
+1. （未做）渡劫入钟 `tribulationClock`。
+2. **终局：** `REALM_LAWS['渡劫期·飞升']` `isTerminal: true`；大乘圆满成功 `ascended`。锁档文案写登仙离去。无键文案改为「气机空转，境界不变」，不谎称扣灵力。
+3. 不启用心魔；不开图鉴。
 
-落点见 [realms_architecture.md](./realms_architecture.md)。
+渡劫入钟细则仍见 [realms_architecture.md](./realms_architecture.md) 第 2.3 节（未接线）。
 
 ---
 

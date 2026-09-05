@@ -1,5 +1,7 @@
 # 技术架构（已实现部分）
 
+修订：2026-09-05 14:40 +08 lzj — 行动流补 combat.md
+
 给后来改代码的人看「东西在哪、原则是什么」。声音未实现部分见 [audio_architecture.md](./audio_architecture.md)。接口清单见 [api.md](./api.md)。
 
 ---
@@ -24,7 +26,7 @@
 2. `POST /api/action` 先过 S21（口令、净化、黑名单、死亡锁），再 **情境锁**（可能 400，**不占日限**），再日限，再其余拦截器。
 3. 多个 **纯函数 Service** 根据关键词与状态硬算，拼 `forcedOutcome`。（宣称奇迹骰 `miracle.service.ts` 已接线，见 [plausibility.md](./plausibility.md)。）
 4. `ai.ts` 以 json_object 调 DeepSeek，只生成 `narrative` 与选项。现码模型名 `deepseek-chat`。官方 V4 以 `deepseek-v4-flash` / `deepseek-v4-pro` 为主，思考模式默认偏开、走 `reasoning_content`，**本项目必须关思考**（`thinking.type = disabled` 或等价），只解析 `content` 里的 JSON。Pro + 思考不提高数值正确率（拦截器已锁），只可能改善文笔；每回合成本与延迟明显高于 Flash/关思考。换模型是运维项，不进阶段 B 强制序。
-5. 后端再写库（气血、时间、背包等），战斗公式覆盖胜负，把结果与 `player` 行返回前端。岁月与死亡锁细则见 [player_state.md](./player_state.md)；境界雷劫见 [realms.md](./realms.md)；加深落点见 [player_state_architecture.md](./player_state_architecture.md)、[realms_architecture.md](./realms_architecture.md)。
+5. 后端再写库（气血、时间、背包等），战斗公式覆盖胜负，把结果与 `player` 行返回前端。岁月与死亡锁细则见 [player_state.md](./player_state.md)；境界雷劫见 [realms.md](./realms.md)；战斗压制见 [combat.md](./combat.md)；加深落点见 [player_state_architecture.md](./player_state_architecture.md)、[realms_architecture.md](./realms_architecture.md)、[combat_architecture.md](./combat_architecture.md)。
 6. 前端追加日志、渲染选项与状态卡。
 
 AI 返回的数值增量若与拦截器冲突，以拦截器为准（现有代码路径）。

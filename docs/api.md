@@ -3,6 +3,8 @@
 修订：2026-09-05 01:25 +08 lzj — GET/DELETE /api/saves 按口令仓过滤
 修订：2026-09-05 01:39 +08 lzj — GET /api/ping 返回 version
 修订：2026-09-05 01:48 +08 lzj — 行动日限缺省关闭
+修订：2026-09-05 14:51 +08 lzj — 行动 combat 含本场气血与天道摘要
+修订：2026-09-05 15:08 +08 lzj — 行动 isAscended
 
 与代码同步日期：2026-09-05。实现以 `backend/src/routes/*.ts` 为准（`server.ts` 只挂载）。本文件只描述契约，不写实现。
 
@@ -77,10 +79,10 @@ Body：`{ playerId, action }`。`action` 为自然语言或快捷指令文本。
 | `narrative` | AI 剧情 |
 | `options` | 下一选项 |
 | `monthsPassed` | 本回合流逝月数 |
-| `isDead` / `deathReason` | 是否本回合终结 |
+| `isDead` / `isAscended` / `deathReason` | 是否本回合陨落或渡劫成仙 |
 | `enteredSamsaraPool` | 是否进入轮回池 |
 | `lifespanStatus` | 大限预警 |
-| `combat` | 有战时：敌人名、胜负、境界差、伤势 |
+| `combat` | 有战时：敌人名、`kind`、境界差、伤势、本场气血、敌势、`summary` |
 | `talentChoices` | 大境成功后的三选一；否则 `null` |
 | `karmaRetribution` | 天罚是否触发 |
 | `crafting` | 百艺结算 |

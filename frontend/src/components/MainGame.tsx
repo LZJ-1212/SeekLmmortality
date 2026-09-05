@@ -1,5 +1,7 @@
 /** 修订：2026-09-05 01:01 +08 lzj — 字号控件抽到共用模块 */
 /** 修订：2026-09-05 01:39 +08 lzj — 局内顶栏展示版本号 */
+/** 修订：2026-09-05 14:51 +08 lzj — 交手后追加天道敌势日志 */
+/** 修订：2026-09-05 15:08 +08 lzj — 渡劫成仙终局锁输入 */
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../playToken';
 import { CommandMenu, type Command } from './CommandMenu';
@@ -52,6 +54,8 @@ interface PlayerPayload extends PlayerCardData {
   talents?: unknown;
   /** I20 加深：当前日段 dawn/noon/dusk/night（后端 world_state.day_phase） */
   day_phase?: string;
+  is_game_over?: boolean;
+  ending_id?: string | null;
 }
 
 /** 安全解析后端存为 JSON 字符串的字段；非字符串原样返回，解析失败退化为空对象 */
@@ -282,9 +286,11 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
   const isDead = playerData
     ? playerData.hp <= 0 || playerData.age > playerData.max_lifespan
     : false;
+  const isAscended = playerData?.ending_id === 'ascend';
+  const isEnded = isDead || isAscended;
 
   const handleAction = async (actionDesc: string) => {
-    if (!actionDesc.trim() || isProcessing || isDead || talentChoices.length > 0) return;
+    if (!actionDesc.trim() || isProcessing || isEnded || talentChoices.length > 0) return;
 
     setLogs(prev => [...prev, { id: Date.now(), type: 'player', content: `> ${actionDesc}` }]);
     setInputText('');
@@ -307,6 +313,10 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
 
         setLogs(prev => [...prev, { id: Date.now() + 1, type: 'narrative', content: finalNarrative }]);
 
+        if (result.data.combat?.summary) {
+          setLogs(prev => [...prev, { id: Date.now() + 15, type: 'system', content: result.data.combat.summary }]);
+        }
+
         // 如果死亡，追加天道提示（区分气血耗尽 / 寿元耗尽 / 渡劫陨落三种死因）
         if (result.data.isDead) {
           const deathMessages: Record<string, string> = {
@@ -319,6 +329,10 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           };
           const deathMessage = deathMessages[result.data.deathReason] ?? deathMessages.hp_exhausted;
           setLogs(prev => [...prev, { id: Date.now() + 2, type: 'system', content: deathMessage }]);
+        }
+
+        if (result.data.isAscended) {
+          setLogs(prev => [...prev, { id: Date.now() + 2, type: 'system', content: '【问道功成】 天劫已渡，此身飞升。仙途已成，不复问人间事。' }]);
         }
 
         // 逆天改命：大境界渡劫成功，弹出天赋三选一，强制玩家先做出抉择
@@ -349,7 +363,10 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
         const refreshResult = await fetchPlayerPayload(playerId);
 
         if (refreshResult.ok) {
-          setPlayerData(refreshResult.payload);
+          setPlayerData({
+            ...refreshResult.payload,
+            ending_id: result.data.isAscended ? 'ascend' : refreshResult.payload.ending_id,
+          });
         } else {
           // 如果刷新失败，降级使用 action 返回的数据（但会丢失 inventory）
           console.warn('刷新玩家数据失败，使用降级数据');
@@ -359,6 +376,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
             cave: result.data.cave,
             sect: result.data.sect,
             relationships: result.data.relationships,
+            ending_id: result.data.isAscended ? 'ascend' : undefined,
           }));
         }
 
@@ -470,7 +488,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           variant="underPanel"
           activeCommand={activeCommand}
           onCommand={handleCommand}
-          disabledAction={isProcessing || isDead}
+          disabledAction={isProcessing || isEnded}
         />
       </aside>
 
@@ -480,7 +498,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           variant="rail"
           activeCommand={activeCommand}
           onCommand={handleCommand}
-          disabledAction={isProcessing || isDead}
+          disabledAction={isProcessing || isEnded}
         />
       </div>
 
@@ -537,8 +555,8 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           <div className="flex items-center gap-3">
             <FontSizeButtons fontSize={fontSize} onChange={setFontSize} />
             <span className="text-sm font-normal opacity-90">
-              {isDead ? '寂灭' : formatHeavenCalendar(playerData.current_year, playerData.current_season)}
-              {!isDead && playerData.day_phase && <span className="ml-1 opacity-80">·{DAY_PHASE_LABEL[playerData.day_phase] ?? ''}</span>}
+              {isAscended ? '飞升' : isDead ? '寂灭' : formatHeavenCalendar(playerData.current_year, playerData.current_season)}
+              {!isEnded && playerData.day_phase && <span className="ml-1 opacity-80">·{DAY_PHASE_LABEL[playerData.day_phase] ?? ''}</span>}
             </span>
           </div>
         </div>
@@ -551,7 +569,8 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
           <span>灵力 {playerData.mp}/{playerData.max_mp}</span>
           <span>寿元 {playerData.age}/{playerData.max_lifespan}</span>
           <span>灵石 {playerData.spirit_stones}</span>
-          {isDead && <span className="text-blood font-bold">〔已陨落〕</span>}
+          {isAscended && <span className="text-gold font-bold">〔问道功成〕</span>}
+          {isDead && !isAscended && <span className="text-blood font-bold">〔已陨落〕</span>}
         </div>
 
         <div
@@ -577,7 +596,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
               <button
                 key={idx}
                 onClick={() => handleAction(opt.text)}
-                disabled={isProcessing || isDead}
+                disabled={isProcessing || isEnded}
                 className={`min-h-10 px-3 py-2 text-white text-sm rounded shadow-sm disabled:opacity-50 transition-colors ${getTagColor(opt.tag)}`}
               >
                 〔{opt.tag}〕{opt.text}
@@ -591,13 +610,13 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAction(inputText)}
-              disabled={isProcessing || isDead}
-              placeholder={isDead ? "道死身灭，诸法皆空..." : (isProcessing ? "天道演算中..." : "输入行动...")}
+              disabled={isProcessing || isEnded}
+              placeholder={isAscended ? '仙途已成，此身不复问人间事。' : isDead ? '道死身灭，诸法皆空...' : (isProcessing ? '天道演算中...' : '输入行动...')}
               className="flex-1 min-h-10 bg-white border border-[#E5E0D5] px-3 py-2 rounded outline-none focus:border-jade disabled:bg-gray-200 disabled:cursor-not-allowed"
             />
             <button
               onClick={() => handleAction(inputText)}
-              disabled={isProcessing || isDead}
+              disabled={isProcessing || isEnded}
               className="min-h-10 px-5 md:px-6 py-2 bg-textDark text-white font-bold rounded hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               行 动
@@ -609,7 +628,7 @@ export const MainGame: React.FC<Props> = ({ playerId, opening, onExitToList }) =
               variant="dock"
               activeCommand={activeCommand}
               onCommand={handleCommand}
-              disabledAction={isProcessing || isDead}
+              disabledAction={isProcessing || isEnded}
             />
           </div>
         </div>

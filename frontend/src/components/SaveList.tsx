@@ -1,5 +1,6 @@
 /** 修订：2026-09-05 01:25 +08 lzj — 存档页提示按口令分仓，清空只动本列表 */
 /** 修订：2026-09-05 01:39 +08 lzj — 存档页展示版本号 */
+/** 修订：2026-09-05 15:08 +08 lzj — 飞升存档标问道功成 */
 import React, { useCallback, useEffect, useState } from 'react';
 import { apiFetch, getPlayToken, setPlayToken } from '../playToken';
 import { GameVersionLabel } from '../GameVersionLabel';
@@ -12,6 +13,7 @@ interface SaveSummary {
   realmMajor: string;
   realmMinor: string;
   isGameOver: boolean;
+  endingId?: string | null;
   updatedAt: string;
 }
 
@@ -188,7 +190,9 @@ export const SaveList: React.FC<Props> = ({ onEnter, onCreate }) => {
                     <span className="font-bold text-textDark">{s.playerName}</span>
                     <span className="text-xs text-textSub">
                       {s.realmMajor ? `${s.realmMajor}${s.realmMinor}` : '——'}
-                      {s.isGameOver && <span className="ml-2 text-blood">已陨落</span>}
+                      {s.endingId === 'ascend'
+                        ? <span className="ml-2 text-gold">问道功成</span>
+                        : s.isGameOver && <span className="ml-2 text-blood">已陨落</span>}
                     </span>
                   </div>
                   <div className="mt-1 text-xs text-textSub">

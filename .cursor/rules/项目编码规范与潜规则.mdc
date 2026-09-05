@@ -12,12 +12,14 @@ alwaysApply: true
 **修订署名：** 改本文件或任何代码/文档时追加一行署名与北京时间，见 `docs/attribution.md`。Git 不能代替。
 
 修订：2026-09-02 21:37 +08 lzj — 动手前增加署名底线
+修订：2026-09-05 14:40 +08 lzj — 成册待办改为 I13–I18、I23–I28（I20–I22 已成册）
+修订：2026-09-05 15:35 +08 lzj — I28 已成册；改六维用途须同步 character.md
 
 ---
 
 ## 1. 动手前
 
-- 先读再改，禁止凭记忆改路径。已落地系统以 **代码为准**；成册规格待办见 `docs/roadmap.md` **I13–I18、I22–I28**（**I20 / I21 已成册**）。规划中系统以 **对应 `docs/*.md` 为准**，禁止只改一边造成双源。改 `REALM_LAWS` 必须同步 `docs/realms.md` 第 5.2 节。
+- 先读再改，禁止凭记忆改路径。已落地系统以 **代码为准**；成册规格待办见 `docs/roadmap.md` **I13–I18、I23–I27**（**I20 / I21 / I22 / I28 已成册**）。规划中系统以 **对应 `docs/*.md` 为准**，禁止只改一边造成双源。改 `REALM_LAWS` 必须同步 `docs/realms.md` 第 5.2 节。改 `REALM_RANKS` 或压制倍率必须同步 `docs/combat.md` 第 3～4 节。改六维用途或仙缘语义必须同步 `docs/character.md`。
 - 新玩法先对规格，再写纯函数 Service，再挂 `/api/action` 拦截器，最后才改 UI。禁止先让 DeepSeek「演」出数值。宣称奇迹、战中神器等先对 `docs/player_agency.md` / `docs/plausibility.md`，排期 **A5**。
 - 开工顺序跟 `docs/roadmap.md` 阶段 A→F。**A6（S22 短记忆）属补现有行动环**，见该文件阶段 A。当前主线是 **阶段 B（I20–I28、I13–I18 成册+加深）**；B 未收束禁止开 C～F（功法、心魔、灵兽等）。不要为了「更修仙」跳过已有雏形。
 - 改配方、地区、命格、功法名：同步 `docs/content_catalog.md`（或实现时立刻补表）。

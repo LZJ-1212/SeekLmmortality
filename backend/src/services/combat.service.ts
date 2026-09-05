@@ -1,9 +1,11 @@
 /**
+ * 修订：2026-09-05 14:51 +08 lzj — 本场遭遇气血、估算伤夹紧、击毙归拦截器
+ * 修订：2026-09-05 15:27 +08 lzj — 交手底数改攻防速，不再采信模型估伤
  * 战斗与境界压制（Service 层，纯函数，不依赖数据库）。
  * 负责：境界差距对战斗伤害的强制压制/碾压，以及五行相生相克对伤害的加成/减益。
  * 核心原则（“绝非龙傲天”）：严格的硬实力鸿沟——低境界绝不能轻易反杀高境界，
- * 具体的倍率全部由后端硬计算，AI 只负责描述战斗过程与估算基础伤害，
- * 绝不允许 AI 自己决定最终的境界压制/克制结果。
+ * 具体的倍率全部由后端硬计算，AI 只负责描述战斗过程，
+ * 绝不允许 AI 自己决定最终的境界压制/克制结果。击毙以本场遭遇气血为准，不采信模型「已死」。交手底数只认攻防速，不采信模型估伤。
  */
 
 /** 九大境界的战力位阶，数字越大代表境界越高 */
@@ -173,5 +175,295 @@ export function resolveCombatModifiers(player: CombatParticipant, enemy: CombatP
     playerDamageMultiplier: round(realmMultiplierForPlayer * elementMultiplierForPlayer),
     enemyDamageMultiplier: round(realmMultiplierForEnemy * elementMultiplierForEnemy),
     narrativeHint,
+  };
+}
+
+export const COMBAT_BASE_DAMAGE_CAP = 40;
+export const COMBAT_STAT_FLOOR = 1;
+export const COMBAT_STAT_CAP = 15;
+export const SKIRMISH_BASE = 10;
+
+export type EncounterWound = '未伤' | '轻创' | '带伤' | '残' | '绝';
+
+export interface CombatTriad {
+  attack: number;
+  defense: number;
+  speed: number;
+}
+
+export function clampCombatStat(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return 10;
+  return Math.min(COMBAT_STAT_CAP, Math.max(COMBAT_STAT_FLOOR, Math.round(n)));
+}
+
+/** 玩家交手三维：攻=神识，防=道心，速=遁速（与面板同一数字）。 */
+export function playerCombatStats(input: { divineSense?: unknown; daoHeart?: unknown; speed?: unknown }): CombatTriad {
+  return {
+    attack: clampCombatStat(input.divineSense),
+    defense: clampCombatStat(input.daoHeart),
+    speed: clampCombatStat(input.speed),
+  };
+}
+
+/** 敌方三维：炼气 8，每高一大境 +2，夹到 15。 */
+export function enemyCombatStatsForRank(rank: number): CombatTriad {
+  const r = Number.isFinite(rank) ? Math.max(0, Math.min(8, Math.floor(rank))) : 0;
+  const v = clampCombatStat(8 + r * 2);
+  return { attack: v, defense: v, speed: v };
+}
+
+/** 对等底数：10 + 攻 − 防，夹 [1, 40]。 */
+export function skirmishBaseDamage(attack: number, defense: number): number {
+  return Math.min(COMBAT_BASE_DAMAGE_CAP, Math.max(1, Math.round(SKIRMISH_BASE + attack - defense)));
+}
+
+/** 相对遁速：己方更快则少挨打。夹 [0.7, 1.3]。 */
+export function relativeSpeedIncomingMultiplier(defenderSpeed: number, attackerSpeed: number): number {
+  const raw = 1 + (attackerSpeed - defenderSpeed) * 0.02;
+  return Math.round(Math.min(1.3, Math.max(0.7, raw)) * 10000) / 10000;
+}
+
+export interface EncounterState {
+  name: string;
+  realmMajor: string;
+  element: string;
+  hp: number;
+  maxHp: number;
+}
+
+export function clampCombatBaseDamage(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(COMBAT_BASE_DAMAGE_CAP, Math.max(0, n));
+}
+
+/** 本场遭遇气血按大境位阶，不是玩家突破后的气血上限。 */
+export function encounterMaxHpForRank(rank: number): number {
+  const r = Number.isFinite(rank) ? Math.max(0, Math.min(8, Math.floor(rank))) : 0;
+  return 80 + r * 40;
+}
+
+export function resolveCombatRank(realmMajor: string, otherRank?: number): number {
+  const own = REALM_RANKS[realmMajor];
+  if (own !== undefined) return own;
+  if (otherRank !== undefined) return otherRank;
+  return 0;
+}
+
+export function describeEncounterWound(hp: number, maxHp: number): EncounterWound {
+  if (hp <= 0 || maxHp <= 0) return '绝';
+  if (hp >= maxHp) return '未伤';
+  const ratio = hp / maxHp;
+  if (ratio > 0.6) return '轻创';
+  if (ratio > 0.3) return '带伤';
+  return '残';
+}
+
+export function detectCombatFleeIntent(actionText: string): boolean {
+  const t = actionText.replace(/\s+/g, '');
+  if (!t) return false;
+  return /逃走|逃跑|逃命|撤退|抽身而退|落荒而逃|转身就跑/.test(t);
+}
+
+export function buildContinuingCombatDirective(encounter: EncounterState): string {
+  const wound = describeEncounterWound(encounter.hp, encounter.maxHp);
+  const realmLabel = encounter.realmMajor || '不明';
+  return `交手未歇。对手「${encounter.name}」大境${realmLabel}，敌势${wound}。击毙与脱身以天道为准，不得写其已死、已换人或已走；玩家若逃走可写脱身。`;
+}
+
+function normalizeElement(raw: unknown): string {
+  return typeof raw === 'string' ? raw : '';
+}
+
+export interface CombatAiReport {
+  inCombat?: boolean;
+  enemyName?: string;
+  enemyRealmMajor?: string;
+  enemyElement?: string | null;
+  baseDamageToPlayer?: unknown;
+  baseDamageToEnemy?: unknown;
+}
+
+export interface CombatTurnInput {
+  playerRealmMajor: string;
+  playerElements: string[];
+  actionText: string;
+  sceneWasCombat: boolean;
+  stored: EncounterState | null;
+  ai: CombatAiReport;
+  /** 缺省按中位 10 */
+  playerCombat?: CombatTriad;
+}
+
+export type CombatTurnKind =
+  | 'none'
+  | 'enemy_instant_win'
+  | 'player_instant_win'
+  | 'enemy_slain'
+  | 'fled'
+  | 'ongoing';
+
+export interface CombatTurnResult {
+  kind: CombatTurnKind;
+  resolution: CombatResolution | null;
+  encounter: EncounterState | null;
+  foeName: string;
+  nextInCombat: boolean;
+  playerSlainByRealm: boolean;
+  combatHpDeltaFromIncoming: number;
+  damageDealt: number;
+  damageTakenIncoming: number;
+  summary: string;
+}
+
+/**
+ * 一回合交手：续场锁对手身份；击毙看本场气血；逃走可脱身；差两境秒杀仍优先。
+ */
+export function resolveCombatTurn(
+  input: CombatTurnInput,
+  multipliers: { damage: number; defense: number },
+): CombatTurnResult {
+  const fled = detectCombatFleeIntent(input.actionText);
+  const stored = input.stored && input.stored.maxHp > 0 && input.stored.hp > 0 ? input.stored : null;
+  const continuing = input.sceneWasCombat && stored !== null;
+  const startNew = !continuing && Boolean(input.ai.inCombat);
+
+  if (!continuing && !startNew) {
+    return {
+      kind: 'none',
+      resolution: null,
+      encounter: null,
+      foeName: '',
+      nextInCombat: false,
+      playerSlainByRealm: false,
+      combatHpDeltaFromIncoming: 0,
+      damageDealt: 0,
+      damageTakenIncoming: 0,
+      summary: '',
+    };
+  }
+
+  const playerRank = resolveCombatRank(input.playerRealmMajor);
+  let name: string;
+  let realmMajor: string;
+  let element: string;
+  let hp: number;
+  let maxHp: number;
+
+  if (stored && continuing) {
+    name = stored.name;
+    realmMajor = stored.realmMajor;
+    element = stored.element;
+    hp = stored.hp;
+    maxHp = stored.maxHp;
+  } else {
+    name = (input.ai.enemyName ?? '').trim() || '无名敌手';
+    realmMajor = input.ai.enemyRealmMajor ?? '';
+    element = normalizeElement(input.ai.enemyElement);
+    const enemyRank = resolveCombatRank(realmMajor, playerRank);
+    maxHp = encounterMaxHpForRank(enemyRank);
+    hp = maxHp;
+  }
+
+  const resolution = resolveCombatModifiers(
+    { realmMajor: input.playerRealmMajor, elements: input.playerElements },
+    { realmMajor, elements: element ? [element] : [] },
+  );
+
+  const rawTriad = input.playerCombat ?? { attack: 10, defense: 10, speed: 10 };
+  const playerTriad: CombatTriad = {
+    attack: clampCombatStat(rawTriad.attack),
+    defense: clampCombatStat(rawTriad.defense),
+    speed: clampCombatStat(rawTriad.speed),
+  };
+  const enemyRankForStats = resolveCombatRank(realmMajor, playerRank);
+  const enemyTriad = enemyCombatStatsForRank(enemyRankForStats);
+  const baseToEnemy = skirmishBaseDamage(playerTriad.attack, enemyTriad.defense);
+  const baseToPlayer = skirmishBaseDamage(enemyTriad.attack, playerTriad.defense);
+  const speedIncoming = relativeSpeedIncomingMultiplier(playerTriad.speed, enemyTriad.speed);
+
+  if (resolution.outcome === 'enemy_instant_win') {
+    return {
+      kind: 'enemy_instant_win',
+      resolution,
+      encounter: null,
+      foeName: name,
+      nextInCombat: false,
+      playerSlainByRealm: true,
+      combatHpDeltaFromIncoming: 0,
+      damageDealt: 0,
+      damageTakenIncoming: 0,
+      summary: `【天道】境界压制：对手「${name}」高出两个大境界，你绝无还手，当场气绝。`,
+    };
+  }
+
+  if (fled) {
+    let taken = 0;
+    let hpDelta = 0;
+    if (resolution.outcome === 'normal') {
+      taken = Math.round(baseToPlayer * resolution.enemyDamageMultiplier * multipliers.defense * speedIncoming);
+      hpDelta = -taken;
+    }
+    return {
+      kind: 'fled',
+      resolution,
+      encounter: null,
+      foeName: name,
+      nextInCombat: false,
+      playerSlainByRealm: false,
+      combatHpDeltaFromIncoming: hpDelta,
+      damageDealt: 0,
+      damageTakenIncoming: taken,
+      summary: `【天道】你抽身离去。对手「${name}」未气绝。`,
+    };
+  }
+
+  if (resolution.outcome === 'player_instant_win') {
+    return {
+      kind: 'player_instant_win',
+      resolution,
+      encounter: null,
+      foeName: name,
+      nextInCombat: false,
+      playerSlainByRealm: false,
+      combatHpDeltaFromIncoming: 0,
+      damageDealt: hp,
+      damageTakenIncoming: 0,
+      summary: `【天道】境界压制：对手「${name}」不堪一击，气绝。`,
+    };
+  }
+
+  const taken = Math.round(baseToPlayer * resolution.enemyDamageMultiplier * multipliers.defense * speedIncoming);
+  const dealt = Math.round(baseToEnemy * resolution.playerDamageMultiplier * multipliers.damage);
+  const nextHp = Math.max(0, hp - dealt);
+  const wound = describeEncounterWound(nextHp, maxHp);
+
+  if (nextHp <= 0) {
+    return {
+      kind: 'enemy_slain',
+      resolution,
+      encounter: null,
+      foeName: name,
+      nextInCombat: false,
+      playerSlainByRealm: false,
+      combatHpDeltaFromIncoming: -taken,
+      damageDealt: dealt,
+      damageTakenIncoming: taken,
+      summary: `【天道】此击命中 ${dealt}。对手「${name}」气绝。`,
+    };
+  }
+
+  return {
+    kind: 'ongoing',
+    resolution,
+    encounter: { name, realmMajor, element, hp: nextHp, maxHp },
+    foeName: name,
+    nextInCombat: true,
+    playerSlainByRealm: false,
+    combatHpDeltaFromIncoming: -taken,
+    damageDealt: dealt,
+    damageTakenIncoming: taken,
+    summary: `【天道】此击命中 ${dealt}。对手「${name}」敌势${wound}。`,
   };
 }

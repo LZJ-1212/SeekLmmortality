@@ -1,4 +1,6 @@
-/** 修订：2026-09-03 23:40 +08 lzj — 闭关回复与境界叙事锁单测 */
+/** 修订：2026-09-03 23:40 +08 lzj — 闭关回复与境界叙事锁单测
+ * 修订：2026-09-05 15:08 +08 lzj — 渡劫成仙结局单测
+ */
 import { describe, it, expect } from 'vitest';
 import {
   clampResource,
@@ -23,6 +25,7 @@ import {
   describeDayPhase,
   describeShichen,
   pointedDayPhase,
+  REALM_LAWS as PRODUCTION_REALM_LAWS,
   type RealmLaw,
 } from './playerState.service';
 
@@ -294,6 +297,41 @@ describe('resolveBreakthroughAttempt（境界突破 / 渡雷劫的确定性数�
       { successRoll: () => 0.99, deathRoll: () => 0 }, // deathRoll 给到最容易触发死亡的值，但 deathChance 已被压到 0
     );
     expect(result.diedFromTribulation).toBe(false);
+  });
+
+  it('失败/拒绝：未知键文案不得谎称已扣灵力', () => {
+    const result = resolveBreakthroughAttempt(
+      { ...baseInput, realmMajor: '未知境界', realmMinor: '未知', cultivation: 999 },
+      REALM_LAWS,
+    );
+    expect(result.forcedOutcomeText).not.toContain('扣除少量灵力');
+    expect(result.clockKind).toBe('blocked');
+  });
+
+  it('正常路径：大乘圆满渡劫成功即成仙结局，不发三选一', () => {
+    const result = resolveBreakthroughAttempt(
+      { hp: 1000, maxHp: 1000, maxLifespan: 12000, daoHeart: 10, merit: 0, realmMajor: '大乘', realmMinor: '圆满', cultivation: 1600000 },
+      PRODUCTION_REALM_LAWS,
+      { successRoll: () => 0 },
+    );
+    expect(result.success).toBe(true);
+    expect(result.ascended).toBe(true);
+    expect(result.isMajorBreakthroughSuccess).toBe(false);
+    expect(result.patch.realmMajor).toBe('渡劫期');
+    expect(result.patch.realmMinor).toBe('飞升');
+    expect(result.forcedOutcomeText).toContain('渡劫成仙');
+  });
+
+  it('正常路径：已在渡劫期·飞升再点突破，数值不变并锁成仙结局', () => {
+    const result = resolveBreakthroughAttempt(
+      { hp: 8000, maxHp: 8000, maxLifespan: 99999, daoHeart: 10, merit: 0, realmMajor: '渡劫期', realmMinor: '飞升', cultivation: 0 },
+      PRODUCTION_REALM_LAWS,
+    );
+    expect(result.ascended).toBe(true);
+    expect(result.patch.hp).toBe(8000);
+    expect(result.patch.cultivation).toBe(0);
+    expect(result.patch.realmMajor).toBe('渡劫期');
+    expect(result.forcedOutcomeText).toContain('此世终局');
   });
 });
 

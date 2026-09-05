@@ -12,6 +12,7 @@ import { isPlayerVisibleToOwner } from '../services/saveAccess.service';
 
 /**
  * 修订：2026-09-05 01:11 +08 lzj — 创角落仓哈希；读档按口令仓隔离
+ * 修订：2026-09-05 15:08 +08 lzj — 探查返回 ending_id
  * 玩家路由：创角（/api/create-player）与状态探查（/api/player/:id）。
  * 业务逻辑在 Service 层；此处只做 HTTP 入参解析、网关校验与响应组装。
  */
@@ -54,6 +55,7 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
   try {
     const player = await prisma.players.findUnique({
       where: { id: playerId },
+      include: { saves: true },
     });
 
     if (!player) {
@@ -63,6 +65,7 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
       return res.status(404).json({ status: 'error', message: '查无此人，该修士恐已陨落。' });
     }
 
+    const { saves, ...playerRow } = player;
     const inventoryData = await inventoryService.getInventory(player.save_id);
     const lifespanStatus = getLifespanStatus(player.age ?? 16, player.max_lifespan ?? 100);
     const cave = await caveService.getCave(player.save_id);
@@ -74,7 +77,7 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
     res.json({
       status: 'success',
       data: {
-        ...player,
+        ...playerRow,
         inventory: inventoryData,
         lifespanStatus,
         cave,
@@ -83,6 +86,8 @@ router.get('/player/:id', requirePlayToken, async (req: Request, res: Response) 
         current_year: worldState?.current_year ?? 387,
         current_season: worldState?.current_season ?? '春',
         day_phase: beatClock.phase,
+        is_game_over: saves?.is_game_over ?? false,
+        ending_id: (saves as { ending_id?: string | null } | null)?.ending_id ?? null,
       },
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 /**
  * 修订：
  * 2026-09-03 23:40 +08 lzj — 闭关气血灵力回复与出关境界叙事锁
+ * 2026-09-05 15:08 +08 lzj — 渡劫成仙锁档为结局
  * 核心状态机（Service 层，纯函数，不依赖数据库）。
  * 负责：气血/灵力/修为的流逝与恢复、时间流逝的月份累加、寿元耗尽判定、
  * 以及境界突破的确定性数值结算（不依赖 AI 自行计算关键惩罚/奖励数值）。
@@ -246,6 +247,8 @@ export interface RealmLaw {
   maxHpGain?: number;
   /** 突破成功后的新寿元上限 */
   newLifespan?: number;
+  /** 再点突破即问道功成（渡劫期·飞升），不读修为、不骰雷劫 */
+  isTerminal?: boolean;
 }
 
 /**
@@ -334,6 +337,7 @@ export const REALM_LAWS: Record<string, RealmLaw> = {
     tribulationTier: '天道', baseSuccess: 0.2, tribulationDamagePercent: 0.8,
     deathChanceOnFailure: 0.55, maxHpGain: 12000, newLifespan: 99999,
   },
+  '渡劫期·飞升': { next: '渡劫期·飞升', reqCultivation: 0, isMajor: false, isTerminal: true },
 };
 
 export interface BreakthroughAttemptInput {
@@ -357,12 +361,20 @@ export interface BreakthroughRolls {
 }
 
 /** 突破结算结果：patch 里是“最终确定值”而非增量，玩家属性直接被覆盖为这些值 */
+export const ASCEND_ENDING_ID = 'ascend';
+export const ASCEND_REALM_KEY = '渡劫期·飞升';
+
+export type BreakthroughClockKind = 'minor' | 'major' | 'blocked';
+
 export interface BreakthroughAttemptResult {
   success: boolean;
   /** 是否是"大境界渡雷劫成功"（区别于小境界的水到渠成），只有这种情况才触发逆天改命天赋三选一 */
   isMajorBreakthroughSuccess: boolean;
   /** 突破失败时，是否触发了雷劫陨落（区别于普通重伤，用于死亡原因细分展示） */
   diedFromTribulation: boolean;
+  /** 渡劫成仙：锁档，不进轮回池，不发三选一 */
+  ascended: boolean;
+  clockKind: BreakthroughClockKind;
   forcedOutcomeText: string;
   patch: {
     hp: number;
@@ -416,7 +428,21 @@ export function resolveBreakthroughAttempt(
       success: false,
       isMajorBreakthroughSuccess: false,
       diedFromTribulation: false,
-      forcedOutcomeText: '玩家试图突破，但前方境界未明，无法突破。扣除少量灵力。',
+      ascended: false,
+      clockKind: 'blocked',
+      forcedOutcomeText: '玩家试图突破，但前方境界未明，气机空转，境界不变。',
+      patch: unchangedPatch,
+    };
+  }
+
+  if (law.isTerminal) {
+    return {
+      success: true,
+      isMajorBreakthroughSuccess: false,
+      diedFromTribulation: false,
+      ascended: true,
+      clockKind: 'blocked',
+      forcedOutcomeText: '天劫已成，此身已在渡劫期·飞升。问道功成，此世终局。叙事须写登仙离去，不得再写人间历练。',
       patch: unchangedPatch,
     };
   }
@@ -426,6 +452,8 @@ export function resolveBreakthroughAttempt(
       success: false,
       isMajorBreakthroughSuccess: false,
       diedFromTribulation: false,
+      ascended: false,
+      clockKind: 'blocked',
       forcedOutcomeText: `玩家试图突破，但修为不足（需要${law.reqCultivation}）。强行冲关导致灵力反噬，受轻伤（气血-10），突破失败。`,
       patch: { ...unchangedPatch, hp: clampResource(input.hp, -10, input.maxHp) },
     };
@@ -437,6 +465,8 @@ export function resolveBreakthroughAttempt(
       success: true,
       isMajorBreakthroughSuccess: false,
       diedFromTribulation: false,
+      ascended: false,
+      clockKind: 'minor',
       forcedOutcomeText: `玩家水到渠成，突破至小境界【${law.next}】。修为清零重修。`,
       patch: {
         ...unchangedPatch,
@@ -460,13 +490,18 @@ export function resolveBreakthroughAttempt(
   if (roll <= successRate) {
     const [nextMajor, nextMinor] = law.next.split('·');
     const newMaxHp = input.maxHp + (law.maxHpGain ?? 100);
+    const ascended = law.next === ASCEND_REALM_KEY;
     return {
       success: true,
-      isMajorBreakthroughSuccess: true,
+      isMajorBreakthroughSuccess: !ascended,
       diedFromTribulation: false,
-      forcedOutcomeText: `玩家历经${tier}劫的九死一生，成功抵御雷劫，突破至【${law.next}】！气血上限大增，伤势完全恢复，寿元大涨。`,
+      ascended,
+      clockKind: 'major',
+      forcedOutcomeText: ascended
+        ? `玩家历经${tier}劫的九死一生，渡劫成仙，境界落在【${law.next}】。此世终局，仙途已成。叙事须写飞升离去，不得再写留在凡间历练。`
+        : `玩家历经${tier}劫的九死一生，成功抵御雷劫，突破至【${law.next}】！气血上限大增，伤势完全恢复，寿元大涨。`,
       patch: {
-        hp: newMaxHp, // 突破成功伤势完全恢复：气血回满至新上限
+        hp: newMaxHp,
         cultivation: 0,
         realmMajor: nextMajor ?? input.realmMajor,
         realmMinor: nextMinor ?? input.realmMinor,
@@ -483,6 +518,8 @@ export function resolveBreakthroughAttempt(
       success: false,
       isMajorBreakthroughSuccess: false,
       diedFromTribulation: true,
+      ascended: false,
+      clockKind: 'major',
       forcedOutcomeText: `玩家渡${tier}劫失败，雷霆之威远超肉身承受极限，当场被雷劫轰灭，道消身陨于这场九死一生的天劫之中。`,
       patch: { ...unchangedPatch, hp: 0 },
     };
@@ -493,6 +530,8 @@ export function resolveBreakthroughAttempt(
     success: false,
     isMajorBreakthroughSuccess: false,
     diedFromTribulation: false,
+    ascended: false,
+    clockKind: 'major',
     forcedOutcomeText: `玩家渡${tier}劫失败，被雷劫劈中！身受重伤（气血-${damage}），修为大跌（修为-100）。`,
     patch: {
       ...unchangedPatch,
